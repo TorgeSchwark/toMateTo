@@ -40,7 +40,6 @@ struct chess_board
         complete_board =  white | black;
     }
 
-    int last_move_type;
 };
 
 
