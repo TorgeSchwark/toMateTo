@@ -3,33 +3,39 @@
 
 #include <cstdint>
 
+#include "move_stack.h"
+
+struct one_side 
+{
+    int64_t knights;
+    int64_t pawns;
+    int64_t rooks;
+    int64_t bishop;
+    int64_t king;
+    int64_t queen;
+    int64_t side_all;
+
+    void update_side()
+    {
+        side_all = knights | pawns | rooks | bishop | king | queen;
+    }
+
+}
+
 struct chess_board
 {
-    int64_t white_knights;
-    int64_t white_pawns;
-    int64_t white_rooks;
-    int64_t white_bishop;
-    int64_t white_king;
-    int64_t white_queen;
-    int64_t white;
+    one_side white;
+    one_side black;
 
     void update_white()
     {
-        white = white_bishop | white_king | white_knights | white_rooks | white_pawns | white_queen;
-    }
-
-    int64_t black_knights;
-    int64_t black_pawns;
-    int64_t black_rooks;
-    int64_t black_bishop;
-    int64_t black_king;
-    int64_t black_queen;
-    int64_t black;
+        white.update_side();
+    };
 
     void update_black()
     {
-        black = black_queen | black_king | black_bishop | black_rooks | black_pawns | black_knights;
-    }
+        black.update_black();
+    };
 
     int64_t complete_board;
 
@@ -39,6 +45,8 @@ struct chess_board
         update_white();
         complete_board =  white | black;
     }
+
+    bool whites_turn;
 
 };
 
