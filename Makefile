@@ -1,12 +1,12 @@
 # Compiler
 CXX = g++
-CXXFLAGS = -Wall -std=c++17
+CXXFLAGS = -Wall -std=c++17 -O3
 
 # Zielprogramm
 TARGET = chess
 
 # Quell- und Objektdateien
-SRC = main.cpp ./move_generation/chess_board.cpp 
+SRC = main.cpp ./move_generation/chess_board.cpp ./generation/knight_tables.cpp  
 OBJ = $(SRC:.cpp=.o)
 
 # Standardziel

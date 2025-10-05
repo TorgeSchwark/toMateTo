@@ -3,10 +3,13 @@
 
 #include <cstdint>
 #include "move_stack.h"
+#include "../generation/knight_tables.h"
 #include <iostream>
 
-inline void set_index_zero(int64_t* bitboard, int64_t index);
-inline int msb_index(int64_t bb);
+
+void set_index_zero(int64_t* bitboard, int64_t index); 
+int msb_index(int64_t bb);
+void set_index_one(int64_t* bitboard, int64_t index);
 
 struct one_side 
 {
@@ -129,7 +132,9 @@ struct chess_board
 
 void find_all_moves(move_stack* move_stack, chess_board* chess_board);
 
-void find_knight_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
+void find_knight_moves(move_stack* move_stack, one_side* player, one_side* enemy);
 
+
+void find_bishop_moves(move_stack* move_stack, one_side* player, one_side* enemy);
 
 #endif 
