@@ -13,7 +13,8 @@ int main() {
     init_knight_table();
     chess_board.print_board();
     init_magic_tables();
-    init_king_tables();
+    init_king_mask();
+    init_all_pinned_tables();
 
     move_stack move_stack;
 

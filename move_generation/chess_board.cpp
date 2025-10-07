@@ -19,7 +19,7 @@ void set_index_one(int64_t* bitboard, int64_t index) {
 }
 
 void find_all_moves(move_stack* move_stack, chess_board* chess_board){
-
+    chess_board->pinned_pieces == 0LL;
     if(chess_board->whites_turn){
         if(chess_board->white.knights){ // at least one knight alive
             find_knight_moves(move_stack, &(chess_board->white), &(chess_board->black));
@@ -123,6 +123,17 @@ void find_queen_moves(move_stack* move_stack, chess_board* chess_board, one_side
             move_stack->add_move(from, current_queen_to, QUEEN, NORMAL_MOVE);
         }
     }
+}
+
+
+void find_all_king_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy){
+    int king_index = __builtin_ctzll(player->king);        // Get index of least significant bit
+    int64_t king_mask = KING_MOVES_MASK[king_index] & player->side_all;
+    
+    int64_t king_diagonals_occ =  enemy->side_all & BISHOP_MAGIC[king_index].mask; // all enemy pieces
+    int index = (int)((king_diagonals_occ * ROOOK_MAGIC[king_index].magic_number) >> (64 - ROOOK_MAGIC[king_index].relevant_bits));
+    int64_t diagonals_until_enemy = ROOOK_MAGIC[king_index].attack_list[index];
+
 }
 
 

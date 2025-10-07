@@ -5,6 +5,7 @@
 #include "move_stack.h"
 #include "../generation/knight_tables.h"
 #include "../generation/magic_gen.h"
+#include "../generation/king_tables.h"
 #include <iostream>
 
 
@@ -125,6 +126,8 @@ struct chess_board
     };
 
     int64_t complete_board;
+    int64_t pinned_pieces;
+
 
     void update_board()
     {

@@ -1,0 +1,8 @@
+Die masken die bei 
+    int64_t diagonals_until_enemy = ROOOK_MAGIC[king_index].attack_list[index]; raus kommen müssen so modifizieirt werden,
+    dass wenn nichts im weg ist die ganze richtung fehlt damit nichts gepinnt wird.
+
+2 mal hashen!
+
+
+dabei direkt number of atackers zählen also direkte atacks! keine figur im weg. und Felder makieren um einmaligen atakcer abzuwähren(wo man zwischen ziehn kann/ schlagen)
