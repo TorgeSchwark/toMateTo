@@ -7,20 +7,20 @@ MagicTableEntry ROOOK_MAGIC[64];
 
 
 // ------------------ Helpers -------------------
-static inline int popcount64(U64 x) {
+int popcount64(U64 x) {
     return __builtin_popcountll(x);
 }
 
-static inline int bit_scan_forward(U64 x) {
+int bit_scan_forward(U64 x) {
     return __builtin_ctzll(x);
 }
 
-static inline U64 set_bit(U64 b, int sq) { return b | (1ULL << sq); }
-static inline U64 clear_bit(U64 b, int sq) { return b & ~(1ULL << sq); }
+U64 set_bit(U64 b, int sq) { return b | (1ULL << sq); }
+U64 clear_bit(U64 b, int sq) { return b & ~(1ULL << sq); }
 
 // ------------------ Board helpers -------------------
 // Files: a=0 ... h=7, ranks 1..8 mapped to 0..7
-static inline int sq(int file, int rank) { return rank*8 + file; }
+int sq(int file, int rank) { return rank*8 + file; }
 
 // ------------------ Generate relevant mask for rook (no edges) -------------------
 U64 rook_relevant_mask(int s) {

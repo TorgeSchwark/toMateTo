@@ -29,6 +29,10 @@ typedef struct {
 extern MagicTableEntry BISHOP_MAGIC[64];
 extern MagicTableEntry ROOOK_MAGIC[64];
 
+int sq(int file, int rank);
+
+int popcount64(U64 x);
+
 U64 rook_relevant_mask(int s);
 
 U64 bishop_relevant_mask(int s);
