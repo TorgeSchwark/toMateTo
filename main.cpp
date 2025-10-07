@@ -2,6 +2,8 @@
 #include <chrono>  // für Zeitmessung
 #include "./move_generation/chess_board.h"
 #include "./generation/knight_tables.h"
+#include "./generation/magic_gen.h"
+#include "./generation/king_tables.h"
 
 int main() {
     std::cout << "Willkommen beim Schachspiel!" << std::endl;
@@ -10,11 +12,13 @@ int main() {
     chess_board.setup_chess_board();
     init_knight_table();
     chess_board.print_board();
+    init_magic_tables();
+    init_king_tables();
 
     move_stack move_stack;
 
     // Anzahl der Wiederholungen
-    const int repetitions = 200000000; // 800 k moves
+    const int repetitions = 66000000; // 800 k moves
 
     // Zeitmessung starten
     auto start_time = std::chrono::high_resolution_clock::now();

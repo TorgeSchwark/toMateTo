@@ -2,6 +2,7 @@
 
 int64_t KNIGHT_LOOCKUP_TABLE[64][9];
 
+
 bool is_on_board(int x, int y, int x_offset, int y_offset){
     return (x+x_offset >= 0 && x+x_offset < 8 && y+y_offset >= 0 && y+y_offset < 8);
 }

@@ -46,16 +46,17 @@ inline std::string move_type_to_string(int type) {
 
 
 struct move_stack{
-    uint8_t moves[500];
-    uint8_t move_counter;
-    uint8_t move_types[500];
+    int64_t moves[500];
+    int move_counter = 0;
+    int64_t move_types[500];
 
-    void add_move(int64_t from, int64_t to,int64_t piece, int64_t move_type){
+    void add_move(int64_t from, int64_t to, int64_t piece, int64_t move_type){
+
         moves[move_counter] = from;
         moves[move_counter+1] = to;
         moves[move_counter+2] = piece;
         moves[move_counter+3] = move_type;
-        move_counter += 4; 
+        move_counter += 4;
     };
 
     void clear(){
@@ -65,8 +66,8 @@ struct move_stack{
     void print_moves() const {
         std::cout << "=== Move Stack ===" << std::endl;
         for (int i = 0; i < move_counter; i += 4) {
-            int from = moves[i];
-            int to = moves[i + 1];
+            int from = __builtin_ctzll(moves[i]);
+            int to = __builtin_ctzll(moves[i + 1]);
             int piece = moves[i + 2];
             int type = moves[i + 3];
 

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include "move_stack.h"
 #include "../generation/knight_tables.h"
+#include "../generation/magic_gen.h"
 #include <iostream>
 
 
@@ -28,7 +29,10 @@ struct one_side
 
     void setup_side(bool is_white) {
     if (is_white) {
-        pawns  = 0x000000000000FF00;  // Bits 8–15
+        pawns = 0x000000000000FF00 & ~((1ULL << 9)  |  // b2
+                               (1ULL << 11) |  // d2
+                               (1ULL << 12) |  // e2
+                               (1ULL << 14));  // g2
         rooks  = 0x0000000000000081;  // a1, h1 (Bits 0, 7)
         knights= 0x0000000000000042;  // b1, g1 (Bits 1, 6)
         bishop = 0x0000000000000024;  // c1, f1 (Bits 2, 5)
@@ -134,7 +138,10 @@ void find_all_moves(move_stack* move_stack, chess_board* chess_board);
 
 void find_knight_moves(move_stack* move_stack, one_side* player, one_side* enemy);
 
+void find_bishop_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
 
-void find_bishop_moves(move_stack* move_stack, one_side* player, one_side* enemy);
+void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
+
+void find_queen_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
 
 #endif 
