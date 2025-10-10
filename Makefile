@@ -6,7 +6,7 @@ CXXFLAGS = -Wall -std=c++17 -O3
 TARGET = chess
 
 # Quell- und Objektdateien
-SRC = main.cpp ./move_generation/chess_board.cpp ./generation/knight_tables.cpp  ./generation/magic_gen.cpp ./move_generation/move_stack.cpp
+SRC = main.cpp ./move_generation/chess_board.cpp ./generation/knight_tables.cpp ./generation/king_tables.cpp  ./generation/magic_gen.cpp ./move_generation/move_stack.cpp 
 OBJ = $(SRC:.cpp=.o)
 
 # Standardziel

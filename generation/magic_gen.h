@@ -27,7 +27,7 @@ typedef struct {
 } MagicEntryData;
 
 extern MagicTableEntry BISHOP_MAGIC[64];
-extern MagicTableEntry ROOOK_MAGIC[64];
+extern MagicTableEntry ROOK_MAGIC[64];
 
 int sq(int file, int rank);
 

@@ -15,6 +15,7 @@ int main() {
     init_magic_tables();
     init_king_mask();
     init_all_pinned_tables();
+    init_all_atack_tables();
 
     move_stack move_stack;
 

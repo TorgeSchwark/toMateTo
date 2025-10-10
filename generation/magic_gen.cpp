@@ -3,7 +3,7 @@
 #include "magic_gen.h"
 
 MagicTableEntry BISHOP_MAGIC[64];
-MagicTableEntry ROOOK_MAGIC[64];
+MagicTableEntry ROOK_MAGIC[64];
 
 
 // ------------------ Helpers -------------------
@@ -345,10 +345,10 @@ void init_all_magics_rooks(char *piece){
         }
 
         if(is_rook){
-            ROOOK_MAGIC[square].attack_list = final_attacks;
-            ROOOK_MAGIC[square].magic_number = magic;
-            ROOOK_MAGIC[square].mask = mask;
-            ROOOK_MAGIC[square].relevant_bits = relevant_bits;
+            ROOK_MAGIC[square].attack_list = final_attacks;
+            ROOK_MAGIC[square].magic_number = magic;
+            ROOK_MAGIC[square].mask = mask;
+            ROOK_MAGIC[square].relevant_bits = relevant_bits;
         }else{
             BISHOP_MAGIC[square].attack_list = final_attacks;
             BISHOP_MAGIC[square].magic_number = magic;
@@ -360,7 +360,7 @@ void init_all_magics_rooks(char *piece){
     }
     if(magic_done == 64){
         if(is_rook){
-            save_magic_data("magic_table_rook.bin", ROOOK_MAGIC);
+            save_magic_data("magic_table_rook.bin", ROOK_MAGIC);
         }else{
             save_magic_data("magic_table_bishop.bin", BISHOP_MAGIC);   
         }
@@ -369,9 +369,9 @@ void init_all_magics_rooks(char *piece){
 
 
 void init_magic_tables(){
-    load_magic_data("./generation/magic_table_rook.bin", ROOOK_MAGIC);
+    load_magic_data("./generation/magic_table_rook.bin", ROOK_MAGIC);
     load_magic_data("./generation/magic_table_bishop.bin", BISHOP_MAGIC);
-    if (!test_magic_numbers(ROOOK_MAGIC, true)) {
+    if (!test_magic_numbers(ROOK_MAGIC, true)) {
         printf("Fehler in ROOK magic table!\n");
     }else{
         printf("kein Fehler in ROOK magic table!\n");
@@ -396,9 +396,9 @@ void init_magic_tables(){
 
 //     if(load_data){
 //         printf("data being loaded \n");
-//         load_magic_data("magic_table_rook.bin", ROOOK_MAGIC);
+//         load_magic_data("magic_table_rook.bin", ROOK_MAGIC);
 //         load_magic_data("magic_table_bishop.bin", BISHOP_MAGIC);
-//         if (!test_magic_numbers(ROOOK_MAGIC, true)) {
+//         if (!test_magic_numbers(ROOK_MAGIC, true)) {
 //             printf("Fehler in ROOK magic table!\n");
 //         }else{
 //             printf("kein Fehler in ROOK magic table!\n");
