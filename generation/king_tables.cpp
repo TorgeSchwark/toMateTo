@@ -5,8 +5,11 @@ int64_t KING_MOVES_MASK[64];
 MagicTableEntry PINNED_PIECES_ROOK_MAGIC[64];
 MagicTableEntry PINNED_PIECES_BISHOP_MAGIC[64];
 
+// normal move table but empty directions are not returnt (no atacker)
 MagicTableEntry ATACK_PATTERN_ROOK_MAGIC[64];
 MagicTableEntry ATACK_PATTERN_BISHOP_MAGIC[64];
+
+MagicTableEntry IS_ATACKED_TABLE[64];
 
 int directions[8][2] = {{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1},{0,1}};
 
@@ -134,7 +137,6 @@ U64 bishop_attacks_on_the_fly_pinned(int sqr, U64 occ) {
 
     return attacks;
 }
-
 
 U64 rook_attacks_patterns_on_the_fly(int sqr, U64 occ) {
     U64 attacks = 0ULL;
@@ -270,7 +272,6 @@ U64 bishop_attacks_patterns_on_the_fly(int sqr, U64 occ) {
     return attacks;
 }
 
-
 void change_order(MagicTableEntry* ALREADY_DONE_MAGIC, U64 *blockers, U64 *occupancies, U64 *final_blockers, int relevant_bits, int square){
     int entries = 1 << relevant_bits;
     for(int i = 0; i < entries; i++){
@@ -280,7 +281,7 @@ void change_order(MagicTableEntry* ALREADY_DONE_MAGIC, U64 *blockers, U64 *occup
 }
 
 void init_atack_tables(char *piece){
-    load_magic_data("./generation/magic_table_rook.bin", ROOOK_MAGIC);
+    load_magic_data("./generation/magic_table_rook.bin", ROOK_MAGIC);
     load_magic_data("./generation/magic_table_bishop.bin", BISHOP_MAGIC);
 
     int is_rook = (strcmp(piece, "rook") == 0);
@@ -302,11 +303,11 @@ void init_atack_tables(char *piece){
             atack_patterns[i] = is_rook ? rook_attacks_patterns_on_the_fly(square, occ) : bishop_attacks_patterns_on_the_fly(square, occ);
         }   
 
-        is_rook ? change_order(ROOOK_MAGIC, occupancies, atack_patterns, final_atack_patterns, relevant_bits, square) : change_order(BISHOP_MAGIC, occupancies, atack_patterns, final_atack_patterns, relevant_bits, square);
+        is_rook ? change_order(ROOK_MAGIC, occupancies, atack_patterns, final_atack_patterns, relevant_bits, square) : change_order(BISHOP_MAGIC, occupancies, atack_patterns, final_atack_patterns, relevant_bits, square);
 
         if(is_rook){
             ATACK_PATTERN_ROOK_MAGIC[square].attack_list = final_atack_patterns;
-            ATACK_PATTERN_ROOK_MAGIC[square].magic_number = ROOOK_MAGIC[square].magic_number;
+            ATACK_PATTERN_ROOK_MAGIC[square].magic_number = ROOK_MAGIC[square].magic_number;
             ATACK_PATTERN_ROOK_MAGIC[square].mask = mask; // meaningless in this case
             ATACK_PATTERN_ROOK_MAGIC[square].relevant_bits = relevant_bits;
         }else{
@@ -321,7 +322,7 @@ void init_atack_tables(char *piece){
 }
 
 void init_pinned_tables(char *piece){
-    load_magic_data("./generation/magic_table_rook.bin", ROOOK_MAGIC);
+    load_magic_data("./generation/magic_table_rook.bin", ROOK_MAGIC);
     load_magic_data("./generation/magic_table_bishop.bin", BISHOP_MAGIC);
     int is_rook = (strcmp(piece, "rook") == 0);
     int magic_done = 0;
@@ -343,11 +344,11 @@ void init_pinned_tables(char *piece){
         }   
 
         
-        is_rook ? change_order(ROOOK_MAGIC, occupancies, blockers, final_blockers, relevant_bits, square) : change_order(BISHOP_MAGIC, occupancies, blockers, final_blockers, relevant_bits, square);
+        is_rook ? change_order(ROOK_MAGIC, occupancies, blockers, final_blockers, relevant_bits, square) : change_order(BISHOP_MAGIC, occupancies, blockers, final_blockers, relevant_bits, square);
         
         if(is_rook){
             PINNED_PIECES_ROOK_MAGIC[square].attack_list = final_blockers;
-            PINNED_PIECES_ROOK_MAGIC[square].magic_number = ROOOK_MAGIC[square].magic_number;
+            PINNED_PIECES_ROOK_MAGIC[square].magic_number = ROOK_MAGIC[square].magic_number;
             PINNED_PIECES_ROOK_MAGIC[square].mask = mask; // meaningless in this case
             PINNED_PIECES_ROOK_MAGIC[square].relevant_bits = relevant_bits;
         }else{
@@ -372,8 +373,6 @@ void init_all_pinned_tables(){
     init_pinned_tables("not rook");
 
 }
-
-
 
 
 

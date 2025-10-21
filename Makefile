@@ -2,6 +2,9 @@
 CXX = g++
 CXXFLAGS = -Wall -std=c++17 -O3
 
+# SFML Libraries (ggf. Pfad anpassen)
+SFML_LIBS = -lsfml-graphics -lsfml-window -lsfml-system
+
 # Zielprogramm
 TARGET = chess
 
@@ -14,7 +17,7 @@ all: $(TARGET)
 
 # Linken
 $(TARGET): $(OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(SFML_LIBS)
 
 # Kompilieren
 %.o: %.cpp

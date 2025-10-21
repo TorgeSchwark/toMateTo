@@ -84,14 +84,19 @@ void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side*
         int rook_index = __builtin_ctzll(rooks);        // Get index of least significant bit
         rooks &= rooks - 1;
         int64_t current_rook_to;
-        int64_t occ = chess_board->complete_board & ROOOK_MAGIC[rook_index].mask;
-        int index = (int)((occ * ROOOK_MAGIC[rook_index].magic_number) >> (64 - ROOOK_MAGIC[rook_index].relevant_bits));
-        int64_t atack_moves = ROOOK_MAGIC[rook_index].attack_list[index] & ~player->side_all;
+        int64_t occ = chess_board->complete_board & ROOK_MAGIC[rook_index].mask;
+        int index = (int)((occ * ROOK_MAGIC[rook_index].magic_number) >> (64 - ROOK_MAGIC[rook_index].relevant_bits));
+        int64_t atack_moves = ROOK_MAGIC[rook_index].attack_list[index] & ~player->side_all;
+        int64_t from = 1ULL << rook_index;
+        //  if ( chess_board->pinned_pieces & from){
+        //    if(!one_direction[rock_from]&player->king){
+        //          atack_moves &= (~one_direction) delete the direction
+        //     }
+        // }
         while(atack_moves){
             int rook_index_to = __builtin_ctzll(atack_moves); // Index des Ziel-Feldes
             atack_moves &= atack_moves - 1;                      // LSb entfernen
             current_rook_to = 1ULL << rook_index_to;
-            int64_t from = 1ULL << rook_index;
             move_stack->add_move(from, current_rook_to, ROOK, NORMAL_MOVE);
         }
     }
@@ -106,9 +111,9 @@ void find_queen_moves(move_stack* move_stack, chess_board* chess_board, one_side
         int64_t from;
         int queen_index_to;
 
-        int64_t occ = chess_board->complete_board & ROOOK_MAGIC[quenn_index].mask;
-        int index = (int)((occ * ROOOK_MAGIC[quenn_index].magic_number) >> (64 - ROOOK_MAGIC[quenn_index].relevant_bits));
-        int64_t atack_moves = ROOOK_MAGIC[quenn_index].attack_list[index];
+        int64_t occ = chess_board->complete_board & ROOK_MAGIC[quenn_index].mask;
+        int index = (int)((occ * ROOK_MAGIC[quenn_index].magic_number) >> (64 - ROOK_MAGIC[quenn_index].relevant_bits));
+        int64_t atack_moves = ROOK_MAGIC[quenn_index].attack_list[index];
 
         occ = chess_board->complete_board & BISHOP_MAGIC[quenn_index].mask;
         index = (int)((occ * BISHOP_MAGIC[quenn_index].magic_number) >> (64 - BISHOP_MAGIC[quenn_index].relevant_bits));
@@ -127,40 +132,22 @@ void find_queen_moves(move_stack* move_stack, chess_board* chess_board, one_side
 
 
 void find_all_king_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy){
-    int king_index = __builtin_ctzll(player->king);        // Get index of least significant bit
-    int64_t possible_king_moves = KING_MOVES_MASK[king_index] & (~player->side_all);
-    while(possible_king_moves){
-        int64_t one_possible_move = __builtin_ctzll(possible_king_moves); // Index des Ziel-Feldes
-        possible_king_moves &= possible_king_moves - 1;
+    int king_pos = __builtin_ctzll(player->king);
 
+    // find all diagonal atacks to king
+    int64_t king_diagonal_atackers = (enemy->bishop | enemy->queen) & BISHOP_MAGIC[king_pos].mask;
+    int magic_index = ((king_diagonal_atackers * BISHOP_MAGIC[king_pos].magic_number) >> (64 - BISHOP_MAGIC[king_pos].relevant_bits));
+    int64_t atack_mask = ATACK_PATTERN_BISHOP_MAGIC[king_pos].attack_list[magic_index];
 
-    }
+    // pinned pieces 
+    int64_t blocked_pieces = atack_mask&(enemy->knights|enemy->rooks|enemy->pawns|player->side_all);
+    int magic_index_blocked = (blocked_pieces *PINNED_PIECES_BISHOP_MAGIC[king_pos].magic_number) >> (64 - PINNED_PIECES_BISHOP_MAGIC[king_pos].relevant_bits);
+    int64_t pinned_pieces = PINNED_PIECES_BISHOP_MAGIC[king_pos].attack_list[magic_index_blocked];
+
+    chess_board->pinned_pieces = chess_board->pinned_pieces | pinned_pieces;// shoould be enough 
     
-    // find pieces pinned diagonal line
-    int64_t king_diagonals_occ = (enemy->bishop|enemy->queen) & BISHOP_MAGIC[king_index].mask; // all enemy pieces
-    int index = (int)((king_diagonals_occ * ATACK_PATTERN_BISHOP_MAGIC[king_index].magic_number) >> (64 - ATACK_PATTERN_BISHOP_MAGIC[king_index].relevant_bits));
-    int64_t diagonals_until_enemy = ATACK_PATTERN_BISHOP_MAGIC[king_index].attack_list[index];
-
-    int64_t king_diagonal_defenders = diagonals_until_enemy&player->side_all;
-    int index = (int)((king_diagonal_defenders * PINNED_PIECES_BISHOP_MAGIC[king_index].magic_number) >> (64 - PINNED_PIECES_BISHOP_MAGIC[king_index].relevant_bits));
-    chess_board->pinned_pieces |= PINNED_PIECES_BISHOP_MAGIC[king_index].attack_list[index];
-
-
-    // find pieces pinned straight line
-    int64_t king_straight_occ = (enemy->rooks|enemy->queen) & ROOK_MAGIC[king_index].mask; 
-    int index = (int)((king_straight_occ * ATACK_PATTERN_ROOK_MAGIC[king_index].magic_number) >> (64 - ATACK_PATTERN_ROOK_MAGIC[king_index].relevant_bits));
-    int64_t straight_until_enemy = ATACK_PATTERN_ROOK_MAGIC[king_index].attack_list[index];
-
-    int64_t king_straight_defenders = straight_until_enemy&player->side_all;
-    int index = (int)((king_diagonals_occ * PINNED_PIECES_ROOK_MAGIC[king_index].magic_number) >> (64 - PINNED_PIECES_ROOK_MAGIC[king_index].relevant_bits));
-    chess_board->pinned_pieces |= PINNED_PIECES_ROOK_MAGIC[king_index].attack_list[index];
-
-    
-
-
-    
-
-
 }
+
+
 
 
