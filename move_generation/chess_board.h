@@ -9,9 +9,24 @@
 #include <iostream>
 
 
+int64_t get_diagonal_atacks(one_side* enemy, one_side* player, int pos_ind, int64_t relevant_pieces);
+int64_t get_diagonal_atackers(one_side* enemy, int pos_ind);
+int64_t get_diagonal_pins(one_side* enemy, one_side* player, int pos_ind, int64_t atack_mask);
+
+int64_t get_straight_atacks(one_side* enemy, one_side* player, int pos_ind, int64_t relevant_pieces);
+int64_t get_straight_atackers(one_side* enemy, int pos_ind);
+int64_t get_straight_pins(one_side* enemy, one_side* player, int pos_ind, int64_t atack_mask);
+
+
+
 void set_index_zero(int64_t* bitboard, int64_t index); 
 int msb_index(int64_t bb);
 void set_index_one(int64_t* bitboard, int64_t index);
+
+bool not_atacked(chess_board* chess_board, one_side* player, one_side* enemy, int64_t pos);
+
+
+
 
 struct one_side 
 {

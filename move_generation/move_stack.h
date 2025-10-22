@@ -16,6 +16,8 @@ const int64_t QUEEN = 5;
 const int64_t KING = 6;
 const int64_t NORMAL_MOVE = 1;
 
+
+
 inline std::string square_to_string(int index) {
     char file = 'a' + (index % 8);
     char rank = '1' + (index / 8);

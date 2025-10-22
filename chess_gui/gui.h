@@ -8,4 +8,6 @@
 void init_gui();
 bool update_gui(const chess_board& board);
 
+void highlight_moves(const move_stack& moves);
+
 #endif

@@ -40,9 +40,15 @@ int main() {
     std::cout << "Dauer: " << duration.count() << "ms\n";
     move_stack.print_moves();
 
+
+
     // GUI starten
     init_gui();
+    highlight_moves(move_stack);
+
+
     while (update_gui(chess_board)) {
+
         // ggf. später: input handling, züge etc.
     }
 

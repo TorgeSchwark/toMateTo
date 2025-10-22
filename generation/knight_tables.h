@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-extern int64_t KNIGHT_LOOCKUP_TABLE[64][9];
+int64_t KNIGHT_LOOCKUP_TABLE[64];
 
 extern int64_t BISHOP_LOOCKUP_TABLE[64][4][8];
 

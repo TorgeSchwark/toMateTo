@@ -9,8 +9,6 @@ MagicTableEntry PINNED_PIECES_BISHOP_MAGIC[64];
 MagicTableEntry ATACK_PATTERN_ROOK_MAGIC[64];
 MagicTableEntry ATACK_PATTERN_BISHOP_MAGIC[64];
 
-MagicTableEntry IS_ATACKED_TABLE[64];
-
 int directions[8][2] = {{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1},{0,1}};
 
 void init_king_mask(){

@@ -1,16 +1,35 @@
 // gui.cpp
 #include "gui.h"
 #include <iostream>
+#include <set>
 
 // Konstanten
-const int TILE_SIZE = 80;
 const int OFFSET_X = 10;
 const int OFFSET_Y = 10;
+const int TILE_SIZE = 80;
+const int BUTTON_AREA_HEIGHT = 50;  // Platz für Button oben
+
+bool legal_moves_only = true;
 
 // Globale GUI-Objekte
 sf::RenderWindow window;
 sf::Texture textures[12]; // 0–5 = weiß, 6–11 = schwarz
 sf::Sprite sprites[12];
+
+
+// Global or passed to update_gui (your call)
+std::set<int> highlighted_squares;
+
+void highlight_moves(const move_stack& moves) {
+    highlighted_squares.clear();
+    for (int i = 0; i < moves.move_counter; i += 4) {
+        int to =__builtin_ctzll(moves.moves[i + 1]);
+        if (to >= 0 && to < 64) {
+            highlighted_squares.insert(to);
+        }
+    }
+}
+
 
 enum PieceIndex {
     WP, WR, WN, WB, WQ, WK,
@@ -25,7 +44,16 @@ void load_texture(sf::Texture& tex, const std::string& path) {
 }
 
 void init_gui() {
-    window.create(sf::VideoMode(8 * TILE_SIZE, 8 * TILE_SIZE), "Schach GUI");
+    window.create(sf::VideoMode(8 * TILE_SIZE, 8 * TILE_SIZE + BUTTON_AREA_HEIGHT), "Schach GUI");
+
+
+    // Button zeichnen
+    // Text zeichnen
+    sf::Font font;
+    if (!font.loadFromFile("./chess_gui/arial.TTF")) {
+        // Stelle sicher, dass du eine Schriftart bereitstellst
+        std::cerr << "Fehler beim Laden der Schriftart!" << std::endl;
+    }
 
     // Texturen laden
     load_texture(textures[WP], "./chess_images/white_pawn.png");
@@ -48,6 +76,8 @@ void init_gui() {
     }
 }
 
+
+
 bool update_gui(const chess_board& board) {
     sf::Event event;
     while (window.pollEvent(event)) {
@@ -55,30 +85,72 @@ bool update_gui(const chess_board& board) {
             window.close();
             return false;
         }
+        // Event-Mausklick hier behandeln
+        if (event.type == sf::Event::MouseButtonPressed) {
+            if (event.mouseButton.button == sf::Mouse::Left) {
+                sf::Vector2f click_pos(event.mouseButton.x, event.mouseButton.y);
+                sf::FloatRect button_bounds(10, 5, 200, 40); // Button liegt z.B. bei (10,5) im Button-Bereich
+                if (button_bounds.contains(click_pos)) {
+                    legal_moves_only = !legal_moves_only;
+                    std::cout << "legal_moves_only ist jetzt: " << (legal_moves_only ? "true" : "false") << "\n";
+                }
+            }
+        }
     }
 
     window.clear();
 
-    // Brett zeichnen
-    for (int row = 0; row < 8; ++row) {
-        for (int col = 0; col < 8; ++col) {
-            sf::RectangleShape square(sf::Vector2f(TILE_SIZE, TILE_SIZE));
-            square.setPosition(col * TILE_SIZE, row * TILE_SIZE);
-            if ((row + col) % 2 == 0)
-                square.setFillColor(sf::Color(240, 217, 181));
-            else
-                square.setFillColor(sf::Color(181, 136, 99));
-            window.draw(square);
+    // Button zeichnen (vor dem Schachbrett)
+    sf::RectangleShape button(sf::Vector2f(200, 40));
+    button.setPosition(10, 5);  // Im Button-Bereich oben
+    button.setFillColor(legal_moves_only ? sf::Color(100, 200, 100) : sf::Color(200, 100, 100));
+    window.draw(button);
+
+    // Button-Text
+    static sf::Font font;
+    static bool fontLoaded = false;
+    if (!fontLoaded) {
+        if (!font.loadFromFile("./chess_gui/arial.TTF")) {
+            std::cerr << "Fehler beim Laden der Schriftart!" << std::endl;
+        } else {
+            fontLoaded = true;
         }
     }
 
-    // Figuren zeichnen
+    sf::Text button_text;
+    button_text.setFont(font);
+    button_text.setCharacterSize(18);
+    button_text.setFillColor(sf::Color::Black);
+    button_text.setString(legal_moves_only ? "only legal moves" : "all moves");
+    button_text.setPosition(20, 10);
+    window.draw(button_text);
+
+    // Schachbrett zeichnen (etwas weiter unten, wegen Button-Höhe)
+    for (int row = 0; row < 8; ++row) {
+    for (int col = 0; col < 8; ++col) {
+        int bit_index = (7 - row) * 8 + col; // Achtung hier: Bitboard-Index = Umgekehrte Zeile
+        bool is_highlighted = highlighted_squares.count(bit_index) > 0;
+
+        sf::RectangleShape square(sf::Vector2f(TILE_SIZE, TILE_SIZE));
+        square.setPosition(col * TILE_SIZE, row * TILE_SIZE + BUTTON_AREA_HEIGHT);
+
+        if ((row + col) % 2 == 0)
+            square.setFillColor(is_highlighted ? sf::Color(200, 255, 200) : sf::Color(240, 217, 181));
+        else
+            square.setFillColor(is_highlighted ? sf::Color(100, 180, 100) : sf::Color(181, 136, 99));
+
+        window.draw(square);
+    }
+}
+
+
+    // Figuren zeichnen (auch mit y-Verschiebung)
     auto draw_pieces = [&](const one_side& side, bool white) {
         int offset = white ? 0 : 6;
         for (int bit = 0; bit < 64; ++bit) {
             int row = 7 - (bit / 8);
             int col = bit % 8;
-            sf::Vector2f pos(col * TILE_SIZE + OFFSET_X, row * TILE_SIZE + OFFSET_Y);
+            sf::Vector2f pos(col * TILE_SIZE + OFFSET_X, row * TILE_SIZE + OFFSET_Y + BUTTON_AREA_HEIGHT);
 
             if (side.pawns & (1ULL << bit)) {
                 sprites[offset + 0].setPosition(pos);
