@@ -4,7 +4,7 @@
 #include "toMateTo_engine/table_generation/knight_tables.h"
 #include "magic_gen.h"
 
-extern int64_t KING_MOVES_MASK[64];
+extern Bitboard KING_MOVES_MASK[64];
 
 extern MagicTableEntry PINNED_PIECES_ROOK_MAGIC[64];
 extern MagicTableEntry PINNED_PIECES_BISHOP_MAGIC[64];

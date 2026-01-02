@@ -1,13 +1,13 @@
 #include "toMateTo_engine/table_generation/knight_tables.h"
 
-int64_t KNIGHT_LOOKUP_TABLE[64]; 
+Bitboard KNIGHT_LOOKUP_TABLE[64]; 
 
 bool is_on_board(int x, int y, int x_offset, int y_offset) {
     return (x + x_offset >= 0 && x + x_offset < 8 &&
             y + y_offset >= 0 && y + y_offset < 8);
 }
 
-void generate_knight_tables(int64_t lookup_table[64]) {
+void generate_knight_tables(Bitboard lookup_table[64]) {
     const int directions[8][2] = {
         {-2, -1}, {-1, -2}, {-2,  1}, {1, -2},
         { 2, -1}, {-1,  2}, {1,  2},  {2,  1}

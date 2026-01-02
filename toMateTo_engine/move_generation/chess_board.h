@@ -9,20 +9,26 @@
 #include "toMateTo_engine/table_generation/magic_gen.h"
 #include "toMateTo_engine/table_generation/king_tables.h"
 
+using Bitboard = uint64_t;
 
-void set_index_zero(int64_t* bitboard, int64_t index); 
-int msb_index(int64_t bb);
-void set_index_one(int64_t* bitboard, int64_t index);
+enum PieceType: std::int8_t{
+    NO_PIECE_TYPE, PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING
+};
+
+
+void set_index_zero(Bitboard* bitboard, Bitboard index); 
+int msb_index(Bitboard bb);
+void set_index_one(Bitboard* bitboard, Bitboard index);
 
 struct one_side 
 {
-    int64_t knights;
-    int64_t pawns;
-    int64_t rooks;
-    int64_t bishop;
-    int64_t king;
-    int64_t queen;
-    int64_t side_all;
+    Bitboard knights;
+    Bitboard pawns;
+    Bitboard rooks;
+    Bitboard bishop;
+    Bitboard king;
+    Bitboard queen;
+    Bitboard side_all;
 
     void update_side()
     {
@@ -55,7 +61,6 @@ struct one_side
 
 };
 
-
 struct chess_board
 {
     one_side white;
@@ -79,8 +84,8 @@ struct chess_board
         for (int i = 0; i < 64; ++i) board[i] = empty;
 
         // Hilfsfunktion zum Setzen eines Felds, falls Bit gesetzt
-        auto set_piece = [&](int64_t bitboard, char symbol) {
-            int64_t copy_bitboard = bitboard;
+        auto set_piece = [&](Bitboard bitboard, char symbol) {
+            Bitboard copy_bitboard = bitboard;
             while(copy_bitboard){
                 int index = msb_index(copy_bitboard);
                 board[index] = symbol;
@@ -126,8 +131,8 @@ struct chess_board
         black.update_side();
     };
 
-    int64_t complete_board;
-    int64_t pinned_pieces;
+    Bitboard complete_board;
+    Bitboard pinned_pieces;
 
 
     void update_board()
@@ -149,14 +154,37 @@ void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side*
 void find_queen_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
 
 
-int64_t get_diagonal_attacks(one_side* enemy, one_side* player, int pos_ind, int64_t relevant_pieces);
-int64_t get_diagonal_attackers(one_side* enemy, int pos_ind);
-int64_t get_diagonal_pins(one_side* enemy, one_side* player, int pos_ind, int64_t atack_mask);
+Bitboard get_diagonal_attacks(one_side* enemy, one_side* player, int pos_ind, Bitboard relevant_pieces);
+Bitboard get_diagonal_attackers(one_side* enemy, int pos_ind);
+Bitboard get_diagonal_pins(one_side* enemy, one_side* player, int pos_ind, Bitboard atack_mask);
 
-int64_t get_straight_attacks(one_side* enemy, one_side* player, int pos_ind, int64_t relevant_pieces);
-int64_t get_straight_attackers(one_side* enemy, int pos_ind);
-int64_t get_straight_pins(one_side* enemy, one_side* player, int pos_ind, int64_t atack_mask);
+Bitboard get_straight_attacks(one_side* enemy, one_side* player, int pos_ind, Bitboard relevant_pieces);
+Bitboard get_straight_attackers(one_side* enemy, int pos_ind);
+Bitboard get_straight_pins(one_side* enemy, one_side* player, int pos_ind, Bitboard atack_mask);
 
-bool not_attacked(chess_board* chess_board, one_side* player, one_side* enemy, int64_t pos);
+bool not_attacked(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos);
+
+
+inline int8_t pop_lsb(Bitboard &board){
+    int8_t bishop_index = __builtin_ctzll(board);        // Get index of least significant bit
+    board &= board - 1;
+    return bishop_index;
+};
+
+
+inline int8_t magic(int8_t piece_type, int8_t square){
+    switch (piece_type)
+    {
+    case BISHOP:
+        Bitboard occ = chess_board->complete_board & BISHOP_MAGIC[bishop_index].mask;
+        int index = (int)((occ * BISHOP_MAGIC[bishop_index].magic_number) >> (64 - BISHOP_MAGIC[bishop_index].relevant_bits));
+        Bitboard atack_moves = BISHOP_MAGIC[bishop_index].attack_list[index] & ~player->side_all;
+        break;
+    
+    default:
+        break;
+    }
+}
+
 
 #endif 
