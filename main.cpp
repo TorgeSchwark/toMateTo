@@ -2,11 +2,11 @@
 #include <iostream>
 #include <chrono>
 
-#include "./chess_gui/gui.h"
-#include "./move_generation/chess_board.h"
-#include "./generation/knight_tables.h"
-#include "./generation/magic_gen.h"
-#include "./generation/king_tables.h"
+#include "chess_gui/gui.h"
+#include "toMateTo_engine/move_generation/chess_board.h"
+#include "toMateTo_engine/table_generation/knight_tables.h"
+#include "toMateTo_engine/table_generation/magic_gen.h"
+#include "toMateTo_engine/table_generation/king_tables.h"
 
 // Here you can add your includes for chess_board, move_stack, your functions, etc.
 // #include "chess.h"  (assumed)
@@ -20,7 +20,7 @@ int main() {
     init_magic_tables();
     init_king_mask();
     init_all_pinned_tables();
-    init_all_atack_tables();
+    init_all_attack_tables();
 
     move_stack move_stack;
 

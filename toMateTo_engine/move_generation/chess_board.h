@@ -2,31 +2,17 @@
 #define CHESS_BOARD
 
 #include <cstdint>
-#include "move_stack.h"
-#include "../generation/knight_tables.h"
-#include "../generation/magic_gen.h"
-#include "../generation/king_tables.h"
 #include <iostream>
 
-
-int64_t get_diagonal_atacks(one_side* enemy, one_side* player, int pos_ind, int64_t relevant_pieces);
-int64_t get_diagonal_atackers(one_side* enemy, int pos_ind);
-int64_t get_diagonal_pins(one_side* enemy, one_side* player, int pos_ind, int64_t atack_mask);
-
-int64_t get_straight_atacks(one_side* enemy, one_side* player, int pos_ind, int64_t relevant_pieces);
-int64_t get_straight_atackers(one_side* enemy, int pos_ind);
-int64_t get_straight_pins(one_side* enemy, one_side* player, int pos_ind, int64_t atack_mask);
-
+#include "toMateTo_engine/move_generation/move_stack.h"
+#include "toMateTo_engine/table_generation/knight_tables.h"
+#include "toMateTo_engine/table_generation/magic_gen.h"
+#include "toMateTo_engine/table_generation/king_tables.h"
 
 
 void set_index_zero(int64_t* bitboard, int64_t index); 
 int msb_index(int64_t bb);
 void set_index_one(int64_t* bitboard, int64_t index);
-
-bool not_atacked(chess_board* chess_board, one_side* player, one_side* enemy, int64_t pos);
-
-
-
 
 struct one_side 
 {
@@ -161,5 +147,16 @@ void find_bishop_moves(move_stack* move_stack, chess_board* chess_board, one_sid
 void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
 
 void find_queen_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
+
+
+int64_t get_diagonal_attacks(one_side* enemy, one_side* player, int pos_ind, int64_t relevant_pieces);
+int64_t get_diagonal_attackers(one_side* enemy, int pos_ind);
+int64_t get_diagonal_pins(one_side* enemy, one_side* player, int pos_ind, int64_t atack_mask);
+
+int64_t get_straight_attacks(one_side* enemy, one_side* player, int pos_ind, int64_t relevant_pieces);
+int64_t get_straight_attackers(one_side* enemy, int pos_ind);
+int64_t get_straight_pins(one_side* enemy, one_side* player, int pos_ind, int64_t atack_mask);
+
+bool not_attacked(chess_board* chess_board, one_side* player, one_side* enemy, int64_t pos);
 
 #endif 

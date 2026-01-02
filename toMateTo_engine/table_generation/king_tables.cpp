@@ -2,12 +2,14 @@
 
 int64_t KING_MOVES_MASK[64];
 
+
+
 MagicTableEntry PINNED_PIECES_ROOK_MAGIC[64];
 MagicTableEntry PINNED_PIECES_BISHOP_MAGIC[64];
 
 // normal move table but empty directions are not returnt (no atacker)
-MagicTableEntry ATACK_PATTERN_ROOK_MAGIC[64];
-MagicTableEntry ATACK_PATTERN_BISHOP_MAGIC[64];
+MagicTableEntry ATTACK_PATTERN_ROOK_MAGIC[64];
+MagicTableEntry ATTACK_PATTERN_BISHOP_MAGIC[64];
 
 int directions[8][2] = {{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1},{0,1}};
 
@@ -278,7 +280,7 @@ void change_order(MagicTableEntry* ALREADY_DONE_MAGIC, U64 *blockers, U64 *occup
     }
 }
 
-void init_atack_tables(char *piece){
+void init_attack_tables(char *piece){
     load_magic_data("./generation/magic_table_rook.bin", ROOK_MAGIC);
     load_magic_data("./generation/magic_table_bishop.bin", BISHOP_MAGIC);
 
@@ -304,15 +306,15 @@ void init_atack_tables(char *piece){
         is_rook ? change_order(ROOK_MAGIC, occupancies, atack_patterns, final_atack_patterns, relevant_bits, square) : change_order(BISHOP_MAGIC, occupancies, atack_patterns, final_atack_patterns, relevant_bits, square);
 
         if(is_rook){
-            ATACK_PATTERN_ROOK_MAGIC[square].attack_list = final_atack_patterns;
-            ATACK_PATTERN_ROOK_MAGIC[square].magic_number = ROOK_MAGIC[square].magic_number;
-            ATACK_PATTERN_ROOK_MAGIC[square].mask = mask; // meaningless in this case
-            ATACK_PATTERN_ROOK_MAGIC[square].relevant_bits = relevant_bits;
+            ATTACK_PATTERN_ROOK_MAGIC[square].attack_list = final_atack_patterns;
+            ATTACK_PATTERN_ROOK_MAGIC[square].magic_number = ROOK_MAGIC[square].magic_number;
+            ATTACK_PATTERN_ROOK_MAGIC[square].mask = mask; // meaningless in this case
+            ATTACK_PATTERN_ROOK_MAGIC[square].relevant_bits = relevant_bits;
         }else{
-            ATACK_PATTERN_BISHOP_MAGIC[square].attack_list = final_atack_patterns;
-            ATACK_PATTERN_BISHOP_MAGIC[square].magic_number = BISHOP_MAGIC[square].magic_number;
-            ATACK_PATTERN_BISHOP_MAGIC[square].mask = mask; // meaningless in this case
-            ATACK_PATTERN_BISHOP_MAGIC[square].relevant_bits = relevant_bits;
+            ATTACK_PATTERN_BISHOP_MAGIC[square].attack_list = final_atack_patterns;
+            ATTACK_PATTERN_BISHOP_MAGIC[square].magic_number = BISHOP_MAGIC[square].magic_number;
+            ATTACK_PATTERN_BISHOP_MAGIC[square].mask = mask; // meaningless in this case
+            ATTACK_PATTERN_BISHOP_MAGIC[square].relevant_bits = relevant_bits;
         }
     }
 
@@ -358,10 +360,10 @@ void init_pinned_tables(char *piece){
     }
 }
 
-void init_all_atack_tables(){
+void init_all_attack_tables(){
 
-    init_atack_tables("rook");
-    init_atack_tables("not rook");
+    init_attack_tables("rook");
+    init_attack_tables("not rook");
 
 }
 

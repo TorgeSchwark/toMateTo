@@ -1,6 +1,6 @@
-#include "knight_tables.h"
+#include "toMateTo_engine/table_generation/knight_tables.h"
 
-int64_t KNIGHT_LOOCKUP_TABLE[64]; // nur 1 Bitboard pro Feld
+int64_t KNIGHT_LOOKUP_TABLE[64]; 
 
 bool is_on_board(int x, int y, int x_offset, int y_offset) {
     return (x + x_offset >= 0 && x + x_offset < 8 &&
@@ -30,5 +30,5 @@ void generate_knight_tables(int64_t loockup_table[64]) {
 }
 
 void init_knight_table() {
-    generate_knight_tables(KNIGHT_LOOCKUP_TABLE);
+    generate_knight_tables(KNIGHT_LOOKUP_TABLE);
 }

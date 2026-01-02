@@ -1,6 +1,6 @@
 // magic_find.c
 // Compile with: gcc -O3 magic_find.c -o magic_find -std=c11
-#include "magic_gen.h"
+#include "toMateTo_engine/table_generation/magic_gen.h"
 
 MagicTableEntry BISHOP_MAGIC[64];
 MagicTableEntry ROOK_MAGIC[64];
