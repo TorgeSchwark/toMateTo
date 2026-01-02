@@ -2,6 +2,7 @@
 #ifndef GUI_H
 #define GUI_H
 
+#include <filesystem>
 #include <SFML/Graphics.hpp>
 #include "toMateTo_engine/move_generation/chess_board.h" // Pfad zu deiner Board-Definition
 

@@ -17,6 +17,9 @@ int main() {
 
     // initialization
     init_knight_table();
+
+    init_all_magics_rooks("rook");
+    init_all_magics_rooks("bishop");
     init_magic_tables();
     init_king_mask();
     init_all_pinned_tables();

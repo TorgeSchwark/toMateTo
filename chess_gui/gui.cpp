@@ -3,18 +3,26 @@
 #include <iostream>
 #include <set>
 
-// Konstanten
+#ifndef ASSET_DIR_PATH
+#define ASSET_DIR_PATH "./chess_gui/chess_images/"
+#endif
+
+// Constants
 const int OFFSET_X = 10;
 const int OFFSET_Y = 10;
 const int TILE_SIZE = 80;
-const int BUTTON_AREA_HEIGHT = 50;  // Platz für Button oben
+const int BUTTON_AREA_HEIGHT = 50;  // Space reserved for the button on top
 
 bool legal_moves_only = true;
 
-// Globale GUI-Objekte
+// Global GUI objects
 sf::RenderWindow window;
-sf::Texture textures[12]; // 0–5 = weiß, 6–11 = schwarz
+sf::Texture textures[12]; // 0–5 = white, 6–11 = black
 sf::Sprite sprites[12];
+
+using std::filesystem::path;
+constexpr const char* ASSET_DIR = ASSET_DIR_PATH;
+
 
 
 // Global or passed to update_gui (your call)
@@ -23,13 +31,12 @@ std::set<int> highlighted_squares;
 void highlight_moves(const move_stack& moves) {
     highlighted_squares.clear();
     for (int i = 0; i < moves.move_counter; i += 4) {
-        int to =__builtin_ctzll(moves.moves[i + 1]);
+        int to = __builtin_ctzll(moves.moves[i + 1]);
         if (to >= 0 && to < 64) {
             highlighted_squares.insert(to);
         }
     }
 }
-
 
 enum PieceIndex {
     WP, WR, WN, WB, WQ, WK,
@@ -38,45 +45,43 @@ enum PieceIndex {
 
 void load_texture(sf::Texture& tex, const std::string& path) {
     if (!tex.loadFromFile(path)) {
-        std::cerr << "Fehler beim Laden: " << path << std::endl;
+        std::cerr << "Error loading: " << path << std::endl;
         std::exit(1);
     }
 }
 
 void init_gui() {
-    window.create(sf::VideoMode(8 * TILE_SIZE, 8 * TILE_SIZE + BUTTON_AREA_HEIGHT), "Schach GUI");
+    window.create(sf::VideoMode(8 * TILE_SIZE, 8 * TILE_SIZE + BUTTON_AREA_HEIGHT), "Chess GUI");
 
-
-    // Button zeichnen
-    // Text zeichnen
+    // Draw button
+    // Load font
     sf::Font font;
-    if (!font.loadFromFile("./chess_gui/arial.TTF")) {
-        // Stelle sicher, dass du eine Schriftart bereitstellst
-        std::cerr << "Fehler beim Laden der Schriftart!" << std::endl;
+    if (!font.loadFromFile(std::string(ASSET_DIR) + "arial.TTF")) {
+        std::cerr << "Error loading font!" << std::endl;
     }
 
-    // Texturen laden
-    load_texture(textures[WP], "./chess_images/white_pawn.png");
-    load_texture(textures[WR], "./chess_images/white_rook.png");
-    load_texture(textures[WN], "./chess_images/white_knight.png");
-    load_texture(textures[WB], "./chess_images/white_bishop.png");
-    load_texture(textures[WQ], "./chess_images/white_queen.png");
-    load_texture(textures[WK], "./chess_images/white_king.png");
 
-    load_texture(textures[BP], "./chess_images/black_pawn.png");
-    load_texture(textures[BR], "./chess_images/black_rook.png");
-    load_texture(textures[BN], "./chess_images/black_knight.png");
-    load_texture(textures[BB], "./chess_images/black_bishop.png");
-    load_texture(textures[BQ], "./chess_images/black_queen.png");
-    load_texture(textures[BK], "./chess_images/black_king.png");
+    // Load textures
+    load_texture(textures[WP], std::string(ASSET_DIR) + "white_pawn.png");
+    load_texture(textures[WR], std::string(ASSET_DIR) + "white_rook.png");
+    load_texture(textures[WN], std::string(ASSET_DIR) + "white_knight.png");
+    load_texture(textures[WB], std::string(ASSET_DIR) + "white_bishop.png");
+    load_texture(textures[WQ], std::string(ASSET_DIR) + "white_queen.png");
+    load_texture(textures[WK], std::string(ASSET_DIR) + "white_king.png");
 
-    // Sprites setzen
+    load_texture(textures[BP], std::string(ASSET_DIR) + "black_pawn.png");
+    load_texture(textures[BR], std::string(ASSET_DIR) + "black_rook.png");
+    load_texture(textures[BN], std::string(ASSET_DIR) + "black_knight.png");
+    load_texture(textures[BB], std::string(ASSET_DIR) + "black_bishop.png");
+    load_texture(textures[BQ], std::string(ASSET_DIR) + "black_queen.png");
+    load_texture(textures[BK], std::string(ASSET_DIR) + "black_king.png");
+
+
+    // Assign textures to sprites
     for (int i = 0; i < 12; ++i) {
         sprites[i].setTexture(textures[i]);
     }
 }
-
-
 
 bool update_gui(const chess_board& board) {
     sf::Event event;
@@ -85,14 +90,16 @@ bool update_gui(const chess_board& board) {
             window.close();
             return false;
         }
-        // Event-Mausklick hier behandeln
+
+        // Handle mouse click event
         if (event.type == sf::Event::MouseButtonPressed) {
             if (event.mouseButton.button == sf::Mouse::Left) {
                 sf::Vector2f click_pos(event.mouseButton.x, event.mouseButton.y);
-                sf::FloatRect button_bounds(10, 5, 200, 40); // Button liegt z.B. bei (10,5) im Button-Bereich
+                sf::FloatRect button_bounds(10, 5, 200, 40); // Button is located e.g. at (10,5) in the button area
                 if (button_bounds.contains(click_pos)) {
                     legal_moves_only = !legal_moves_only;
-                    std::cout << "legal_moves_only ist jetzt: " << (legal_moves_only ? "true" : "false") << "\n";
+                    std::cout << "legal_moves_only is now: "
+                              << (legal_moves_only ? "true" : "false") << "\n";
                 }
             }
         }
@@ -100,20 +107,23 @@ bool update_gui(const chess_board& board) {
 
     window.clear();
 
-    // Button zeichnen (vor dem Schachbrett)
+    // Draw button (before drawing the chessboard)
     sf::RectangleShape button(sf::Vector2f(200, 40));
-    button.setPosition(10, 5);  // Im Button-Bereich oben
-    button.setFillColor(legal_moves_only ? sf::Color(100, 200, 100) : sf::Color(200, 100, 100));
+    button.setPosition(10, 5);  // In the top button area
+    button.setFillColor(legal_moves_only ? sf::Color(100, 200, 100)
+                                         : sf::Color(200, 100, 100));
     window.draw(button);
 
-    // Button-Text
+    // Button text
     static sf::Font font;
     static bool fontLoaded = false;
     if (!fontLoaded) {
-        if (!font.loadFromFile("./chess_gui/arial.TTF")) {
-            std::cerr << "Fehler beim Laden der Schriftart!" << std::endl;
-        } else {
-            fontLoaded = true;
+        if (!fontLoaded) {
+            if (!font.loadFromFile(std::string(ASSET_DIR) + "arial.TTF")) {
+                std::cerr << "Error loading font!" << std::endl;
+            } else {
+                fontLoaded = true;
+            }
         }
     }
 
@@ -125,32 +135,34 @@ bool update_gui(const chess_board& board) {
     button_text.setPosition(20, 10);
     window.draw(button_text);
 
-    // Schachbrett zeichnen (etwas weiter unten, wegen Button-Höhe)
+    // Draw chessboard (shifted down due to button area)
     for (int row = 0; row < 8; ++row) {
-    for (int col = 0; col < 8; ++col) {
-        int bit_index = (7 - row) * 8 + col; // Achtung hier: Bitboard-Index = Umgekehrte Zeile
-        bool is_highlighted = highlighted_squares.count(bit_index) > 0;
+        for (int col = 0; col < 8; ++col) {
+            int bit_index = (7 - row) * 8 + col; // Bitboard index = reversed row
+            bool is_highlighted = highlighted_squares.count(bit_index) > 0;
 
-        sf::RectangleShape square(sf::Vector2f(TILE_SIZE, TILE_SIZE));
-        square.setPosition(col * TILE_SIZE, row * TILE_SIZE + BUTTON_AREA_HEIGHT);
+            sf::RectangleShape square(sf::Vector2f(TILE_SIZE, TILE_SIZE));
+            square.setPosition(col * TILE_SIZE, row * TILE_SIZE + BUTTON_AREA_HEIGHT);
 
-        if ((row + col) % 2 == 0)
-            square.setFillColor(is_highlighted ? sf::Color(200, 255, 200) : sf::Color(240, 217, 181));
-        else
-            square.setFillColor(is_highlighted ? sf::Color(100, 180, 100) : sf::Color(181, 136, 99));
+            if ((row + col) % 2 == 0)
+                square.setFillColor(is_highlighted ? sf::Color(200, 255, 200)
+                                                   : sf::Color(240, 217, 181));
+            else
+                square.setFillColor(is_highlighted ? sf::Color(100, 180, 100)
+                                                   : sf::Color(181, 136, 99));
 
-        window.draw(square);
+            window.draw(square);
+        }
     }
-}
 
-
-    // Figuren zeichnen (auch mit y-Verschiebung)
+    // Draw pieces (also shifted by button height)
     auto draw_pieces = [&](const one_side& side, bool white) {
         int offset = white ? 0 : 6;
         for (int bit = 0; bit < 64; ++bit) {
             int row = 7 - (bit / 8);
             int col = bit % 8;
-            sf::Vector2f pos(col * TILE_SIZE + OFFSET_X, row * TILE_SIZE + OFFSET_Y + BUTTON_AREA_HEIGHT);
+            sf::Vector2f pos(col * TILE_SIZE + OFFSET_X,
+                             row * TILE_SIZE + OFFSET_Y + BUTTON_AREA_HEIGHT);
 
             if (side.pawns & (1ULL << bit)) {
                 sprites[offset + 0].setPosition(pos);

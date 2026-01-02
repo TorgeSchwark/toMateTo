@@ -1,6 +1,8 @@
 #ifndef MAGIC_GEN
 #define MAGIC_GEN
 
+#include <iostream>
+#include <set>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

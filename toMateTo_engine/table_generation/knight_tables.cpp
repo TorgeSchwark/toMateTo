@@ -7,7 +7,7 @@ bool is_on_board(int x, int y, int x_offset, int y_offset) {
             y + y_offset >= 0 && y + y_offset < 8);
 }
 
-void generate_knight_tables(int64_t loockup_table[64]) {
+void generate_knight_tables(int64_t lookup_table[64]) {
     const int directions[8][2] = {
         {-2, -1}, {-1, -2}, {-2,  1}, {1, -2},
         { 2, -1}, {-1,  2}, {1,  2},  {2,  1}
@@ -24,7 +24,7 @@ void generate_knight_tables(int64_t loockup_table[64]) {
                     bitboard |= (1ULL << target_index);
                 }
             }
-            loockup_table[x * 8 + y] = bitboard;
+            lookup_table[x * 8 + y] = bitboard;
         }
     }
 }

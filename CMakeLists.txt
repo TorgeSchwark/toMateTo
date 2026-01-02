@@ -35,3 +35,9 @@ target_link_libraries(toMateTo
         sfml-window
         sfml-system
 )
+
+target_compile_definitions(toMateTo PRIVATE
+    TABLE_DIR_PATH="${CMAKE_SOURCE_DIR}/toMateTo_engine/table_generation/tables"
+    ASSET_DIR_PATH="${CMAKE_SOURCE_DIR}/chess_gui/chess_images/"
+)
+

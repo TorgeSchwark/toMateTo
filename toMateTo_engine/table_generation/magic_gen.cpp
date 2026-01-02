@@ -2,6 +2,14 @@
 // Compile with: gcc -O3 magic_find.c -o magic_find -std=c11
 #include "toMateTo_engine/table_generation/magic_gen.h"
 
+#ifndef TABLE_DIR_PATH
+#define TABLE_DIR_PATH "./toMateTo_engine/table_generation/tables"
+#endif
+
+
+const char* TABLE_PATH = TABLE_DIR_PATH;
+
+
 MagicTableEntry BISHOP_MAGIC[64];
 MagicTableEntry ROOK_MAGIC[64];
 
@@ -261,7 +269,7 @@ bool test_magic_numbers(MagicTableEntry table[64], bool is_rook) {
 
 void load_magic_data(const char *filename, MagicTableEntry table[64]) {
     FILE *f = fopen(filename, "rb");
-    if (!f) { perror("fopen"); return; }
+    if (!f) { perror("fopen"); printf(filename); return; }
 
     for (int sq=0; sq < 64; sq++) {
         MagicEntryData entry;
@@ -293,7 +301,7 @@ void load_magic_data(const char *filename, MagicTableEntry table[64]) {
 
 void save_magic_data(const char *filename, MagicTableEntry table[64]) {
     FILE *f = fopen(filename, "wb");
-    if (!f) { perror("fopen"); return; }
+    if (!f) { perror("save fopen"); return; }
 
     for (int sq=0; sq < 64; sq++) {
         MagicEntryData entry = {
@@ -358,19 +366,30 @@ void init_all_magics_rooks(char *piece){
         free(attacks);
         free(occupancies);
     }
-    if(magic_done == 64){
-        if(is_rook){
-            save_magic_data("magic_table_rook.bin", ROOK_MAGIC);
-        }else{
-            save_magic_data("magic_table_bishop.bin", BISHOP_MAGIC);   
+    if (magic_done == 64) {
+        char path[256];
+
+        if (is_rook) {
+            snprintf(path, sizeof(path), "%s/magic_table_rook.bin", TABLE_PATH);
+            save_magic_data(path, ROOK_MAGIC);
+        } else {
+            snprintf(path, sizeof(path), "%s/magic_table_bishop.bin", TABLE_PATH);
+            save_magic_data(path, BISHOP_MAGIC);
         }
+
     }
 }
 
 
 void init_magic_tables(){
-    load_magic_data("./generation/magic_table_rook.bin", ROOK_MAGIC);
-    load_magic_data("./generation/magic_table_bishop.bin", BISHOP_MAGIC);
+    char rook_path[256];
+    char bishop_path[256];
+
+    snprintf(rook_path, sizeof(rook_path), "%s/magic_table_rook.bin", TABLE_PATH);
+    snprintf(bishop_path, sizeof(bishop_path), "%s/magic_table_bishop.bin", TABLE_PATH);
+
+    load_magic_data(rook_path, ROOK_MAGIC);
+    load_magic_data(bishop_path, BISHOP_MAGIC);
     if (!test_magic_numbers(ROOK_MAGIC, true)) {
         printf("Fehler in ROOK magic table!\n");
     }else{
@@ -383,35 +402,4 @@ void init_magic_tables(){
         printf("kein Fehler in BISHOP magic table!\n");
     }
 }
-
-// // ------------------ Example usage -------------------
-// int main(int argc, char **argv) {
-//     if (argc < 3) {
-//         printf("Usage: %s <square 0-63> <rook|bishop>\n", argv[0]);
-//         return 1;
-//     }
-//     int square = atoi(argv[1]);
-//     int is_rook = (strcmp(argv[2], "rook") == 0);
-//     int load_data = (strcmp(argv[2], "load") == 0);
-
-//     if(load_data){
-//         printf("data being loaded \n");
-//         load_magic_data("magic_table_rook.bin", ROOK_MAGIC);
-//         load_magic_data("magic_table_bishop.bin", BISHOP_MAGIC);
-//         if (!test_magic_numbers(ROOK_MAGIC, true)) {
-//             printf("Fehler in ROOK magic table!\n");
-//         }else{
-//             printf("kein Fehler in ROOK magic table!\n");
-//         }
-
-//         if (!test_magic_numbers(BISHOP_MAGIC, false)) {
-//             printf("Fehler in BISHOP magic table!\n");
-//         }else{
-//             printf("kein Fehler in BISHOP magic table!\n");
-//         }
-
-//     }else{
-//         init_all_magics_rooks(argv[2]);
-//     }
-// }
 
