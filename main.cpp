@@ -6,7 +6,7 @@
 #include "toMateTo_engine/move_generation/chess_board.h"
 #include "toMateTo_engine/table_generation/knight_tables.h"
 #include "toMateTo_engine/table_generation/magic_gen.h"
-#include "toMateTo_engine/table_generation/king_tables.h"
+#include "toMateTo_engine/table_generation/magic_king_tables.h"
 
 // Here you can add your includes for chess_board, move_stack, your functions, etc.
 // #include "chess.h"  (assumed)
@@ -18,12 +18,11 @@ int main() {
     // initialization
     init_knight_table();
 
-    init_all_magics_rooks("rook");
-    init_all_magics_rooks("bishop");
-    init_magic_tables();
+    init_magic_rook_or_bishop("rook");
+    init_magic_rook_or_bishop("bishop");
     init_king_mask();
-    init_all_pinned_tables();
-    init_all_attack_tables();
+    init_pinned_tables_rook_and_bishop();
+    init_attack_tables_rock_and_bishop();
 
     move_stack move_stack;
 

@@ -7,7 +7,7 @@
 #include "toMateTo_engine/move_generation/move_stack.h"
 #include "toMateTo_engine/table_generation/knight_tables.h"
 #include "toMateTo_engine/table_generation/magic_gen.h"
-#include "toMateTo_engine/table_generation/king_tables.h"
+#include "toMateTo_engine/table_generation/magic_king_tables.h"
 
 
 

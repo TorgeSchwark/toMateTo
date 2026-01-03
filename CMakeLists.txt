@@ -13,7 +13,8 @@ add_executable(toMateTo
     ${GUI_DIR}/gui.cpp
     ${ENGINE_DIR}/move_generation/chess_board.cpp
     ${ENGINE_DIR}/table_generation/knight_tables.cpp
-    ${ENGINE_DIR}/table_generation/king_tables.cpp
+    ${ENGINE_DIR}/table_generation/magic_king_tables.cpp
+    ${ENGINE_DIR}/table_generation/magic_helper_functions.cpp
     ${ENGINE_DIR}/table_generation/magic_gen.cpp
     ${ENGINE_DIR}/move_generation/move_stack.cpp
 )

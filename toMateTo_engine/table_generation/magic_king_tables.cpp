@@ -1,8 +1,8 @@
-#include "king_tables.h"
+#include "magic_king_tables.h"
+
+
 
 Bitboard KING_MOVES_MASK[64];
-
-
 
 MagicTableEntry PINNED_PIECES_ROOK_MAGIC[64];
 MagicTableEntry PINNED_PIECES_BISHOP_MAGIC[64];
@@ -13,7 +13,7 @@ MagicTableEntry ATTACK_PATTERN_BISHOP_MAGIC[64];
 
 int directions[8][2] = {{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1},{0,1}};
 
-void init_king_mask(){
+void init_king_move_mask(){
     for(int x = 0; x < 8; x ++){
         for(int y = 0; y < 8; y ++){
             Bitboard mask = 0LL;
@@ -82,7 +82,6 @@ U64 rook_attacks_on_the_fl_pinned(int sqr, U64 occ) {
     return attacks;
 }
 
-// ------------------ Compute bishop attacks -------------------
 U64 bishop_attacks_on_the_fly_pinned(int sqr, U64 occ) {
     U64 attacks = 0ULL;
     int r = sqr / 8, f = sqr % 8;
@@ -272,105 +271,82 @@ U64 bishop_attacks_patterns_on_the_fly(int sqr, U64 occ) {
     return attacks;
 }
 
-void change_order(MagicTableEntry* ALREADY_DONE_MAGIC, U64 *blockers, U64 *occupancies, U64 *final_blockers, int relevant_bits, int square){
-    int entries = 1 << relevant_bits;
-    for(int i = 0; i < entries; i++){
-        int index = (occupancies[i] * ALREADY_DONE_MAGIC[square].magic_number) >> (64 - relevant_bits);
-        final_blockers[index] = blockers[i];
-    }
-}
-
-void init_attack_tables(char *piece){
-    load_magic_data("./generation/magic_table_rook.bin", ROOK_MAGIC);
-    load_magic_data("./generation/magic_table_bishop.bin", BISHOP_MAGIC);
-
-    int is_rook = (strcmp(piece, "rook") == 0);
-    int magic_done = 0;
-
-    for(int square = 0; square < 64; square++){
-        U64 mask = is_rook ? rook_relevant_mask(square) : bishop_relevant_mask(square);
-
-        int relevant_bits = popcount64(mask);
-        int entries = 1 << relevant_bits;
-        U64 *occupancies = (U64*)malloc(sizeof(U64) * entries);
-        U64 *atack_patterns = (U64*)malloc(sizeof(U64) * entries);
-        U64 *final_atack_patterns = (U64*)malloc(sizeof(U64) * entries);
-
-        generate_occupancy_variations(mask, occupancies, entries);
-
-        for (int i=0;i<entries;++i) {
-            U64 occ = occupancies[i];
-            atack_patterns[i] = is_rook ? rook_attacks_patterns_on_the_fly(square, occ) : bishop_attacks_patterns_on_the_fly(square, occ);
-        }   
-
-        is_rook ? change_order(ROOK_MAGIC, occupancies, atack_patterns, final_atack_patterns, relevant_bits, square) : change_order(BISHOP_MAGIC, occupancies, atack_patterns, final_atack_patterns, relevant_bits, square);
-
-        if(is_rook){
-            ATTACK_PATTERN_ROOK_MAGIC[square].attack_list = final_atack_patterns;
-            ATTACK_PATTERN_ROOK_MAGIC[square].magic_number = ROOK_MAGIC[square].magic_number;
-            ATTACK_PATTERN_ROOK_MAGIC[square].mask = mask; // meaningless in this case
-            ATTACK_PATTERN_ROOK_MAGIC[square].relevant_bits = relevant_bits;
-        }else{
-            ATTACK_PATTERN_BISHOP_MAGIC[square].attack_list = final_atack_patterns;
-            ATTACK_PATTERN_BISHOP_MAGIC[square].magic_number = BISHOP_MAGIC[square].magic_number;
-            ATTACK_PATTERN_BISHOP_MAGIC[square].mask = mask; // meaningless in this case
-            ATTACK_PATTERN_BISHOP_MAGIC[square].relevant_bits = relevant_bits;
-        }
-    }
-
-
-}
-
-void init_pinned_tables(char *piece){
-    load_magic_data("./generation/magic_table_rook.bin", ROOK_MAGIC);
-    load_magic_data("./generation/magic_table_bishop.bin", BISHOP_MAGIC);
-    int is_rook = (strcmp(piece, "rook") == 0);
-    int magic_done = 0;
-
-    for(int square = 0; square < 64; square++){
-        U64 mask = is_rook ? rook_relevant_mask(square) : bishop_relevant_mask(square);
-
-        int relevant_bits = popcount64(mask);
-        int entries = 1 << relevant_bits;
-        U64 *occupancies = (U64*)malloc(sizeof(U64) * entries);
-        U64 *blockers = (U64*)malloc(sizeof(U64) * entries);
-        U64 *final_blockers = (U64*)malloc(sizeof(U64) * entries);
-
-        generate_occupancy_variations(mask, occupancies, entries);
-
-        for (int i=0;i<entries;++i) {
-            U64 occ = occupancies[i];
-            blockers[i] = is_rook ? rook_attacks_on_the_fl_pinned(square, occ) : bishop_attacks_on_the_fly_pinned(square, occ);
-        }   
-
-        
-        is_rook ? change_order(ROOK_MAGIC, occupancies, blockers, final_blockers, relevant_bits, square) : change_order(BISHOP_MAGIC, occupancies, blockers, final_blockers, relevant_bits, square);
-        
-        if(is_rook){
-            PINNED_PIECES_ROOK_MAGIC[square].attack_list = final_blockers;
-            PINNED_PIECES_ROOK_MAGIC[square].magic_number = ROOK_MAGIC[square].magic_number;
-            PINNED_PIECES_ROOK_MAGIC[square].mask = mask; // meaningless in this case
-            PINNED_PIECES_ROOK_MAGIC[square].relevant_bits = relevant_bits;
-        }else{
-            PINNED_PIECES_BISHOP_MAGIC[square].attack_list = final_blockers;
-            PINNED_PIECES_BISHOP_MAGIC[square].magic_number = BISHOP_MAGIC[square].magic_number;
-            PINNED_PIECES_BISHOP_MAGIC[square].mask = mask; // meaningless in this case
-            PINNED_PIECES_BISHOP_MAGIC[square].relevant_bits = relevant_bits;
+void init_king_mask(){
+    for(int x = 0; x < 8; x ++){
+        for(int y = 0; y < 8; y ++){
+            Bitboard mask = 0LL;
+            for(int direction_ind = 0; direction_ind < 8; direction_ind++ ){
+                if (is_on_board(x,y,directions[direction_ind][0], directions[direction_ind][1])){
+                    mask |= 1LL << ((x+directions[direction_ind][0])*8+(y+directions[direction_ind][1]));
+                }
+            }
+            KING_MOVES_MASK[x*8+y] = mask;
         }
     }
 }
 
-void init_all_attack_tables(){
+void init_attack_tables_rook_or_bishop(char *piece)
+{   
+    char rook_path[256];
+    char bishop_path[256];
 
-    init_attack_tables("rook");
-    init_attack_tables("not rook");
+    snprintf(rook_path, sizeof(rook_path), "%s/magic_table_rook.bin", TABLE_DIR_PATH);
+    snprintf(bishop_path, sizeof(bishop_path), "%s/magic_table_bishop.bin", TABLE_DIR_PATH);
+
+    load_magic_data(rook_path, ROOK_MAGIC);
+    load_magic_data(bishop_path, BISHOP_MAGIC);
+
+    int is_rook = (strcmp(piece, "rook") == 0);
+
+    for (int square = 0; square < 64; square++) {
+        if (is_rook)
+            build_reordered_table(square, rook_relevant_mask,
+                                  ROOK_MAGIC, ATTACK_PATTERN_ROOK_MAGIC,
+                                  rook_attacks_patterns_on_the_fly);
+        else
+            build_reordered_table(square, bishop_relevant_mask,
+                                  BISHOP_MAGIC, ATTACK_PATTERN_BISHOP_MAGIC,
+                                  bishop_attacks_patterns_on_the_fly);
+    }
+    
+}
+
+void init_pinned_tables_rook_or_bishop(char *piece)
+{
+    char rook_path[256];
+    char bishop_path[256];
+
+    snprintf(rook_path, sizeof(rook_path), "%s/magic_table_rook.bin", TABLE_DIR_PATH);
+    snprintf(bishop_path, sizeof(bishop_path), "%s/magic_table_bishop.bin", TABLE_DIR_PATH);
+
+    load_magic_data(rook_path, ROOK_MAGIC);
+    load_magic_data(bishop_path, BISHOP_MAGIC);
+
+    int is_rook = (strcmp(piece, "rook") == 0);
+
+    for (int square = 0; square < 64; square++) {
+        if (is_rook)
+            build_reordered_table(square, rook_relevant_mask,
+                                  ROOK_MAGIC, PINNED_PIECES_ROOK_MAGIC,
+                                  rook_attacks_on_the_fl_pinned);
+        else
+            build_reordered_table(square, bishop_relevant_mask,
+                                  BISHOP_MAGIC, PINNED_PIECES_BISHOP_MAGIC,
+                                  bishop_attacks_on_the_fly_pinned);
+    }
+}
+
+void init_attack_tables_rock_and_bishop(){
+
+    init_attack_tables_rook_or_bishop("rook");
+    init_attack_tables_rook_or_bishop("not rook");
 
 }
 
-void init_all_pinned_tables(){
+void init_pinned_tables_rook_and_bishop(){
 
-    init_pinned_tables("rook");
-    init_pinned_tables("not rook");
+    init_pinned_tables_rook_or_bishop("rook");
+    init_pinned_tables_rook_or_bishop("not rook");
 
 }
 
