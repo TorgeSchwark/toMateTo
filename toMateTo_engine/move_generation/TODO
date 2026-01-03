@@ -1,3 +1,13 @@
 rework other find_move functions.
 rework way moves are stored.
 write Speed test function.
+
+IDEE for pins
+1. ich verwende einen magic hash table: 
+Eingabe ist die Position der angreifer direkt auf allen linien(durch verundung mit den schiebe figuren).
+Ausgabe ist ein Bitboard in dem alle Felder zwischen dem Angreifer und dem könig auf 1 gesetzt sind inkulussive der Angreifer.
+ 2. verundung mit allen figuren! jetzt gibt es folgende fälle: 3 Figuren auf einer linie makiert: 2 figuren sind durch die selbe figur gepinnt -> keine figur gepinnt
+ 2 figuren makiert: figur gepinnt. eine figur makiert: köig im schach. 3. Schritt: magic table gibt zurück: nichts für eine richtung falls 3 figuren makiert sind, die position der gepinnten figur. 
+ falls 2 makiert sind die position des Angreifers falls einer makiert ist. 4. verunden mit meinen figuren um die tatsächlich gepinnten figuren zu erhalten. 
+ 5. verunden mit gegnern um Anzahl der Angreifer zu erhalten (Schach/ doppelschach) Vorteil: 
+ 2 magic tables, ein paar unds -> wie viele angreifer, gepinnte figuren. für alle Richtungen gleichzeitig.
