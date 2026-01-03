@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#include "toMateTo_engine/move_generation/types.h"
+
 extern Bitboard KNIGHT_LOOKUP_TABLE[64];
 
 extern Bitboard BISHOP_LOOCKUP_TABLE[64][4][8];

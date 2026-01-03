@@ -5,6 +5,8 @@
 #include <string>    
 #include <iostream>   
 
+#include "toMateTo_engine/move_generation/types.h"
+
 inline constexpr Bitboard KNIGHT_MOVES[4] = {17,15,10,6};
 inline constexpr int8_t NORMAL_MOVE = 1;
 
@@ -61,7 +63,7 @@ struct move_stack{
         for (int i = 0; i < move_counter; i += 4) {
             int from = __builtin_ctzll(moves[i]);
             int to = __builtin_ctzll(moves[i + 1]);
-            int piece = moves[i + 2];
+            PieceType piece = static_cast<PieceType>(moves[i + 2]);
             int type = moves[i + 3];
 
             std::cout << "Move " << (i / 4) << ": "

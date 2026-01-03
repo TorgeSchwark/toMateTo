@@ -9,11 +9,7 @@
 #include "toMateTo_engine/table_generation/magic_gen.h"
 #include "toMateTo_engine/table_generation/king_tables.h"
 
-using Bitboard = uint64_t;
 
-enum PieceType: std::int8_t{
-    NO_PIECE_TYPE, PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING
-};
 
 
 void set_index_zero(Bitboard* bitboard, Bitboard index); 
@@ -172,18 +168,22 @@ inline int8_t pop_lsb(Bitboard &board){
 };
 
 
-inline int8_t magic(int8_t piece_type, int8_t square){
+inline Bitboard magic(PieceType piece_type, int8_t square, chess_board* chess_board, one_side* player){
+    Bitboard attack_move;
     switch (piece_type)
     {
-    case BISHOP:
-        Bitboard occ = chess_board->complete_board & BISHOP_MAGIC[bishop_index].mask;
-        int index = (int)((occ * BISHOP_MAGIC[bishop_index].magic_number) >> (64 - BISHOP_MAGIC[bishop_index].relevant_bits));
-        Bitboard atack_moves = BISHOP_MAGIC[bishop_index].attack_list[index] & ~player->side_all;
+    case BISHOP: {
+        Bitboard occ = chess_board->complete_board & BISHOP_MAGIC[square].mask;
+        int index = (int)((occ * BISHOP_MAGIC[square].magic_number) >> (64 - BISHOP_MAGIC[square].relevant_bits));
+        attack_move = BISHOP_MAGIC[square].attack_list[index] & ~player->side_all;
         break;
+    }
     
     default:
         break;
     }
+
+    return attack_move;
 }
 
 

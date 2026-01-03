@@ -1,1 +1,2 @@
-Testen ob hash table schneller sing für pinned pieces oder die berechnung ob ein Feld bedroht ist!
+rework other find_move functions.
+rework way moves are stored.

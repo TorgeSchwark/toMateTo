@@ -40,17 +40,11 @@ void find_bishop_moves(move_stack* move_stack, chess_board* chess_board, one_sid
 
         int bishop_index = pop_lsb(bishops);
 
-        Bitboard current_bishop_to;
+        Bitboard attack_moves = magic(BISHOP, bishop_index, chess_board, player);
 
-        Bitboard occ = chess_board->complete_board & BISHOP_MAGIC[bishop_index].mask;
-        int index = (int)((occ * BISHOP_MAGIC[bishop_index].magic_number) >> (64 - BISHOP_MAGIC[bishop_index].relevant_bits));
-        Bitboard atack_moves = BISHOP_MAGIC[bishop_index].attack_list[index] & ~player->side_all;
-
-        
-        while(atack_moves){
-            int bishop_index_to = __builtin_ctzll(atack_moves); 
-            atack_moves &= atack_moves - 1;                      
-            current_bishop_to = 1ULL << bishop_index_to;
+        while(attack_moves){
+            int8_t bishop_index_to = pop_lsb(attack_moves);                     
+            Bitboard current_bishop_to = 1ULL << bishop_index_to;
             Bitboard from = 1ULL << bishop_index;
             move_stack->add_move(from, current_bishop_to, BISHOP, NORMAL_MOVE);
         }
