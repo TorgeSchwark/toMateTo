@@ -13,40 +13,55 @@ void set_index_one(Bitboard* bitboard, Bitboard index) {
 }
 
 void find_all_moves(move_stack* move_stack, chess_board* chess_board){
-    chess_board->pinned_pieces == 0LL;
+    chess_board->pinned_pieces = 0LL;
     if(chess_board->whites_turn){
-        if(chess_board->white.knights){ // at least one knight alive
-            find_knight_moves(move_stack, &(chess_board->white), &(chess_board->black));
-        }
-        if(chess_board->white.knights){
-            find_bishop_moves(move_stack, chess_board, &(chess_board->white), &(chess_board->black));
-        }
-        if(chess_board->white.rooks){
-            find_rook_moves(move_stack, chess_board, &(chess_board->white), &(chess_board->black));
-        }
-        if(chess_board->white.queen){
-            find_queen_moves(move_stack, chess_board, &(chess_board->white), &(chess_board->black));
-        }
+        find_knight_moves(move_stack, &(chess_board->white), &(chess_board->black));
+        find_bishop_moves(move_stack, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
+        find_rook_moves(move_stack, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.rooks));
+
+        find_bishop_moves(move_stack, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
+        find_rook_moves(move_stack, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
+
     }else{
 
     }
 }
 
-// Vorausgesetzt: 
-// BISHOP_ATTACKS[index][blocker_occupation] gibt Bitboard mit allen erreichbaren Zielen zurück
-void find_bishop_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy){
-    Bitboard bishops = player->bishop;
+void find_bishop_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishop){
+    Bitboard bishops = *bishop;
     while(bishops){
 
         int bishop_index = pop_lsb(bishops);
 
+        Bitboard from = 1ULL << bishop_index;
+
         Bitboard attack_moves = magic(BISHOP, bishop_index, chess_board, player);
 
         while(attack_moves){
-            int8_t bishop_index_to = pop_lsb(attack_moves);                     
+            int8_t bishop_index_to = pop_lsb(attack_moves);    
+
             Bitboard current_bishop_to = 1ULL << bishop_index_to;
-            Bitboard from = 1ULL << bishop_index;
+            
             move_stack->add_move(from, current_bishop_to, BISHOP, NORMAL_MOVE);
+        }
+    }
+}
+
+void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rook){
+    Bitboard rooks = *rook;
+    while(rooks){
+        int rook_index = pop_lsb(rooks);        
+
+        Bitboard attack_moves = magic(ROOK, rook_index, chess_board, player);
+
+        Bitboard from = 1ULL << rook_index;
+    
+        while(attack_moves){
+            int rook_index_to = pop_lsb(attack_moves);   
+
+            Bitboard current_rook_to = 1ULL << rook_index_to;
+
+            move_stack->add_move(from, current_rook_to, ROOK, NORMAL_MOVE);
         }
     }
 }
@@ -56,79 +71,21 @@ void find_knight_moves(move_stack* move_stack, one_side* player, one_side* enemy
     Bitboard knights = player->knights;
 
     while (knights) {
-        int knight_index = __builtin_ctzll(knights); 
-        knights &= knights - 1;                      
+        int knight_index = pop_lsb(knights);
 
-        Bitboard attack_moves = KNIGHT_LOOKUP_TABLE[knight_index];
+        Bitboard from = 1ULL << knight_index;          
 
-        attack_moves &= ~player->side_all;
+        Bitboard attack_moves = KNIGHT_LOOKUP_TABLE[knight_index] & (~player->side_all);
 
         while (attack_moves) {
-            int knight_index_to = __builtin_ctzll(attack_moves); 
-            attack_moves &= attack_moves - 1;                    
+            int knight_index_to = pop_lsb(attack_moves); 
 
             Bitboard current_knight_to = 1ULL << knight_index_to;
-            Bitboard from = 1ULL << knight_index;
 
             move_stack->add_move(from, current_knight_to, KNIGHT, NORMAL_MOVE);
         }
     }
 }
-
-
-
-void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy){
-    Bitboard rooks = player->rooks;
-    while(rooks){
-        int rook_index = __builtin_ctzll(rooks);        // Get index of least significant bit
-        rooks &= rooks - 1;
-        Bitboard current_rook_to;
-        Bitboard occ = chess_board->complete_board & ROOK_MAGIC[rook_index].mask;
-        int index = (int)((occ * ROOK_MAGIC[rook_index].magic_number) >> (64 - ROOK_MAGIC[rook_index].relevant_bits));
-        Bitboard atack_moves = ROOK_MAGIC[rook_index].attack_list[index] & ~player->side_all;
-        Bitboard from = 1ULL << rook_index;
-        //  if ( chess_board->pinned_pieces & from){
-        //    if(!one_direction[rock_from]&player->king){
-        //          atack_moves &= (~one_direction) delete the direction
-        //     }
-        // }
-        while(atack_moves){
-            int rook_index_to = __builtin_ctzll(atack_moves); // Index des Ziel-Feldes
-            atack_moves &= atack_moves - 1;                      // LSb entfernen
-            current_rook_to = 1ULL << rook_index_to;
-            move_stack->add_move(from, current_rook_to, ROOK, NORMAL_MOVE);
-        }
-    }
-}
-
-void find_queen_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy){
-    Bitboard queens = player->queen;
-    while(queens){
-        int quenn_index = __builtin_ctzll(queens);        // Get index of least significant bit
-        queens &= queens - 1;
-        Bitboard current_queen_to;
-        Bitboard from;
-        int queen_index_to;
-
-        Bitboard occ = chess_board->complete_board & ROOK_MAGIC[quenn_index].mask;
-        int index = (int)((occ * ROOK_MAGIC[quenn_index].magic_number) >> (64 - ROOK_MAGIC[quenn_index].relevant_bits));
-        Bitboard atack_moves = ROOK_MAGIC[quenn_index].attack_list[index];
-
-        occ = chess_board->complete_board & BISHOP_MAGIC[quenn_index].mask;
-        index = (int)((occ * BISHOP_MAGIC[quenn_index].magic_number) >> (64 - BISHOP_MAGIC[quenn_index].relevant_bits));
-        atack_moves |= BISHOP_MAGIC[quenn_index].attack_list[index];
-        atack_moves &= ~player->side_all;
-
-        while(atack_moves){
-            queen_index_to = __builtin_ctzll(atack_moves); // Index des Ziel-Feldes
-            atack_moves &= atack_moves - 1;                      // LSb entfernen
-            current_queen_to = 1ULL << queen_index_to;
-            from = 1ULL << quenn_index;
-            move_stack->add_move(from, current_queen_to, QUEEN, NORMAL_MOVE);
-        }
-    }
-}
-
 
 bool not_attacked(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
 

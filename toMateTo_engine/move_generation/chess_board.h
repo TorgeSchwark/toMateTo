@@ -143,9 +143,9 @@ void find_all_moves(move_stack* move_stack, chess_board* chess_board);
 
 void find_knight_moves(move_stack* move_stack, one_side* player, one_side* enemy);
 
-void find_bishop_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
+void find_bishop_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishops);
 
-void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
+void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rooks);
 
 void find_queen_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
 
@@ -178,7 +178,11 @@ inline Bitboard magic(PieceType piece_type, int8_t square, chess_board* chess_bo
         attack_move = BISHOP_MAGIC[square].attack_list[index] & ~player->side_all;
         break;
     }
-    
+    case ROOK: {
+        Bitboard occ = chess_board->complete_board & ROOK_MAGIC[square].mask;
+        int index = (int)((occ * ROOK_MAGIC[square].magic_number) >> (64 - ROOK_MAGIC[square].relevant_bits));
+        attack_move = ROOK_MAGIC[square].attack_list[index] & ~player->side_all;
+    }
     default:
         break;
     }

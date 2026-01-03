@@ -45,7 +45,7 @@ struct move_stack{
     int move_counter = 0;
     Bitboard move_types[500];
 
-    void add_move(Bitboard from, Bitboard to, Bitboard piece, Bitboard move_type){
+    inline void add_move(Bitboard from, Bitboard to, Bitboard piece, Bitboard move_type){
 
         moves[move_counter] = from;
         moves[move_counter+1] = to;

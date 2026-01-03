@@ -28,7 +28,7 @@ int main() {
     move_stack move_stack;
 
     // Example move test
-    const int repetitions = 10000000;
+    const int repetitions = 6000000;
     auto start_time = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < repetitions; ++i) {
         move_stack.clear();
