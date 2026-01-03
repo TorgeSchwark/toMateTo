@@ -1,2 +1,3 @@
 rework other find_move functions.
 rework way moves are stored.
+write Speed test function.
