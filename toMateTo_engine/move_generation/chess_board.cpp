@@ -35,7 +35,7 @@ void find_bishop_moves(move_stack* move_stack, chess_board* chess_board, one_sid
 
         Bitboard from = 1ULL << bishop_index;
 
-        Bitboard attack_moves = magic(BISHOP, bishop_index, chess_board, player);
+        Bitboard attack_moves = bishop_magic(bishop_index, chess_board, player);
 
         while(attack_moves){
             int8_t bishop_index_to = pop_lsb(attack_moves);    
@@ -52,7 +52,7 @@ void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side*
     while(rooks){
         int rook_index = pop_lsb(rooks);        
 
-        Bitboard attack_moves = magic(ROOK, rook_index, chess_board, player);
+        Bitboard attack_moves = rook_magic(rook_index, chess_board, player);
 
         Bitboard from = 1ULL << rook_index;
     
@@ -69,13 +69,13 @@ void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side*
 
 void find_knight_moves(move_stack* move_stack, one_side* player, one_side* enemy) {
     Bitboard knights = player->knights;
-
+    Bitboard negative_player = ~player->side_all;
     while (knights) {
         int knight_index = pop_lsb(knights);
 
         Bitboard from = 1ULL << knight_index;          
 
-        Bitboard attack_moves = KNIGHT_LOOKUP_TABLE[knight_index] & (~player->side_all);
+        Bitboard attack_moves = KNIGHT_LOOKUP_TABLE[knight_index] & negative_player;
 
         while (attack_moves) {
             int knight_index_to = pop_lsb(attack_moves); 

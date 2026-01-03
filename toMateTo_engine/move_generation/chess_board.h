@@ -168,27 +168,24 @@ inline int8_t pop_lsb(Bitboard &board){
 };
 
 
-inline Bitboard magic(PieceType piece_type, int8_t square, chess_board* chess_board, one_side* player){
-    Bitboard attack_move;
-    switch (piece_type)
-    {
-    case BISHOP: {
-        Bitboard occ = chess_board->complete_board & BISHOP_MAGIC[square].mask;
-        int index = (int)((occ * BISHOP_MAGIC[square].magic_number) >> (64 - BISHOP_MAGIC[square].relevant_bits));
-        attack_move = BISHOP_MAGIC[square].attack_list[index] & ~player->side_all;
-        break;
-    }
-    case ROOK: {
-        Bitboard occ = chess_board->complete_board & ROOK_MAGIC[square].mask;
-        int index = (int)((occ * ROOK_MAGIC[square].magic_number) >> (64 - ROOK_MAGIC[square].relevant_bits));
-        attack_move = ROOK_MAGIC[square].attack_list[index] & ~player->side_all;
-    }
-    default:
-        break;
-    }
+inline Bitboard bishop_magic(int square, const chess_board* board, const one_side* player) {
+    Bitboard occ = board->complete_board & BISHOP_MAGIC[square].mask;
 
-    return attack_move;
+    int index = (int)((occ * BISHOP_MAGIC[square].magic_number)
+                      >> (64 - BISHOP_MAGIC[square].relevant_bits));
+
+    return BISHOP_MAGIC[square].attack_list[index] & ~player->side_all;
 }
+
+inline Bitboard rook_magic(int square, const chess_board* board, const one_side* player) {
+    Bitboard occ = board->complete_board & ROOK_MAGIC[square].mask;
+
+    int index = (int)((occ * ROOK_MAGIC[square].magic_number)
+                      >> (64 - ROOK_MAGIC[square].relevant_bits));
+
+    return ROOK_MAGIC[square].attack_list[index] & ~player->side_all;
+}
+
 
 
 #endif 
