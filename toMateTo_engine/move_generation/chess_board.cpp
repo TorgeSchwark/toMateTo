@@ -88,26 +88,36 @@ void find_knight_moves(move_stack* move_stack, one_side* player, one_side* enemy
 }
 
 bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
+    // Checks if a pos is attacked by a piece
 
-    // returns a Bitboard where every square between nearest attacker and the quare is marked! 
-    Bitboard relavant_squares = get_straight_attackers(enemy, pos_ind);
+    // returns a Bitboard where every square between nearest attacker and the square is marked! 
+    Bitboard relevant_squares = get_straight_attackers(enemy, pos_ind);
     // with this we get only the attacking piece itself and every piece in the line of attack
-    if (is_straight_attacked(chess_board, pos_ind, relavant_squares)){
+    if (is_straight_attacked(chess_board, pos_ind, relevant_squares)){
         return false;
     }
     // return directions where an attacker exists until attacker including attacker!
-    Bitboard relavant_squares = get_diagonal_attackers(enemy, pos_ind);
+    Bitboard relevant_squares = get_diagonal_attackers(enemy, pos_ind);
     // this will mark attackers and every blocking piece both enemy blocking and team
-    if(is_diagonal_attacked(chess_board, pos_ind, relavant_squares)){
+    if(is_diagonal_attacked(chess_board, pos_ind, relevant_squares)){
         return false;
     }
 
-    Bitboard knight_moves = KNIGHT_LOOKUP_TABLE[pos_ind];
+    if(KNIGHT_LOOKUP_TABLE[pos_ind] & enemy->knights){
+        return false;
+    }
+
+    if(PAWN_ATTACK_LOOKUP_TABLE[chess_board->whites_turn][pos_ind]&enemy->pawns){
+        return false;
+    }
 
     return true;
 }
 
 void find_all_king_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy){
+    // check first if King is in check! 
+
+
     int king_pos = __builtin_ctzll(player->king);
 
     Bitboard attack_mask = get_diagonal_attackers(enemy, king_pos);

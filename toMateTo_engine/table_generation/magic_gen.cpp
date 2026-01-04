@@ -2,7 +2,7 @@
 // Compile with: gcc -O3 magic_find.c -o magic_find -std=c11
 #include "toMateTo_engine/table_generation/magic_gen.h"
 
-
+Bitboard PAWN_ATTACK_LOOKUP_TABLE[2][64]; 
 
 MagicTableEntry BISHOP_MAGIC[64];
 MagicTableEntry ROOK_MAGIC[64];
@@ -266,6 +266,43 @@ void load_magic_tables(){
         printf("Fehler in BISHOP magic table!\n");
     }else{
         printf("kein Fehler in BISHOP magic table!\n");
+    }
+}
+
+inline int sq_index(int x, int y) {
+    return y * 8 + x;
+}
+
+void generate_pawn_lookup_table() {
+
+    for (int sq = 0; sq < 64; ++sq) {
+
+        int x = sq % 8;
+        int y = sq / 8;
+
+        // Black = 0, White = 1
+        PAWN_ATTACK_LOOKUP_TABLE[0][sq] = 0ULL;   // black
+        PAWN_ATTACK_LOOKUP_TABLE[1][sq] = 0ULL;   // white
+
+        // ---------- WHITE (moves +1 rank) ----------
+        if (is_on_board(x, y, -1, +1)) {
+            int t = sq_index(x - 1, y + 1);
+            PAWN_ATTACK_LOOKUP_TABLE[1][sq] |= (1ULL << t);
+        }
+        if (is_on_board(x, y, +1, +1)) {
+            int t = sq_index(x + 1, y + 1);
+            PAWN_ATTACK_LOOKUP_TABLE[1][sq] |= (1ULL << t);
+        }
+
+        // ---------- BLACK (moves -1 rank) ----------
+        if (is_on_board(x, y, -1, -1)) {
+            int t = sq_index(x - 1, y - 1);
+            PAWN_ATTACK_LOOKUP_TABLE[0][sq] |= (1ULL << t);
+        }
+        if (is_on_board(x, y, +1, -1)) {
+            int t = sq_index(x + 1, y - 1);
+            PAWN_ATTACK_LOOKUP_TABLE[0][sq] |= (1ULL << t);
+        }
     }
 }
 

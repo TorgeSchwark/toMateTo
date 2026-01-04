@@ -13,6 +13,11 @@ void set_index_zero(Bitboard* bitboard, Bitboard index);
 int msb_index(Bitboard bb);
 void set_index_one(Bitboard* bitboard, Bitboard index);
 
+inline bool is_on_board(int x, int y, int x_offset, int y_offset) {
+    return (x + x_offset >= 0 && x + x_offset < 8 &&
+            y + y_offset >= 0 && y + y_offset < 8);
+}
+
 struct one_side 
 {
     Bitboard knights;

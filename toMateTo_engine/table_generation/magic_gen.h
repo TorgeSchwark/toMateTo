@@ -12,6 +12,9 @@
 
 #include "toMateTo_engine/move_generation/types.h"
 #include "toMateTo_engine/table_generation/magic_helper_functions.h"
+#include "toMateTo_engine/move_generation/chess_board.h"
+
+extern Bitboard PAWN_ATTACK_LOOKUP_TABLE[2][64];
 
 extern MagicTableEntry BISHOP_MAGIC[64];
 extern MagicTableEntry ROOK_MAGIC[64];
