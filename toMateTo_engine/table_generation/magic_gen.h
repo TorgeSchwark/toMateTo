@@ -12,7 +12,6 @@
 
 #include "toMateTo_engine/move_generation/types.h"
 #include "toMateTo_engine/table_generation/magic_helper_functions.h"
-#include "toMateTo_engine/move_generation/chess_board.h"
 
 extern Bitboard PAWN_ATTACK_LOOKUP_TABLE[2][64];
 
@@ -30,8 +29,6 @@ void generate_occupancy_variations(U64 mask, U64 *out, int count);
 U64 rook_attacks_on_the_fly(int sqr, U64 occ);
 
 U64 bishop_attacks_on_the_fly(int sqr, U64 occ);
-
-
 
 int find_magic(U64 *occupancies, U64 *attacks, U64 *final_atacks, int entries, int relevant_bits, U64 *out_magic, int square);
 

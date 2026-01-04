@@ -10,6 +10,12 @@
 
 #include "toMateTo_engine/move_generation/types.h"
 
+inline bool is_on_board(int x, int y, int x_offset, int y_offset) {
+    return (x + x_offset >= 0 && x + x_offset < 8 &&
+            y + y_offset >= 0 && y + y_offset < 8);
+}
+
+
 void change_order(MagicTableEntry* ALREADY_DONE_MAGIC, U64 *blockers, U64 *occupancies, U64 *final_blockers, int relevant_bits, int square);
 
 uint64_t xorshift64star(uint64_t *state);

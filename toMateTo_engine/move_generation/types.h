@@ -36,4 +36,6 @@ typedef struct {
     // attack_list wird separat gespeichert, weil variabel lang
 } MagicEntryData;
 
+
+
 #endif 

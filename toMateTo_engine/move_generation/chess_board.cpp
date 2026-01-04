@@ -97,7 +97,7 @@ bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy,
         return false;
     }
     // return directions where an attacker exists until attacker including attacker!
-    Bitboard relevant_squares = get_diagonal_attackers(enemy, pos_ind);
+    relevant_squares = get_diagonal_attackers(enemy, pos_ind);
     // this will mark attackers and every blocking piece both enemy blocking and team
     if(is_diagonal_attacked(chess_board, pos_ind, relevant_squares)){
         return false;

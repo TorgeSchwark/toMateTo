@@ -4,7 +4,7 @@
 #include <cstdint>
 
 #include "toMateTo_engine/move_generation/types.h"
-#include "toMateTo_engine/move_generation/chess_board.h"
+#include "toMateTo_engine/table_generation/magic_helper_functions.h"
 
 
 extern Bitboard KNIGHT_LOOKUP_TABLE[64];
