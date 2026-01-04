@@ -9,9 +9,6 @@
 #include "toMateTo_engine/table_generation/magic_gen.h"
 #include "toMateTo_engine/table_generation/magic_king_tables.h"
 
-
-
-
 void set_index_zero(Bitboard* bitboard, Bitboard index); 
 int msb_index(Bitboard bb);
 void set_index_one(Bitboard* bitboard, Bitboard index);
@@ -149,17 +146,7 @@ void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side*
 
 void find_queen_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
 
-
-Bitboard get_diagonal_attacks(one_side* enemy, one_side* player, int pos_ind, Bitboard relevant_pieces);
-Bitboard get_diagonal_attackers(one_side* enemy, int pos_ind);
-Bitboard get_diagonal_pins(one_side* enemy, one_side* player, int pos_ind, Bitboard atack_mask);
-
-Bitboard get_straight_attacks(one_side* enemy, one_side* player, int pos_ind, Bitboard relevant_pieces);
-Bitboard get_straight_attackers(one_side* enemy, int pos_ind);
-Bitboard get_straight_pins(one_side* enemy, one_side* player, int pos_ind, Bitboard atack_mask);
-
 bool not_attacked(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos);
-
 
 inline int8_t pop_lsb(Bitboard &board){
     int8_t bishop_index = __builtin_ctzll(board);        // Get index of least significant bit
@@ -167,24 +154,61 @@ inline int8_t pop_lsb(Bitboard &board){
     return bishop_index;
 };
 
-
-inline Bitboard bishop_magic(int square, const chess_board* board, const one_side* player) {
-    Bitboard occ = board->complete_board & BISHOP_MAGIC[square].mask;
-
-    int index = (int)((occ * BISHOP_MAGIC[square].magic_number)
-                      >> (64 - BISHOP_MAGIC[square].relevant_bits));
-
-    return BISHOP_MAGIC[square].attack_list[index] & ~player->side_all;
+inline Bitboard magic_lookup(Bitboard occ, const MagicTableEntry& m) {
+    int index = (int)((occ * m.magic_number) >> (64 - m.relevant_bits));
+    return m.attack_list[index];
 }
 
-inline Bitboard rook_magic(int square, const chess_board* board, const one_side* player) {
-    Bitboard occ = board->complete_board & ROOK_MAGIC[square].mask;
-
-    int index = (int)((occ * ROOK_MAGIC[square].magic_number)
-                      >> (64 - ROOK_MAGIC[square].relevant_bits));
-
-    return ROOK_MAGIC[square].attack_list[index] & ~player->side_all;
+inline Bitboard pins_magic(int square, Bitboard blocked, const MagicTableEntry table[]){
+    return magic_lookup(blocked, table[square]);
 }
+
+inline Bitboard get_diagonal_attacks(one_side* enemy, one_side* player, int pos_ind, Bitboard relevant_pieces){
+    return pins_magic(pos_ind, relevant_pieces, PINNED_PIECES_BISHOP_MAGIC);
+}
+
+inline Bitboard get_straight_attacks(one_side* enemy, one_side* player, int pos_ind, Bitboard relevant_pieces){
+    return pins_magic(pos_ind, relevant_pieces, PINNED_PIECES_ROOK_MAGIC);
+}
+
+inline Bitboard attackers_magic(int square,Bitboard attackers,const MagicTableEntry table[],const MagicTableEntry pattern[]){
+    Bitboard masked = attackers & table[square].mask;
+    return magic_lookup(masked, pattern[square]);
+}
+
+inline Bitboard get_straight_pins(one_side* enemy, one_side* player,int pos_ind, Bitboard attack_mask){
+    Bitboard blocked = attack_mask & (enemy->knights | enemy->bishop | enemy->pawns | player->side_all);
+    return pins_magic(pos_ind, blocked, PINNED_PIECES_ROOK_MAGIC);
+}
+
+inline Bitboard get_diagonal_pins(one_side* enemy, one_side* player, int pos_ind, Bitboard attack_mask){
+    Bitboard blocked = attack_mask & (enemy->knights | enemy->rooks | enemy->pawns | player->side_all);
+    return pins_magic(pos_ind, blocked, PINNED_PIECES_BISHOP_MAGIC);
+}
+
+inline Bitboard get_diagonal_attackers(one_side* enemy, int pos_ind) {
+    return attackers_magic(pos_ind, enemy->bishop | enemy->queen, BISHOP_MAGIC, ATTACK_PATTERN_BISHOP_MAGIC);
+}
+
+inline Bitboard sliding_magic(int square, Bitboard occ, const MagicTableEntry table[], Bitboard blockers_mask = ~0ULL){
+    return magic_lookup(occ & table[square].mask, table[square]) & blockers_mask;
+}
+
+inline Bitboard get_straight_attackers(one_side* enemy, int pos_ind) {
+    return attackers_magic(pos_ind, enemy->rooks | enemy->queen, ROOK_MAGIC, ATTACK_PATTERN_ROOK_MAGIC);
+}
+
+inline Bitboard bishop_magic(int square, const chess_board* board, const one_side* player){
+    return sliding_magic(square, board->complete_board, BISHOP_MAGIC, ~player->side_all);
+}
+
+inline Bitboard rook_magic(int square,const chess_board* board, const one_side* player){
+    return sliding_magic(square, board->complete_board, ROOK_MAGIC, ~player->side_all);
+}
+
+
+
+
 
 
 

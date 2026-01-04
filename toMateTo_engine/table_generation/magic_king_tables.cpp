@@ -1,7 +1,5 @@
 #include "magic_king_tables.h"
 
-
-
 Bitboard KING_MOVES_MASK[64];
 
 MagicTableEntry PINNED_PIECES_ROOK_MAGIC[64];

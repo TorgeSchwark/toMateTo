@@ -5,8 +5,10 @@
 
 using Bitboard = uint64_t;
 typedef uint64_t U64;
-typedef U64 (*attack_like_fn)(int square, U64 occ);
 
+typedef U64 (*attack_like_fn)(int square, U64 occ);
+typedef U64 (*attack_fn)(int square, U64 occ);
+typedef U64 (*mask_fn)(int square);
 
 enum PieceType: std::int8_t{
     NO_PIECE_TYPE, PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING

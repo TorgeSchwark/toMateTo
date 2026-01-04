@@ -108,49 +108,6 @@ bool not_attacked(chess_board* chess_board, one_side* player, one_side* enemy, B
     return true;
 }
 
-// get the blocker hash
-// this can be used if all attackers and blockers in attack direction are marked it will only return the attackers if there attack is not blocked!
-Bitboard get_diagonal_attacks(one_side* enemy, one_side* player, int pos_ind, Bitboard relevant_pieces){
-    int magic_index_blocked = (relevant_pieces *PINNED_PIECES_BISHOP_MAGIC[pos_ind].magic_number) >> (64 - PINNED_PIECES_BISHOP_MAGIC[pos_ind].relevant_bits);
-    Bitboard attacking_pieces= PINNED_PIECES_BISHOP_MAGIC[pos_ind].attack_list[magic_index_blocked];
-    return attacking_pieces;
-}
-
-Bitboard get_straight_attacks(one_side* enemy, one_side* player, int pos_ind, Bitboard relevant_pieces){
-    int magic_index_blocked = (relevant_pieces *PINNED_PIECES_ROOK_MAGIC[pos_ind].magic_number) >> (64 - PINNED_PIECES_ROOK_MAGIC[pos_ind].relevant_bits);
-    Bitboard pinned_pieces = PINNED_PIECES_ROOK_MAGIC[pos_ind].attack_list[magic_index_blocked];
-    return pinned_pieces;
-}
-
-Bitboard get_diagonal_attackers(one_side* enemy, int pos_ind){
-    Bitboard king_diagonal_attackers = (enemy->bishop | enemy->queen) & BISHOP_MAGIC[pos_ind].mask;
-    int magic_index = ((king_diagonal_attackers * BISHOP_MAGIC[pos_ind].magic_number) >> (64 - BISHOP_MAGIC[pos_ind].relevant_bits));
-    Bitboard attack_mask = ATTACK_PATTERN_BISHOP_MAGIC[pos_ind].attack_list[magic_index];
-    return attack_mask;
-}
-
-Bitboard get_straight_attackers(one_side* enemy, int pos_ind){
-    Bitboard king_straight_atackers = (enemy->rooks | enemy->queen) & ROOK_MAGIC[pos_ind].mask;
-    int magic_index = ((king_straight_atackers * ROOK_MAGIC[pos_ind].magic_number) >> (64 - ROOK_MAGIC[pos_ind].relevant_bits));
-    Bitboard attack_mask = ATTACK_PATTERN_ROOK_MAGIC[pos_ind].attack_list[magic_index];
-    return attack_mask;
-}
-
-Bitboard get_straight_pins(one_side* enemy, one_side* player, int pos_ind, Bitboard attack_mask){
-    Bitboard blocked_pieces = attack_mask&(enemy->knights|enemy->bishop|enemy->pawns|player->side_all);
-    int magic_index_blocked = (blocked_pieces *PINNED_PIECES_ROOK_MAGIC[pos_ind].magic_number) >> (64 - PINNED_PIECES_ROOK_MAGIC[pos_ind].relevant_bits);
-    Bitboard pinned_pieces = PINNED_PIECES_ROOK_MAGIC[pos_ind].attack_list[magic_index_blocked];
-    return pinned_pieces;
-}
-
-Bitboard get_diagonal_pins(one_side* enemy, one_side* player, int pos_ind, Bitboard attack_mask){
-    Bitboard blocked_pieces = attack_mask&(enemy->knights|enemy->rooks|enemy->pawns|player->side_all);
-    int magic_index_blocked = (blocked_pieces *PINNED_PIECES_BISHOP_MAGIC[pos_ind].magic_number) >> (64 - PINNED_PIECES_BISHOP_MAGIC[pos_ind].relevant_bits);
-    Bitboard pinned_pieces = PINNED_PIECES_BISHOP_MAGIC[pos_ind].attack_list[magic_index_blocked];
-    return pinned_pieces;
-}
-
-
 void find_all_king_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy){
     int king_pos = __builtin_ctzll(player->king);
 

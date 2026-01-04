@@ -10,9 +10,6 @@
 
 #include "toMateTo_engine/move_generation/types.h"
 
-typedef U64 (*attack_fn)(int square, U64 occ);
-typedef U64 (*mask_fn)(int square);
-
 void change_order(MagicTableEntry* ALREADY_DONE_MAGIC, U64 *blockers, U64 *occupancies, U64 *final_blockers, int relevant_bits, int square);
 
 uint64_t xorshift64star(uint64_t *state);
