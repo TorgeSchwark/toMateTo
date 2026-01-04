@@ -87,19 +87,18 @@ void find_knight_moves(move_stack* move_stack, one_side* player, one_side* enemy
     }
 }
 
-bool not_attacked(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
+bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
 
-    Bitboard straight_attackers = get_straight_attackers(enemy, pos_ind);
-    // this will mark attackers and every blocking piece both enemy blocking and team
-    Bitboard relevant_attackers_and_defenders = straight_attackers&(chess_board->complete_board);
-    if (get_diagonal_attacks(enemy, player, pos_ind, relevant_attackers_and_defenders)){
+    // returns a Bitboard where every square between nearest attacker and the quare is marked! 
+    Bitboard relavant_squares = get_straight_attackers(enemy, pos_ind);
+    // with this we get only the attacking piece itself and every piece in the line of attack
+    if (is_straight_attacked(chess_board, pos_ind, relavant_squares)){
         return false;
     }
     // return directions where an attacker exists until attacker including attacker!
-    Bitboard diagonal_attackers = get_diagonal_attackers(enemy, pos_ind);
+    Bitboard relavant_squares = get_diagonal_attackers(enemy, pos_ind);
     // this will mark attackers and every blocking piece both enemy blocking and team
-    relevant_attackers_and_defenders = diagonal_attackers&(chess_board->complete_board);
-    if(Bitboard attacking_pieces = get_diagonal_attacks(enemy, player, pos_ind, relevant_attackers_and_defenders)){
+    if(is_diagonal_attacked(chess_board, pos_ind, relavant_squares)){
         return false;
     }
 
@@ -132,7 +131,7 @@ void find_all_king_moves(move_stack* move_stack, chess_board* chess_board, one_s
         Bitboard king_to = 1ULL << king_index_to;
         Bitboard from = 1ULL << king_pos;
 
-        if (not_attacked(chess_board, player, enemy, king_pos)){
+        if (is_save_square(chess_board, player, enemy, king_pos)){
             move_stack->add_move(from, king_to, KING, NORMAL_MOVE);
         }
     }

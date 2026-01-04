@@ -146,7 +146,7 @@ void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side*
 
 void find_queen_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
 
-bool not_attacked(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos);
+bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos);
 
 inline int8_t pop_lsb(Bitboard &board){
     int8_t bishop_index = __builtin_ctzll(board);        // Get index of least significant bit
@@ -163,12 +163,14 @@ inline Bitboard pins_magic(int square, Bitboard blocked, const MagicTableEntry t
     return magic_lookup(blocked, table[square]);
 }
 
-inline Bitboard get_diagonal_attacks(one_side* enemy, one_side* player, int pos_ind, Bitboard relevant_pieces){
-    return pins_magic(pos_ind, relevant_pieces, PINNED_PIECES_BISHOP_MAGIC);
+inline Bitboard is_diagonal_attacked(chess_board* chess_board,  int pos_ind, Bitboard relevant_squares){
+    Bitboard relevant_attackers_and_defenders = relevant_squares & chess_board->complete_board;
+    return pins_magic(pos_ind, relevant_attackers_and_defenders, PINNED_PIECES_BISHOP_MAGIC);
 }
 
-inline Bitboard get_straight_attacks(one_side* enemy, one_side* player, int pos_ind, Bitboard relevant_pieces){
-    return pins_magic(pos_ind, relevant_pieces, PINNED_PIECES_ROOK_MAGIC);
+inline Bitboard is_straight_attacked(chess_board* chess_board, int pos_ind, Bitboard relevant_squares){
+    Bitboard relevant_attackers_and_defenders = relevant_squares & chess_board->complete_board;
+    return pins_magic(pos_ind, relevant_attackers_and_defenders, PINNED_PIECES_ROOK_MAGIC);
 }
 
 inline Bitboard attackers_magic(int square,Bitboard attackers,const MagicTableEntry table[],const MagicTableEntry pattern[]){
@@ -205,11 +207,5 @@ inline Bitboard bishop_magic(int square, const chess_board* board, const one_sid
 inline Bitboard rook_magic(int square,const chess_board* board, const one_side* player){
     return sliding_magic(square, board->complete_board, ROOK_MAGIC, ~player->side_all);
 }
-
-
-
-
-
-
 
 #endif 
