@@ -66,7 +66,6 @@ void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side*
     }
 }
 
-
 void find_knight_moves(move_stack* move_stack, one_side* player, one_side* enemy) {
     Bitboard knights = player->knights;
     Bitboard negative_player = ~player->side_all;
@@ -147,6 +146,61 @@ void find_all_king_moves(move_stack* move_stack, chess_board* chess_board, one_s
     }
 }
 
+void setup_fen_position(chess_board& board, const std::string& fen)
+{
+    board.white = {};
+    board.black = {};
+    board.complete_board = 0ULL;
+
+    std::istringstream ss(fen);
+    std::string placement, active;
+    ss >> placement >> active;
+
+    int square = 56;   // start at a8
+
+    for (char c : placement)
+    {
+        if (c == '/')
+        {
+            square -= 16;   // move one rank down
+            continue;
+        }
+
+        if (std::isdigit(c))
+        {
+            square += (c - '0');
+            continue;
+        }
+
+        Bitboard bit = 1ULL << square;
+
+        switch (c)
+        {
+            case 'P': board.white.pawns  |= bit; break;
+            case 'N': board.white.knights|= bit; break;
+            case 'B': board.white.bishop |= bit; break;
+            case 'R': board.white.rooks  |= bit; break;
+            case 'Q': board.white.queen  |= bit; break;
+            case 'K': board.white.king   |= bit; break;
+
+            case 'p': board.black.pawns  |= bit; break;
+            case 'n': board.black.knights|= bit; break;
+            case 'b': board.black.bishop |= bit; break;
+            case 'r': board.black.rooks  |= bit; break;
+            case 'q': board.black.queen  |= bit; break;
+            case 'k': board.black.king   |= bit; break;
+        }
+
+        square++;
+    }
+
+    board.white.update_side();
+    board.black.update_side();
+    board.complete_board = board.white.side_all | board.black.side_all;
+
+    board.whites_turn = (active == "w");
+    board.print_board();
+}
 
 
 

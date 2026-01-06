@@ -7,6 +7,15 @@
 
 #include "toMateTo_engine/move_generation/types.h"
 
+// TODO change to that structure:
+// A move needs 16 bits to be stored
+//
+// bit  0- 5: destination square (from 0 to 63)
+// bit  6-11: origin square (from 0 to 63)
+// bit 12-13: promotion piece type - 2 (from KNIGHT-2 to QUEEN-2)
+// bit 14-15: special move flag: promotion (1), en passant (2), castling (3)
+// NOTE: en passant bit is set only when a pawn can be captured
+
 inline constexpr Bitboard KNIGHT_MOVES[4] = {17,15,10,6};
 inline constexpr int8_t NORMAL_MOVE = 1;
 

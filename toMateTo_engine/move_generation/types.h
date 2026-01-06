@@ -37,5 +37,28 @@ typedef struct {
 } MagicEntryData;
 
 
+// Castling Writes like in Stockfish!
+enum CastlingRights : int8_t {
+    NO_CASTLING,
+    WHITE_KING_SIDE,
+    WHITE_QUEEN_SIDE = WHITE_KING_SIDE << 1,
+    BLACK_KING_SIDE  = WHITE_KING_SIDE << 2,
+    BLACK_QUEEN_SIDE = WHITE_KING_SIDE << 3,
+
+    KING_SIDE      = WHITE_KING_SIDE | BLACK_KING_SIDE,
+    QUEEN_SIDE     = WHITE_QUEEN_SIDE | BLACK_QUEEN_SIDE,
+    WHITE_CASTLING = WHITE_KING_SIDE | WHITE_QUEEN_SIDE,
+    BLACK_CASTLING = BLACK_KING_SIDE | BLACK_QUEEN_SIDE,
+    ANY_CASTLING   = WHITE_CASTLING | BLACK_CASTLING,
+
+    CASTLING_RIGHT_NB = 16
+};
+
+enum MoveType {
+    NORMAL,
+    PROMOTION  = 1 << 14,
+    EN_PASSANT = 2 << 14,
+    CASTLING   = 3 << 14
+};
 
 #endif 

@@ -3,11 +3,14 @@
 
 #include <cstdint>
 #include <iostream>
+#include <string>
+#include <sstream>
 
 #include "toMateTo_engine/move_generation/move_stack.h"
 #include "toMateTo_engine/table_generation/knight_tables.h"
 #include "toMateTo_engine/table_generation/magic_gen.h"
 #include "toMateTo_engine/table_generation/magic_king_tables.h"
+#include "toMateTo_engine/move_generation/types.h"
 
 void set_index_zero(Bitboard* bitboard, Bitboard index); 
 int msb_index(Bitboard bb);
@@ -24,7 +27,7 @@ struct one_side
     Bitboard queen;
     Bitboard side_all;
 
-    void update_side()
+    inline void update_side()
     {
         side_all = knights | pawns | rooks | bishop | king | queen;
     }
@@ -59,8 +62,12 @@ struct chess_board
 {
     one_side white;
     one_side black;
-    bool whites_turn;
 
+    bool whites_turn;
+    int8_t ep_square;
+
+    int16_t halve_move_counter;
+    int16_t full_move_counter;
 
     void setup_chess_board(){
         white.setup_side(true);
@@ -77,12 +84,12 @@ struct chess_board
         char board[64];
         for (int i = 0; i < 64; ++i) board[i] = empty;
 
-        // Hilfsfunktion zum Setzen eines Felds, falls Bit gesetzt
-        auto set_piece = [&](Bitboard bitboard, char symbol) {
+        // writes the symbol of the Piece on the correct position of the String representation
+        auto set_piece = [&](Bitboard bitboard, char piece_symbol) {
             Bitboard copy_bitboard = bitboard;
             while(copy_bitboard){
                 int index = msb_index(copy_bitboard);
-                board[index] = symbol;
+                board[index] = piece_symbol;
                 set_index_zero(&copy_bitboard, index);
             }
         };
@@ -115,12 +122,12 @@ struct chess_board
         std::cout << "  a b c d e f g h" << std::endl;
     }
 
-    void update_white()
+    inline void update_white()
     {
         white.update_side();
     };
 
-    void update_black()
+    inline void update_black()
     {
         black.update_side();
     };
@@ -128,8 +135,12 @@ struct chess_board
     Bitboard complete_board;
     Bitboard pinned_pieces;
 
+    
 
-    void update_board()
+    CastlingRights castling_rights;  
+
+
+    inline void update_board()
     {
         update_black();
         update_white();
@@ -208,5 +219,7 @@ inline Bitboard bishop_magic(int square, const chess_board* board, const one_sid
 inline Bitboard rook_magic(int square,const chess_board* board, const one_side* player){
     return sliding_magic(square, board->complete_board, ROOK_MAGIC, ~player->side_all);
 }
+
+void setup_fen_position(chess_board& board, const std::string& fen);
 
 #endif 

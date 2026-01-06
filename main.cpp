@@ -8,9 +8,6 @@
 #include "toMateTo_engine/table_generation/magic_gen.h"
 #include "toMateTo_engine/table_generation/magic_king_tables.h"
 
-// Here you can add your includes for chess_board, move_stack, your functions, etc.
-// #include "chess.h"  (assumed)
-
 int main() {
     chess_board chess_board;
     chess_board.setup_chess_board();
@@ -23,6 +20,8 @@ int main() {
     init_king_mask();
     init_pinned_tables_rook_and_bishop();
     init_attack_tables_rock_and_bishop();
+
+    setup_fen_position(chess_board, "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2");
 
     move_stack move_stack;
 
