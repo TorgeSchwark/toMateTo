@@ -148,21 +148,30 @@ void find_all_king_moves(move_stack* move_stack, chess_board* chess_board, one_s
 
 void setup_fen_position(chess_board& board, const std::string& fen)
 {
+    // Clear board
     board.white = {};
     board.black = {};
     board.complete_board = 0ULL;
+    board.castling_rights = NO_CASTLING;
+    board.ep_square = -1;
+    board.halve_move_counter = 0;
+    board.full_move_counter = 1;
 
     std::istringstream ss(fen);
-    std::string placement, active;
-    ss >> placement >> active;
 
-    int square = 56;   // start at a8
+    std::string placement, active, castling, enpassant;
+    int halfmove = 0, fullmove = 1;
+
+    ss >> placement >> active >> castling >> enpassant >> halfmove >> fullmove;
+
+    // --- Piece placement ---
+    int square = 56;   // a8
 
     for (char c : placement)
     {
         if (c == '/')
         {
-            square -= 16;   // move one rank down
+            square -= 16;   // next rank down
             continue;
         }
 
@@ -176,30 +185,79 @@ void setup_fen_position(chess_board& board, const std::string& fen)
 
         switch (c)
         {
-            case 'P': board.white.pawns  |= bit; break;
-            case 'N': board.white.knights|= bit; break;
-            case 'B': board.white.bishop |= bit; break;
-            case 'R': board.white.rooks  |= bit; break;
-            case 'Q': board.white.queen  |= bit; break;
-            case 'K': board.white.king   |= bit; break;
+            case 'P': board.white.pawns   |= bit; break;
+            case 'N': board.white.knights |= bit; break;
+            case 'B': board.white.bishop  |= bit; break;
+            case 'R': board.white.rooks   |= bit; break;
+            case 'Q': board.white.queen   |= bit; break;
+            case 'K': board.white.king    |= bit; break;
 
-            case 'p': board.black.pawns  |= bit; break;
-            case 'n': board.black.knights|= bit; break;
-            case 'b': board.black.bishop |= bit; break;
-            case 'r': board.black.rooks  |= bit; break;
-            case 'q': board.black.queen  |= bit; break;
-            case 'k': board.black.king   |= bit; break;
+            case 'p': board.black.pawns   |= bit; break;
+            case 'n': board.black.knights |= bit; break;
+            case 'b': board.black.bishop  |= bit; break;
+            case 'r': board.black.rooks   |= bit; break;
+            case 'q': board.black.queen   |= bit; break;
+            case 'k': board.black.king    |= bit; break;
         }
 
         square++;
     }
 
+    // --- Active color ---
+    board.whites_turn = (active == "w");
+
+    // --- Castling rights ---
+    board.castling_rights = NO_CASTLING;
+
+    if (castling != "-")
+    {
+        for (char c : castling)
+        {
+            switch (c)
+            {
+                case 'K':
+                    board.castling_rights =
+                        CastlingRights(board.castling_rights | WHITE_KING_SIDE);
+                    break;
+
+                case 'Q':
+                    board.castling_rights =
+                        CastlingRights(board.castling_rights | WHITE_QUEEN_SIDE);
+                    break;
+
+                case 'k':
+                    board.castling_rights =
+                        CastlingRights(board.castling_rights | BLACK_KING_SIDE);
+                    break;
+
+                case 'q':
+                    board.castling_rights =
+                        CastlingRights(board.castling_rights | BLACK_QUEEN_SIDE);
+                    break;
+            }
+        }
+    }
+
+    // --- En-passant square ---
+    if (enpassant != "-" && enpassant.size() == 2)
+    {
+        int file = enpassant[0] - 'a';
+        int rank = enpassant[1] - '1';
+        board.ep_square = rank * 8 + file;
+    }
+    else
+    {
+        board.ep_square = -1;
+    }
+
+    // --- Clocks ---
+    board.halve_move_counter  = halfmove;
+    board.full_move_counter = fullmove;
+
+    // --- Derived bitboards ---
     board.white.update_side();
     board.black.update_side();
     board.complete_board = board.white.side_all | board.black.side_all;
-
-    board.whites_turn = (active == "w");
-    board.print_board();
 }
 
 
