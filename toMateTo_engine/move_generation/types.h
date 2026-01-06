@@ -14,6 +14,15 @@ enum PieceType: std::int8_t{
     NO_PIECE_TYPE, PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING
 };
 
+typedef int8_t square;
+
+enum MoveType {
+    NORMAL,
+    PROMOTION  = 1 << 14,
+    EN_PASSANT = 2 << 14,
+    CASTLING   = 3 << 14
+};
+
 #ifndef TABLE_DIR_PATH
 #define TABLE_DIR_PATH "./toMateTo_engine/table_generation/tables"
 #endif

@@ -19,6 +19,35 @@
 inline constexpr Bitboard KNIGHT_MOVES[4] = {17,15,10,6};
 inline constexpr int8_t NORMAL_MOVE = 1;
 
+constexpr square from_sq(const Move& m) {
+    return square((m.move >> 6) & 0x3F);
+}
+
+constexpr square to_sq(const Move& m) {
+    return square(m.move & 0x3F);
+}
+
+
+struct Move{
+
+    Move() = default;
+    constexpr Move(std::uint16_t d) :
+        move(d) {};
+
+    constexpr Move(square from, square to)
+        : move((from << 6) | to) {}
+    
+    inline std::string move_to_string(const Move& m) {
+        int from = from_sq(m);
+        int to   = to_sq(m);
+
+        return square_to_string(from) + " -> " + square_to_string(to);
+    }
+
+
+    int16_t move;
+};
+
 
 inline std::string square_to_string(int index) {
     char file = 'a' + (index % 8);
