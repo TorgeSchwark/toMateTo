@@ -1,6 +1,3 @@
-In king move function first check for double check -> we dont need to look fore pins -> look for save squares
-    the is_save function can easily be adjusted to count number of attacks and stop early if 2 are found.
-rework way moves are stored.
 write Speed test function.
 
 IDEE for pins
