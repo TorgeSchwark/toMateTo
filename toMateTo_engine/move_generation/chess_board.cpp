@@ -26,9 +26,9 @@ Move* find_all_moves(Move* moves, chess_board* chess_board){
         // Attack amount 0: for move gen just care about pinned pieces!
         // one Check: find king save square. For all other pieces, check if there move can capture or block, pinned pieces cant block or capture!
         // two checks find king save square dont care about other pieces.
-    
-        if(attack_amounts_to_square(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square)){
-            find_king_save_squares(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
+        attack_amounts_to_square(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
+        if(chess_board->attack_count){
+            moves = find_king_save_squares(moves, chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
         }
         moves = find_knight_moves(moves, &(chess_board->white), &(chess_board->black));
         moves = find_bishop_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
@@ -65,9 +65,27 @@ Move* find_bishop_moves(Move* moves, chess_board* chess_board, one_side* player,
 Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rook){
     Bitboard rooks = *rook;
     while(rooks){
-        square rook_square = pop_lsb(rooks);        
+        square rook_square = pop_lsb(rooks);    
+        bool is_pinned = rook_square&chess_board->pinned_pieces;
+        // piece cant move to save king if pinned.
+        if(is_pinned && (chess_board->attack_count)){
+            return moves;
+        }    
 
         Bitboard rook_destinations = rook_magic(rook_square, chess_board, player);
+
+        // a pinned piece can only walk if the king is not in check
+        // cases: Pinned and king attacked, Pinned and King not attacked, not pinned king under attack,
+
+        
+        if(chess_board->attack_count){
+            // if we get here and king is attacked it means piece in not pinned!
+            
+        }else if(is_pinned){
+            // if we get here and piece is pinned it means king is not attacked!
+
+        }// else king is not attacked and piece not pinned!
+        
 
         moves = add_normal_moves(rook_square, rook_destinations, moves);
     }
@@ -133,6 +151,49 @@ int8_t attack_amounts_to_square(chess_board* chess_board, one_side* player, one_
     count_attacks += __builtin_popcountll(PAWN_ATTACK_LOOKUP_TABLE[chess_board->whites_turn][pos_ind]&enemy->pawns);
 
     return count_attacks;
+}
+
+int8_t find_pin_information(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
+    // Finds Number of attacks on the king
+    // Stores all pinned Pieces 
+    // Stores all pieces attacking the King
+
+    int8_t count_attacks;
+
+    // Straight block
+    Bitboard relevant_squares = get_straight_attackers(enemy, pos_ind);
+    Bitboard pinned_pieces_straight = get_straight_pins(enemy, player, pos_ind, relevant_squares);
+    Bitboard straight_attackers = is_straight_attacked(chess_board, pos_ind, relevant_squares);
+    count_attacks += __builtin_popcountll(straight_attackers);
+    
+    // Diagonal block
+    relevant_squares = get_diagonal_attackers(enemy, pos_ind);
+    Bitboard pinned_pieces_diagonal = get_diagonal_pins(enemy, player, pos_ind, relevant_squares);
+    Bitboard diagonal_attackers = is_straight_attacked(chess_board, pos_ind, relevant_squares);
+    count_attacks += __builtin_popcountll(diagonal_attackers);
+
+    // Knights and Pawns
+    Bitboard knight_attackers = KNIGHT_LOOKUP_TABLE[pos_ind] & enemy->knights;
+    count_attacks += __builtin_popcountll(knight_attackers);
+    Bitboard pawn_attackers = PAWN_ATTACK_LOOKUP_TABLE[chess_board->whites_turn][pos_ind]&enemy->pawns;
+    count_attacks += __builtin_popcountll(pawn_attackers);
+
+    // store all pinned pieces: These can also be enemy pieces Pinned by there Team
+    chess_board->pinned_pieces |= pinned_pieces_diagonal | pinned_pieces_straight;
+    //store all attacking pieces
+    chess_board->attacking_pieces |= straight_attackers | diagonal_attackers;
+
+    chess_board->attack_count = count_attacks;
+}
+
+Move* find_king_save_squares(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position){
+    Bitboard possible_king_moves = KING_MOVES_MASK[king_position] & ~player->side_all; 
+    while(possible_king_moves){
+        square to = pop_lsb(possible_king_moves);
+        if(is_save_square(chess_board, player, enemy, to)){ // there can be a piece as long as the square is not under attack
+            *moves++ = Move(king_position, pop_lsb(possible_king_moves));
+        }
+    }return moves;
 }
 
 void find_all_king_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy){

@@ -135,6 +135,12 @@ struct chess_board
 
     Bitboard complete_board;
     Bitboard pinned_pieces;
+    // Pieces currently attacking the King
+    Bitboard attacking_pieces;
+    // Can be used if king is attacked only once to filter where pieces can go!
+    Bitboard attack_defend_squares;
+
+    int8_t attack_count;
 
     
 
@@ -158,9 +164,13 @@ Move* find_bishop_moves(Move* moves, chess_board* chess_board, one_side* player,
 
 Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rooks);
 
+Move* find_king_save_squares(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position);
+
 bool is_save_square(Move* moves, one_side* player, one_side* enemy, Bitboard pos);
 
 int8_t attack_amounts_to_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind);
+
+int8_t find_pin_information(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind);
 
 inline square pop_lsb(Bitboard &board){
     square bishop_index = __builtin_ctzll(board);        // Get index of least significant bit
@@ -210,7 +220,7 @@ inline Bitboard sliding_magic(int square, Bitboard occ, const MagicTableEntry ta
     return magic_lookup(occ & table[square].mask, table[square]) & blockers_mask;
 }
 
-inline Bitboard get_straight_attackers(one_side* enemy, int pos_ind) {
+inline Bitboard get_straight_attackers(one_side* enemy, square pos_ind) {
     return attackers_magic(pos_ind, enemy->rooks | enemy->queen, ROOK_MAGIC, ATTACK_PATTERN_ROOK_MAGIC);
 }
 

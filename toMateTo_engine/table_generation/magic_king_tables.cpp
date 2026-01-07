@@ -9,6 +9,8 @@ MagicTableEntry PINNED_PIECES_BISHOP_MAGIC[64];
 MagicTableEntry ATTACK_PATTERN_ROOK_MAGIC[64];
 MagicTableEntry ATTACK_PATTERN_BISHOP_MAGIC[64];
 
+Bitboard SQUARES_IN_BETWEEN[64][64];
+
 int directions[8][2] = {{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1},{0,1}};
 
 void init_king_move_mask(){
@@ -348,6 +350,56 @@ void init_pinned_tables_rook_and_bishop(){
 
 }
 
+void init_squares_in_between_table()
+{
+    for (int from = 0; from < 64; ++from)
+    {
+        for (int to = 0; to < 64; ++to)
+        {
+            Bitboard bb = 0;
+
+            if (from == to) {
+                SQUARES_IN_BETWEEN[from][to] = 0;
+                continue;
+            }
+
+            int fr = rank_of(from);
+            int ff = file_of(from);
+            int tr = rank_of(to);
+            int tf = file_of(to);
+
+            int dr = (tr > fr) - (tr < fr);   // -1, 0, or +1
+            int df = (tf > ff) - (tf < ff);   // -1, 0, or +1
+
+            bool aligned =
+                (fr == tr) ||                  
+                (ff == tf) ||                  
+                (fr - tr == ff - tf) ||          
+                (fr - tr == tf - ff);            
+
+            if (!aligned) {
+                SQUARES_IN_BETWEEN[from][to] = 0;
+                continue;
+            }
+
+            int sq = from;
+
+            while (true)
+            {
+                sq += dr * 8 + df;
+
+                if (sq == to) {
+                    bb |= (1ULL << sq);  
+                    break;
+                }
+
+                bb |= (1ULL << sq);
+            }
+
+            SQUARES_IN_BETWEEN[from][to] = bb;
+        }
+    }
+}
 
 
 
