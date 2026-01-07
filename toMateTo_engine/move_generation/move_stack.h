@@ -16,15 +16,11 @@
 // bit 14-15: special move flag: promotion (1), en passant (2), castling (3)
 // NOTE: en passant bit is set only when a pawn can be captured
 
-inline constexpr Bitboard KNIGHT_MOVES[4] = {17,15,10,6};
-inline constexpr int8_t NORMAL_MOVE = 1;
 
-constexpr square from_sq(const Move& m) {
-    return square((m.move >> 6) & 0x3F);
-}
-
-constexpr square to_sq(const Move& m) {
-    return square(m.move & 0x3F);
+inline std::string square_to_string(int index) {
+    char file = 'a' + (index % 8);
+    char rank = '1' + (index / 8);
+    return std::string() + file + rank;
 }
 
 
@@ -36,10 +32,18 @@ struct Move{
 
     constexpr Move(square from, square to)
         : move((from << 6) | to) {}
+
+    constexpr square from_sq(const Move& m) {
+        return square((m.move >> 6) & 0x3F);
+    }
+
+    constexpr square to_sq(const Move& m) {
+        return square(m.move & 0x3F);
+    }
     
-    inline std::string move_to_string(const Move& m) {
-        int from = from_sq(m);
-        int to   = to_sq(m);
+    inline std::string move_to_string() {
+        square from = from_sq(move);
+        square to   = to_sq(move);
 
         return square_to_string(from) + " -> " + square_to_string(to);
     }
@@ -48,12 +52,15 @@ struct Move{
     int16_t move;
 };
 
+inline constexpr Bitboard KNIGHT_MOVES[4] = {17,15,10,6};
+inline constexpr int8_t NORMAL_MOVE = 1;
 
-inline std::string square_to_string(int index) {
-    char file = 'a' + (index % 8);
-    char rank = '1' + (index / 8);
-    return std::string() + file + rank;
-}
+
+
+
+
+
+
 
 inline std::string piece_to_string(PieceType piece) {
     switch (piece) {

@@ -21,26 +21,37 @@ int main() {
     init_pinned_tables_rook_and_bishop();
     init_attack_tables_rock_and_bishop();
 
-    setup_fen_position(chess_board, "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2");
+    // setup_fen_position(chess_board, "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2");
 
-    move_stack move_stack;
 
     // Example move test
     const int repetitions = 6000000;
     auto start_time = std::chrono::high_resolution_clock::now();
+    Move moves[256];
+    Move* result;
+
     for (int i = 0; i < repetitions; ++i) {
-        move_stack.clear();
-        find_all_moves(&move_stack, &chess_board);
+
+        result = find_all_moves(moves, &chess_board);
+
+        
     }
+    // print results
+    int count = (result - moves);
+    for (int i = 0; i < count; ++i) {
+            std::cout << moves[i].move_to_string() << "\n";
+        }
+
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
     std::cout << "Duration: " << duration.count() << "ms\n";
-    move_stack.print_moves();
+    std::cout << moves[0].move_to_string() << "\n";
+    printf("%d moves \n", count);
+    
 
     // Start GUI
     init_gui();
-    highlight_moves(move_stack);
 
     while (update_gui(chess_board)) {
         // maybe later: input handling, moves, etc.

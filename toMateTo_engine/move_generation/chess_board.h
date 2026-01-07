@@ -147,18 +147,17 @@ struct chess_board
         complete_board =  white.side_all | black.side_all;
     }
 };
+Move* add_normal_moves(square from, Bitboard destinations, Move* moves);
 
-void find_all_moves(move_stack* move_stack, chess_board* chess_board);
+Move* find_all_moves(Move* moves, chess_board* chess_board);
 
-void find_knight_moves(move_stack* move_stack, one_side* player, one_side* enemy);
+Move* find_knight_moves(Move* moves, one_side* player, one_side* enemy);
 
-void find_bishop_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishops);
+Move* find_bishop_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishops);
 
-void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rooks);
+Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rooks);
 
-void find_queen_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy);
-
-bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos);
+bool is_save_square(Move* moves, one_side* player, one_side* enemy, Bitboard pos);
 
 inline int8_t pop_lsb(Bitboard &board){
     int8_t bishop_index = __builtin_ctzll(board);        // Get index of least significant bit

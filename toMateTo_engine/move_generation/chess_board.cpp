@@ -12,78 +12,66 @@ void set_index_one(Bitboard* bitboard, Bitboard index) {
     *bitboard |= (1ULL << index);
 }
 
-void find_all_moves(move_stack* move_stack, chess_board* chess_board){
+Move* find_all_moves(Move* moves, chess_board* chess_board){
     chess_board->pinned_pieces = 0LL;
     if(chess_board->whites_turn){
-        find_knight_moves(move_stack, &(chess_board->white), &(chess_board->black));
-        find_bishop_moves(move_stack, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
-        find_rook_moves(move_stack, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.rooks));
+        moves = find_knight_moves(moves, &(chess_board->white), &(chess_board->black));
+        moves = find_bishop_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
+        moves = find_rook_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.rooks));
 
-        find_bishop_moves(move_stack, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
-        find_rook_moves(move_stack, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
+        moves = find_bishop_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
+        moves = find_rook_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
 
     }else{
 
     }
+    return moves;
 }
 
-void find_bishop_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishop){
+Move* add_normal_moves(square from, Bitboard destinations, Move* moves){
+    while(destinations){
+        *moves++ = Move(from, pop_lsb(destinations));
+    }return moves;
+}
+
+Move* find_bishop_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishop){
     Bitboard bishops = *bishop;
     while(bishops){
 
-        int bishop_index = pop_lsb(bishops);
+        square bishop_square = pop_lsb(bishops);
 
-        Bitboard from = 1ULL << bishop_index;
+        Bitboard bishop_destinations = bishop_magic(bishop_square, chess_board, player);
 
-        Bitboard attack_moves = bishop_magic(bishop_index, chess_board, player);
-
-        while(attack_moves){
-            int8_t bishop_index_to = pop_lsb(attack_moves);    
-
-            Bitboard current_bishop_to = 1ULL << bishop_index_to;
-            
-            move_stack->add_move(from, current_bishop_to, BISHOP, NORMAL_MOVE);
-        }
+        moves = add_normal_moves(bishop_square, bishop_destinations, moves);
     }
+    return moves;
 }
 
-void find_rook_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rook){
+
+
+Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rook){
     Bitboard rooks = *rook;
     while(rooks){
-        int rook_index = pop_lsb(rooks);        
+        square rook_square = pop_lsb(rooks);        
 
-        Bitboard attack_moves = rook_magic(rook_index, chess_board, player);
+        Bitboard rook_destinations = rook_magic(rook_square, chess_board, player);
 
-        Bitboard from = 1ULL << rook_index;
-    
-        while(attack_moves){
-            int rook_index_to = pop_lsb(attack_moves);   
-
-            Bitboard current_rook_to = 1ULL << rook_index_to;
-
-            move_stack->add_move(from, current_rook_to, ROOK, NORMAL_MOVE);
-        }
+        moves = add_normal_moves(rook_square, rook_destinations, moves);
     }
+    return moves;
 }
 
-void find_knight_moves(move_stack* move_stack, one_side* player, one_side* enemy) {
+Move* find_knight_moves(Move* moves, one_side* player, one_side* enemy) {
     Bitboard knights = player->knights;
     Bitboard negative_player = ~player->side_all;
     while (knights) {
-        int knight_index = pop_lsb(knights);
+        square knight_square= pop_lsb(knights);
 
-        Bitboard from = 1ULL << knight_index;          
+        Bitboard knight_destinations = KNIGHT_LOOKUP_TABLE[knight_square] & negative_player;
 
-        Bitboard attack_moves = KNIGHT_LOOKUP_TABLE[knight_index] & negative_player;
-
-        while (attack_moves) {
-            int knight_index_to = pop_lsb(attack_moves); 
-
-            Bitboard current_knight_to = 1ULL << knight_index_to;
-
-            move_stack->add_move(from, current_knight_to, KNIGHT, NORMAL_MOVE);
-        }
+        moves = add_normal_moves(knight_square, knight_destinations, moves);
     }
+    return moves;
 }
 
 bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
