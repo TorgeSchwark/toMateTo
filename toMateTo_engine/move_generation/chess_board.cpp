@@ -17,6 +17,16 @@ Move* find_all_moves(Move* moves, chess_board* chess_board){
 
     if(chess_board->whites_turn){
         square white_king_square = __builtin_ctzll(chess_board->white.king);
+        // TODO::squeze out more information at same time! same relevent squares is used to find pins and Attacks.
+        // if there is 2 we only need that info, but thats Rare case! so just try figure out ->
+        // if there is only one attack we still need to know which pieces are pinned! and need the attackers
+        // if there is none still need pins:
+        // just try to find pins, count attacks meanwhile, double attack is so sheldom keep searching for attacks and Pins
+        // store the Pins regardless of attack amount.
+        // Attack amount 0: for move gen just care about pinned pieces!
+        // one Check: find king save square. For all other pieces, check if there move can capture or block, pinned pieces cant block or capture!
+        // two checks find king save square dont care about other pieces.
+    
         if(attack_amounts_to_square(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square)){
             find_king_save_squares(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
         }
