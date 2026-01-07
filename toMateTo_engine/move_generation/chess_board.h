@@ -28,6 +28,8 @@ struct one_side
     Bitboard queen;
     Bitboard side_all;
 
+    Bitboard save_king_squares;
+
     inline void update_side()
     {
         side_all = knights | pawns | rooks | bishop | king | queen;
@@ -142,8 +144,6 @@ struct chess_board
 
     int8_t attack_count;
 
-    
-
     CastlingRights castling_rights;  
 
 
@@ -170,7 +170,7 @@ bool is_save_square(Move* moves, one_side* player, one_side* enemy, Bitboard pos
 
 int8_t attack_amounts_to_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind);
 
-int8_t find_pin_information(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind);
+void find_pin_information(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind);
 
 inline square pop_lsb(Bitboard &board){
     square bishop_index = __builtin_ctzll(board);        // Get index of least significant bit
@@ -219,6 +219,8 @@ inline Bitboard get_diagonal_attackers(one_side* enemy, int pos_ind) {
 inline Bitboard sliding_magic(int square, Bitboard occ, const MagicTableEntry table[], Bitboard blockers_mask = ~0ULL){
     return magic_lookup(occ & table[square].mask, table[square]) & blockers_mask;
 }
+
+Move* add_castling(Move* moves, chess_board* board, one_side* player, one_side* enemy, square king_pos, bool is_white);
 
 inline Bitboard get_straight_attackers(one_side* enemy, square pos_ind) {
     return attackers_magic(pos_ind, enemy->rooks | enemy->queen, ROOK_MAGIC, ATTACK_PATTERN_ROOK_MAGIC);

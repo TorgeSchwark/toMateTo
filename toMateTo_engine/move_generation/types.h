@@ -4,6 +4,10 @@
 #include <cstdint>
 
 using Bitboard = uint64_t;
+
+enum { BLACK = 0, WHITE = 1 };
+enum { KING_SIDE_INDEX = 0, QUEEN_SIDE_INDEX = 1 };
+
 typedef uint64_t U64;
 
 typedef U64 (*attack_like_fn)(int square, U64 occ);
@@ -13,6 +17,14 @@ typedef U64 (*mask_fn)(int square);
 enum PieceType: std::int8_t{
     NO_PIECE_TYPE, PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING
 };
+
+enum MoveType {
+    NORMAL,
+    PROMOTION  = 1 << 14,
+    EN_PASSANT = 2 << 14,
+    CASTLING   = 3 << 14
+};
+
 
 typedef int8_t square;
 
@@ -40,6 +52,7 @@ typedef struct {
 } MagicEntryData;
 
 
+
 // Castling Writes like in Stockfish!
 enum CastlingRights : int8_t {
     NO_CASTLING,
@@ -57,11 +70,6 @@ enum CastlingRights : int8_t {
     CASTLING_RIGHT_NB = 16
 };
 
-enum MoveType {
-    NORMAL,
-    PROMOTION  = 1 << 14,
-    EN_PASSANT = 2 << 14,
-    CASTLING   = 3 << 14
-};
+
 
 #endif 

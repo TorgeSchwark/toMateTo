@@ -16,6 +16,18 @@
 // bit 14-15: special move flag: promotion (1), en passant (2), castling (3)
 // NOTE: en passant bit is set only when a pawn can be captured
 
+inline void print_bitboard(Bitboard bb) {
+    std::cout << "\n";
+    for (int rank = 7; rank >= 0; --rank) {
+        std::cout << rank + 1 << " | ";
+        for (int file = 0; file < 8; ++file) {
+            int square = rank * 8 + file;
+            std::cout << ((bb >> square) & 1ULL ? "1 " : ". ");
+        }
+        std::cout << "\n";
+    }
+    std::cout << "    a b c d e f g h\n\n";
+}
 
 inline std::string square_to_string(int index) {
     char file = 'a' + (index % 8);
@@ -32,6 +44,9 @@ struct Move{
 
     constexpr Move(square from, square to)
         : move((from << 6) | to) {}
+
+    constexpr Move(square from, square to, int8_t special_move_type)
+        : move((from << 6) | to | (special_move_type << 14)) {}
 
     constexpr square from_sq(const Move& m) {
         return square((m.move >> 6) & 0x3F);

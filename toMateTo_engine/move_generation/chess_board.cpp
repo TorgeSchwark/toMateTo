@@ -13,17 +13,22 @@ void set_index_one(Bitboard* bitboard, Bitboard index) {
 }
 
 Move* find_all_moves(Move* moves, chess_board* chess_board){
-    chess_board->pinned_pieces = 0LL;
 
     if(chess_board->whites_turn){
         square white_king_square = __builtin_ctzll(chess_board->white.king);
-        attack_amounts_to_square(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
-        if(chess_board->attack_count){
-            moves = find_king_save_squares(moves, chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
-        }
+
+        find_pin_information(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
+
+        moves = find_king_save_squares(moves, chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
+        moves = add_castling(moves, chess_board, &(chess_board->white), &(chess_board->black), white_king_square, chess_board->whites_turn);
+
         if(chess_board->attack_count < 2){
-            chess_board->attack_defend_squares = SQUARES_IN_BETWEEN[white_king_square][chess_board->attacking_pieces];
+            if(chess_board->attack_count == 1){
+                chess_board->attack_defend_squares = SQUARES_IN_BETWEEN[white_king_square][__builtin_ctzll(chess_board->attacking_pieces)];
+            }
+
             moves = find_knight_moves(moves, chess_board, &(chess_board->white), &(chess_board->black));
+
             moves = find_bishop_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
             moves = find_rook_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.rooks));
 
@@ -150,100 +155,100 @@ bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy,
     return true;
 }
 
-int8_t attack_amounts_to_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
-    // this is the same as is_save_square but it gives the extra information about how many attacks face ibe square
-
-    int8_t count_attacks;
-    // returns a Bitboard where every square between nearest attacker and the square is marked! 
-    Bitboard relevant_squares = get_straight_attackers(enemy, pos_ind);
-    // with this we get only the attacking piece itself and every piece in the line of attack
-    count_attacks += __builtin_popcountll(is_straight_attacked(chess_board, pos_ind, relevant_squares));
-    
-    // return directions where an attacker exists until attacker including attacker!
-    relevant_squares = get_diagonal_attackers(enemy, pos_ind);
-    // this will mark attackers and every blocking piece both enemy blocking and team
-    count_attacks += __builtin_popcountll(is_diagonal_attacked(chess_board, pos_ind, relevant_squares));
-
-    count_attacks += __builtin_popcountll(KNIGHT_LOOKUP_TABLE[pos_ind] & enemy->knights);
-    
-    count_attacks += __builtin_popcountll(PAWN_ATTACK_LOOKUP_TABLE[chess_board->whites_turn][pos_ind]&enemy->pawns);
-
-    return count_attacks;
-}
-
-int8_t find_pin_information(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
+void find_pin_information(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
     // Finds Number of attacks on the king
     // Stores all pinned Pieces 
     // Stores all pieces attacking the King
 
-    int8_t count_attacks;
+    int8_t count_attacks = 0;
 
     // Straight block
     Bitboard relevant_squares = get_straight_attackers(enemy, pos_ind);
     Bitboard pinned_pieces_straight = get_straight_pins(enemy, player, pos_ind, relevant_squares);
     Bitboard straight_attackers = is_straight_attacked(chess_board, pos_ind, relevant_squares);
-    count_attacks += __builtin_popcountll(straight_attackers);
     
     // Diagonal block
     relevant_squares = get_diagonal_attackers(enemy, pos_ind);
     Bitboard pinned_pieces_diagonal = get_diagonal_pins(enemy, player, pos_ind, relevant_squares);
-    Bitboard diagonal_attackers = is_straight_attacked(chess_board, pos_ind, relevant_squares);
-    count_attacks += __builtin_popcountll(diagonal_attackers);
+    Bitboard diagonal_attackers = is_diagonal_attacked(chess_board, pos_ind, relevant_squares);
 
     // Knights and Pawns
     Bitboard knight_attackers = KNIGHT_LOOKUP_TABLE[pos_ind] & enemy->knights;
-    count_attacks += __builtin_popcountll(knight_attackers);
     Bitboard pawn_attackers = PAWN_ATTACK_LOOKUP_TABLE[chess_board->whites_turn][pos_ind]&enemy->pawns;
-    count_attacks += __builtin_popcountll(pawn_attackers);
 
     // store all pinned pieces: These can also be enemy pieces Pinned by there Team
-    chess_board->pinned_pieces |= pinned_pieces_diagonal | pinned_pieces_straight;
+    chess_board->pinned_pieces = pinned_pieces_diagonal | pinned_pieces_straight;
     //store all attacking pieces
-    chess_board->attacking_pieces |= straight_attackers | diagonal_attackers;
+    chess_board->attacking_pieces = straight_attackers | diagonal_attackers | knight_attackers | pawn_attackers;
+    count_attacks = __builtin_popcountll(chess_board->attacking_pieces);
 
     chess_board->attack_count = count_attacks;
 }
 
+extern const CastlingRights CASTLING_FLAG[2][2] = {
+    { BLACK_KING_SIDE,  BLACK_QUEEN_SIDE },
+    { WHITE_KING_SIDE,  WHITE_QUEEN_SIDE }
+};
+
+// cs: 0 = king-side, 1 = queen-side
+Move* add_castling(
+    Move* moves,
+    chess_board* board,
+    one_side* player,
+    one_side* enemy,
+    square king_pos,
+    bool is_white
+) {
+    if (board->attack_count)
+        return moves;
+
+    for (int cs = 0; cs < 2; ++cs) {
+
+        // 1) has right?
+        if (!(board->castling_rights & CASTLING_FLAG[is_white][cs]))
+            continue;
+
+        // 2) intermediate squares must be empty
+        if (board->complete_board & CASTLE_FREE[is_white][cs])
+            continue;
+
+        // 3) check safety (only those not yet computed)
+        Bitboard check = CASTLE_SAVE[is_white][cs] & ~player->save_king_squares;
+
+        bool safe = true;
+        while (check) {
+            square sq = pop_lsb(check);
+            if (!is_save_square(board, player, enemy, sq)) {
+                safe = false;
+                break;
+            }
+        }
+
+        if (!safe)
+            continue;
+
+        // 4) add move
+        
+        *moves++ = Move(king_pos, CASTLE_TO[is_white][cs], CASTLING);
+    }
+
+    return moves;
+}
+
+
 Move* find_king_save_squares(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position){
-    Bitboard possible_king_moves = KING_MOVES_MASK[king_position] & ~player->side_all; 
+    Bitboard possible_king_moves = KING_MOVES_MASK[king_position] & ~player->side_all;
+    player->save_king_squares = 0LL;
     while(possible_king_moves){
         square to = pop_lsb(possible_king_moves);
         if(is_save_square(chess_board, player, enemy, to)){ // there can be a piece as long as the square is not under attack
-            *moves++ = Move(king_position, pop_lsb(possible_king_moves));
+            // this whole function could be split in only parallel moves and the rest so this is not done for every free square:
+            player->save_king_squares |= (1ULL << to);
+            *moves++ = Move(king_position, to);
         }
     }return moves;
 }
 
-void find_all_king_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy){
-    // check first if King is in check! 
-    int king_pos = __builtin_ctzll(player->king);
-
-    Bitboard attack_mask = get_diagonal_attackers(enemy, king_pos);
-    // pinned pieces 
-    Bitboard pinned_pieces = get_diagonal_pins(enemy, player, king_pos, attack_mask);
-    
-    chess_board->pinned_pieces = chess_board->pinned_pieces | pinned_pieces;
-
-    // find all straight attacks to king
-    attack_mask = get_straight_attackers(enemy, king_pos);
-
-    // pinned pieces 
-    pinned_pieces = get_straight_pins(enemy, player, king_pos, attack_mask);
-    
-    chess_board->pinned_pieces = chess_board->pinned_pieces | pinned_pieces;
-    
-    Bitboard king_moves = KING_MOVES_MASK[king_pos];
-    while(king_moves){
-        int king_index_to = __builtin_ctzll(king_moves); 
-        king_moves &= king_moves - 1;                      // delete LSB
-        Bitboard king_to = 1ULL << king_index_to;
-        Bitboard from = 1ULL << king_pos;
-
-        if (is_save_square(chess_board, player, enemy, king_pos)){
-            move_stack->add_move(from, king_to, KING, NORMAL_MOVE);
-        }
-    }
-}
 
 void setup_fen_position(chess_board& board, const std::string& fen)
 {

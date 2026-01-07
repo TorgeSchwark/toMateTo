@@ -9,9 +9,24 @@ MagicTableEntry PINNED_PIECES_BISHOP_MAGIC[64];
 MagicTableEntry ATTACK_PATTERN_ROOK_MAGIC[64];
 MagicTableEntry ATTACK_PATTERN_BISHOP_MAGIC[64];
 
-// Marks squares in between + the to square. No not a line the to field
-Bitboard SQUARES_IN_BETWEEN[64][64];
 Bitboard SQUARES_ON_THE_LINE[64][64];
+Bitboard SQUARES_IN_BETWEEN[64][64];
+
+// Marks squares in between + the to square. No not a line the to field
+Bitboard CASTLE_FREE[2][2] = {
+    { (1ULL<<61) | (1ULL<<62),          (1ULL<<57) | (1ULL<<58) | (1ULL<<59) }, // BLACK
+    { (1ULL<<5)  | (1ULL<<6),           (1ULL<<1)  | (1ULL<<2)  | (1ULL<<3)  }  // WHITE
+};
+
+Bitboard CASTLE_SAVE[2][2] = {
+    { (1ULL<<61) | (1ULL<<62),          (1ULL<<58) | (1ULL<<59) },             // BLACK
+    { (1ULL<<5)  | (1ULL<<6),           (1ULL<<2)  | (1ULL<<3)  }              // WHITE
+};
+
+square CASTLE_TO[2][2] = {
+    { 62,                       58 },                          // BLACK
+    { 6,                        2  }                           // WHITE
+};
 
 int directions[8][2] = {{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1},{0,1}};
 
@@ -273,16 +288,21 @@ U64 bishop_attacks_patterns_on_the_fly(int sqr, U64 occ) {
     return attacks;
 }
 
-void init_king_mask(){
-    for(int x = 0; x < 8; x ++){
-        for(int y = 0; y < 8; y ++){
-            Bitboard mask = 0LL;
-            for(int direction_ind = 0; direction_ind < 8; direction_ind++ ){
-                if (is_on_board(x,y,directions[direction_ind][0], directions[direction_ind][1])){
-                    mask |= 1LL << ((x+directions[direction_ind][0])*8+(y+directions[direction_ind][1]));
+void init_king_mask() {
+    for (int y = 0; y < 8; y++) {          // rank
+        for (int x = 0; x < 8; x++) {      // file
+            Bitboard mask = 0ULL;
+
+            for (int d = 0; d < 8; d++) {
+                if (is_on_board(x, y, directions[d][0], directions[d][1])) {
+                    int nx = x + directions[d][0];
+                    int ny = y + directions[d][1];
+
+                    mask |= (1ULL << (ny * 8 + nx));
                 }
             }
-            KING_MOVES_MASK[x*8+y] = mask;
+
+            KING_MOVES_MASK[y * 8 + x] = mask;
         }
     }
 }
@@ -400,7 +420,6 @@ void init_squares_in_between_table()
         }
     }
 }
-
 
 void init_square_on_the_line_table()
 {
