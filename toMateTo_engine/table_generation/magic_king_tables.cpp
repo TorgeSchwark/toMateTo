@@ -9,7 +9,9 @@ MagicTableEntry PINNED_PIECES_BISHOP_MAGIC[64];
 MagicTableEntry ATTACK_PATTERN_ROOK_MAGIC[64];
 MagicTableEntry ATTACK_PATTERN_BISHOP_MAGIC[64];
 
+// Marks squares in between + the to square. No not a line the to field
 Bitboard SQUARES_IN_BETWEEN[64][64];
+Bitboard SQUARES_ON_THE_LINE[64][64];
 
 int directions[8][2] = {{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1},{0,1}};
 
@@ -356,29 +358,29 @@ void init_squares_in_between_table()
     {
         for (int to = 0; to < 64; ++to)
         {
-            Bitboard bb = 0;
-
             if (from == to) {
                 SQUARES_IN_BETWEEN[from][to] = 0;
                 continue;
             }
+
+            Bitboard bb = 0;
 
             int fr = rank_of(from);
             int ff = file_of(from);
             int tr = rank_of(to);
             int tf = file_of(to);
 
-            int dr = (tr > fr) - (tr < fr);   // -1, 0, or +1
-            int df = (tf > ff) - (tf < ff);   // -1, 0, or +1
+            int dr = (tr > fr) - (tr < fr);   // -1, 0, +1
+            int df = (tf > ff) - (tf < ff);   // -1, 0, +1
 
             bool aligned =
-                (fr == tr) ||                  
-                (ff == tf) ||                  
+                (fr == tr) ||                 
+                (ff == tf) ||                    
                 (fr - tr == ff - tf) ||          
                 (fr - tr == tf - ff);            
 
             if (!aligned) {
-                SQUARES_IN_BETWEEN[from][to] = 0;
+                SQUARES_IN_BETWEEN[from][to] = (1ULL << to);
                 continue;
             }
 
@@ -388,12 +390,10 @@ void init_squares_in_between_table()
             {
                 sq += dr * 8 + df;
 
-                if (sq == to) {
-                    bb |= (1ULL << sq);  
-                    break;
-                }
-
                 bb |= (1ULL << sq);
+
+                if (sq == to)
+                    break;
             }
 
             SQUARES_IN_BETWEEN[from][to] = bb;
@@ -402,4 +402,66 @@ void init_squares_in_between_table()
 }
 
 
+void init_square_on_the_line_table()
+{
+    for (int from = 0; from < 64; ++from)
+    {
+        for (int to = 0; to < 64; ++to)
+        {
+            Bitboard bb = 0;
+
+            if (from == to) {
+                SQUARES_ON_THE_LINE[from][to] = (1ULL << from);
+                continue;
+            }
+
+            int fr = rank_of(from);
+            int ff = file_of(from);
+            int tr = rank_of(to);
+            int tf = file_of(to);
+
+            // Prüfen, ob sie auf derselben Linie liegen
+            bool aligned =
+                (fr == tr) ||                    // gleiche Reihe
+                (ff == tf) ||                    // gleiche Spalte
+                (fr - tr == ff - tf) ||          // Diagonale
+                (fr - tr == tf - ff);            // Anti-Diagonale
+
+            if (!aligned) {
+                SQUARES_ON_THE_LINE[from][to] = 0;
+                continue;
+            }
+
+            int dr = (tr > fr) - (tr < fr);   // -1, 0, +1
+            int df = (tf > ff) - (tf < ff);   // -1, 0, +1
+
+            // 1️⃣ In Richtung (dr, df) bis zum Rand laufen
+            int sq = from;
+            while (sq >= 0 && sq < 64)
+            {
+                bb |= (1ULL << sq);
+
+                int r = rank_of(sq) + dr;
+                int f = file_of(sq) + df;
+                if (r < 0 || r > 7 || f < 0 || f > 7) break;
+
+                sq = r * 8 + f;
+            }
+
+            // 2️⃣ In die Gegenrichtung laufen
+            sq = from;
+            while (sq >= 0 && sq < 64)
+            {
+                int r = rank_of(sq) - dr;
+                int f = file_of(sq) - df;
+                if (r < 0 || r > 7 || f < 0 || f > 7) break;
+
+                sq = r * 8 + f;
+                bb |= (1ULL << sq);
+            }
+
+            SQUARES_ON_THE_LINE[from][to] = bb;
+        }
+    }
+}
 

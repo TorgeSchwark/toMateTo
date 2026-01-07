@@ -13,6 +13,8 @@ extern MagicTableEntry ATTACK_PATTERN_ROOK_MAGIC[64];
 extern MagicTableEntry ATTACK_PATTERN_BISHOP_MAGIC[64];
 
 extern Bitboard SQUARES_IN_BETWEEN[64][64];
+extern Bitboard SQUARES_ON_THE_LINE[64][64];
+
 
 void init_king_mask();
 
@@ -29,6 +31,7 @@ void init_attack_tables_rock_and_bishop();
 void init_pinned_tables_rook_and_bishop();
 
 void init_squares_in_between_table();
+void init_square_on_the_line_table();
 
 static inline int file_of(int sq) { return sq & 7; }
 static inline int rank_of(int sq) { return sq >> 3; }

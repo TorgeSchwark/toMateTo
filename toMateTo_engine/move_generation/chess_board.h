@@ -158,7 +158,7 @@ Move* add_normal_moves(square from, Bitboard destinations, Move* moves);
 
 Move* find_all_moves(Move* moves, chess_board* chess_board);
 
-Move* find_knight_moves(Move* moves, one_side* player, one_side* enemy);
+Move* find_knight_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy);
 
 Move* find_bishop_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishops);
 

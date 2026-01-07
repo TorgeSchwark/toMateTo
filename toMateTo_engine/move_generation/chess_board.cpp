@@ -17,26 +17,19 @@ Move* find_all_moves(Move* moves, chess_board* chess_board){
 
     if(chess_board->whites_turn){
         square white_king_square = __builtin_ctzll(chess_board->white.king);
-        // TODO::squeze out more information at same time! same relevent squares is used to find pins and Attacks.
-        // if there is 2 we only need that info, but thats Rare case! so just try figure out ->
-        // if there is only one attack we still need to know which pieces are pinned! and need the attackers
-        // if there is none still need pins:
-        // just try to find pins, count attacks meanwhile, double attack is so sheldom keep searching for attacks and Pins
-        // store the Pins regardless of attack amount.
-        // Attack amount 0: for move gen just care about pinned pieces!
-        // one Check: find king save square. For all other pieces, check if there move can capture or block, pinned pieces cant block or capture!
-        // two checks find king save square dont care about other pieces.
         attack_amounts_to_square(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
         if(chess_board->attack_count){
             moves = find_king_save_squares(moves, chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
         }
-        moves = find_knight_moves(moves, &(chess_board->white), &(chess_board->black));
-        moves = find_bishop_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
-        moves = find_rook_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.rooks));
+        if(chess_board->attack_count < 2){
+            chess_board->attack_defend_squares = SQUARES_IN_BETWEEN[white_king_square][chess_board->attacking_pieces];
+            moves = find_knight_moves(moves, chess_board, &(chess_board->white), &(chess_board->black));
+            moves = find_bishop_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
+            moves = find_rook_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.rooks));
 
-        moves = find_bishop_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
-        moves = find_rook_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
-
+            moves = find_bishop_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
+            moves = find_rook_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
+        }
     }else{
 
     }
@@ -54,8 +47,23 @@ Move* find_bishop_moves(Move* moves, chess_board* chess_board, one_side* player,
     while(bishops){
 
         square bishop_square = pop_lsb(bishops);
+        bool is_pinned = bishop_square&chess_board->pinned_pieces;
+        if(is_pinned && (chess_board->attack_count)){
+            return moves;
+        }    
 
         Bitboard bishop_destinations = bishop_magic(bishop_square, chess_board, player);
+
+        // a pinned piece can only walk if the king is not in check
+        if(chess_board->attack_count){
+            // if we get here and king is attacked it means piece in not pinned!
+            // Filter for defending moves
+            bishop_destinations &= chess_board->attack_defend_squares;
+        }else if(is_pinned){
+            // if we get here and piece is pinned it means king is not attacked!
+            // only walk on pinned line!
+            bishop_destinations |= SQUARES_ON_THE_LINE[bishop_square][player->king];
+        }// else king is not attacked and piece not pinned!
 
         moves = add_normal_moves(bishop_square, bishop_destinations, moves);
     }
@@ -75,31 +83,41 @@ Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, o
         Bitboard rook_destinations = rook_magic(rook_square, chess_board, player);
 
         // a pinned piece can only walk if the king is not in check
-        // cases: Pinned and king attacked, Pinned and King not attacked, not pinned king under attack,
-
-        
         if(chess_board->attack_count){
             // if we get here and king is attacked it means piece in not pinned!
-            
+            // Filter for defending moves
+            rook_destinations &= chess_board->attack_defend_squares;
         }else if(is_pinned){
             // if we get here and piece is pinned it means king is not attacked!
-
+            // only walk on pinned line!
+            rook_destinations |= SQUARES_ON_THE_LINE[rook_square][player->king];
         }// else king is not attacked and piece not pinned!
-        
 
         moves = add_normal_moves(rook_square, rook_destinations, moves);
     }
     return moves;
 }
 
-Move* find_knight_moves(Move* moves, one_side* player, one_side* enemy) {
+Move* find_knight_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy) {
     Bitboard knights = player->knights;
     Bitboard negative_player = ~player->side_all;
     while (knights) {
+
         square knight_square= pop_lsb(knights);
+        bool is_pinned = knight_square&chess_board->pinned_pieces;
+
+        // pinned knight cant move!
+        if(is_pinned){
+            return moves;
+        }  
 
         Bitboard knight_destinations = KNIGHT_LOOKUP_TABLE[knight_square] & negative_player;
 
+        if(chess_board->attack_count){
+            // if we get here and king is attacked it means piece in not pinned!
+            // Filter for defending moves
+            knight_destinations &= chess_board->attack_defend_squares;
+        }
         moves = add_normal_moves(knight_square, knight_destinations, moves);
     }
     return moves;

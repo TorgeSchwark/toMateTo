@@ -18,6 +18,7 @@ int main() {
     init_magic_rook_or_bishop("rook");
     init_magic_rook_or_bishop("bishop");
     init_squares_in_between_table();
+    init_square_on_the_line_table();
     init_king_mask();
     init_pinned_tables_rook_and_bishop();
     init_attack_tables_rock_and_bishop();
