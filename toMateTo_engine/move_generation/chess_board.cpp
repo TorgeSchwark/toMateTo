@@ -14,7 +14,12 @@ void set_index_one(Bitboard* bitboard, Bitboard index) {
 
 Move* find_all_moves(Move* moves, chess_board* chess_board){
     chess_board->pinned_pieces = 0LL;
+
     if(chess_board->whites_turn){
+        square white_king_square = __builtin_ctzll(chess_board->white.king);
+        if(attack_amounts_to_square(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square)){
+            find_king_save_squares(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
+        }
         moves = find_knight_moves(moves, &(chess_board->white), &(chess_board->black));
         moves = find_bishop_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
         moves = find_rook_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.rooks));
@@ -46,8 +51,6 @@ Move* find_bishop_moves(Move* moves, chess_board* chess_board, one_side* player,
     }
     return moves;
 }
-
-
 
 Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rook){
     Bitboard rooks = *rook;
@@ -101,10 +104,29 @@ bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy,
     return true;
 }
 
+int8_t attack_amounts_to_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
+    // this is the same as is_save_square but it gives the extra information about how many attacks face ibe square
+
+    int8_t count_attacks;
+    // returns a Bitboard where every square between nearest attacker and the square is marked! 
+    Bitboard relevant_squares = get_straight_attackers(enemy, pos_ind);
+    // with this we get only the attacking piece itself and every piece in the line of attack
+    count_attacks += __builtin_popcountll(is_straight_attacked(chess_board, pos_ind, relevant_squares));
+    
+    // return directions where an attacker exists until attacker including attacker!
+    relevant_squares = get_diagonal_attackers(enemy, pos_ind);
+    // this will mark attackers and every blocking piece both enemy blocking and team
+    count_attacks += __builtin_popcountll(is_diagonal_attacked(chess_board, pos_ind, relevant_squares));
+
+    count_attacks += __builtin_popcountll(KNIGHT_LOOKUP_TABLE[pos_ind] & enemy->knights);
+    
+    count_attacks += __builtin_popcountll(PAWN_ATTACK_LOOKUP_TABLE[chess_board->whites_turn][pos_ind]&enemy->pawns);
+
+    return count_attacks;
+}
+
 void find_all_king_moves(move_stack* move_stack, chess_board* chess_board, one_side* player, one_side* enemy){
     // check first if King is in check! 
-
-
     int king_pos = __builtin_ctzll(player->king);
 
     Bitboard attack_mask = get_diagonal_attackers(enemy, king_pos);
@@ -248,5 +270,93 @@ void setup_fen_position(chess_board& board, const std::string& fen)
     board.complete_board = board.white.side_all | board.black.side_all;
 }
 
+std::string board_to_fen(const chess_board& board)
+{
+    std::string fen;
 
+    // --- Piece placement ---
+    for (int rank = 7; rank >= 0; --rank)
+    {
+        int empty = 0;
 
+        for (int file = 0; file < 8; ++file)
+        {
+            int square = rank * 8 + file;
+            Bitboard bit = 1ULL << square;
+            char piece = 0;
+
+            // White pieces
+            if (board.white.pawns   & bit) piece = 'P';
+            else if (board.white.knights & bit) piece = 'N';
+            else if (board.white.bishop  & bit) piece = 'B';
+            else if (board.white.rooks   & bit) piece = 'R';
+            else if (board.white.queen   & bit) piece = 'Q';
+            else if (board.white.king    & bit) piece = 'K';
+
+            // Black pieces
+            else if (board.black.pawns   & bit) piece = 'p';
+            else if (board.black.knights & bit) piece = 'n';
+            else if (board.black.bishop  & bit) piece = 'b';
+            else if (board.black.rooks   & bit) piece = 'r';
+            else if (board.black.queen   & bit) piece = 'q';
+            else if (board.black.king    & bit) piece = 'k';
+
+            if (piece)
+            {
+                if (empty > 0)
+                {
+                    fen += std::to_string(empty);
+                    empty = 0;
+                }
+                fen += piece;
+            }
+            else
+            {
+                ++empty;
+            }
+        }
+
+        if (empty > 0)
+            fen += std::to_string(empty);
+
+        if (rank > 0)
+            fen += '/';
+    }
+
+    // --- Active color ---
+    fen += ' ';
+    fen += (board.whites_turn ? 'w' : 'b');
+
+    // --- Castling rights ---
+    fen += ' ';
+    std::string castling;
+
+    if (board.castling_rights & WHITE_KING_SIDE)  castling += 'K';
+    if (board.castling_rights & WHITE_QUEEN_SIDE) castling += 'Q';
+    if (board.castling_rights & BLACK_KING_SIDE)  castling += 'k';
+    if (board.castling_rights & BLACK_QUEEN_SIDE) castling += 'q';
+
+    fen += (castling.empty() ? "-" : castling);
+
+    // --- En-passant square ---
+    fen += ' ';
+    if (board.ep_square >= 0)
+    {
+        int file = board.ep_square % 8;
+        int rank = board.ep_square / 8;
+        fen += static_cast<char>('a' + file);
+        fen += static_cast<char>('1' + rank);
+    }
+    else
+    {
+        fen += "-";
+    }
+
+    // --- Clocks ---
+    fen += ' ';
+    fen += std::to_string(board.halve_move_counter);
+    fen += ' ';
+    fen += std::to_string(board.full_move_counter);
+
+    return fen;
+}

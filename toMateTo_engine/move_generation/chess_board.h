@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <bit>
 
 #include "toMateTo_engine/move_generation/move_stack.h"
 #include "toMateTo_engine/table_generation/knight_tables.h"
@@ -159,8 +160,10 @@ Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, o
 
 bool is_save_square(Move* moves, one_side* player, one_side* enemy, Bitboard pos);
 
-inline int8_t pop_lsb(Bitboard &board){
-    int8_t bishop_index = __builtin_ctzll(board);        // Get index of least significant bit
+int8_t attack_amounts_to_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind);
+
+inline square pop_lsb(Bitboard &board){
+    square bishop_index = __builtin_ctzll(board);        // Get index of least significant bit
     board &= board - 1;
     return bishop_index;
 };
@@ -220,5 +223,7 @@ inline Bitboard rook_magic(int square,const chess_board* board, const one_side* 
 }
 
 void setup_fen_position(chess_board& board, const std::string& fen);
+
+std::string board_to_fen(const chess_board& board);
 
 #endif 
