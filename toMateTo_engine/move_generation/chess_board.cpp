@@ -131,6 +131,10 @@ Move* find_knight_moves(Move* moves, chess_board* chess_board, one_side* player,
 Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy){
     Bitboard empty = ~chess_board->complete_board;
     Bitboard pawns = player->pawns;
+    Bitboard pinned_pawns = pawns &= chess_board->pinned_pieces;
+    while(pinned_pawns){
+        square pinned_pawn= pop_lsb(knights);
+    }
     // single push
     Bitboard push1 = (pawns << NORTH) & empty;
 
@@ -149,6 +153,7 @@ Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, o
 
     // promotions
     Bitboard promo_push = push1 & PROMOTION_ROW[WHITE];
+    push1 &= ~PROMOTION_ROW[WHITE];
     Bitboard promo_capL  = capL & PROMOTION_ROW[WHITE];
     Bitboard promo_capR  = capR & PROMOTION_ROW[WHITE];
 
