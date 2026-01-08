@@ -18,23 +18,13 @@ enum PieceType: std::int8_t{
     NO_PIECE_TYPE, PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING
 };
 
-enum Direction {
-    NORTH =  8,
-    SOUTH = -8,
+const int8_t FORWARD[2];
 
-    EAST  =  1,
-    WEST  = -1,
+const int8_t FORWARD_LEFT[2];
 
-    NORTH_EAST =  9,
-    NORTH_WEST =  7,
+const int8_t FORWARD_RIGHT[2];
 
-    SOUTH_EAST = -7,
-    SOUTH_WEST = -9,
-
-    DOUBLE_NORTH = 16,
-    DOUBLE_SOUTH = -16,
-};
-
+const int8_t DOUBLE_FORWARD[2];
 
 enum MoveType {
     NORMAL,
@@ -42,6 +32,19 @@ enum MoveType {
     EN_PASSANT = 2 << 14,
     CASTLING   = 3 << 14
 };
+
+enum PawnMoveType {
+    PUSH1,
+    PUSH2,
+    CAPL,
+    CAPR,
+    PROMO_PUSH,
+    PROMO_CAPL,
+    PROMO_CAPR,
+    EPL,
+    EPR
+};
+
 
 enum {
     FILE_A, FILE_B, FILE_C, FILE_D,
