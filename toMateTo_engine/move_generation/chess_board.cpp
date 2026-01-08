@@ -128,6 +128,82 @@ Move* find_knight_moves(Move* moves, chess_board* chess_board, one_side* player,
     return moves;
 }
 
+Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy){
+    Bitboard empty = ~chess_board->complete_board;
+    Bitboard pawns = player->pawns;
+    // single push
+    Bitboard push1 = (pawns << NORTH) & empty;
+
+    // double push
+    Bitboard push2 =
+        ((pawns & PAWN_ROW[WHITE]) << NORTH) & empty;
+    push2 = (push2 << NORTH) & empty;
+
+    // captures
+    Bitboard pawnCapL = (pawns << NORTH_WEST) & ~BOARD_FILE[FILE_A];
+    Bitboard pawnCapR = (pawns << NORTH_EAST) & ~BOARD_FILE[FILE_H];
+
+    // normal captures
+    Bitboard capL = pawnCapL & enemy->side_all;
+    Bitboard capR = pawnCapR & enemy->side_all;
+
+    // promotions
+    Bitboard promo_push = push1 & PROMOTION_ROW[WHITE];
+    Bitboard promo_capL  = capL & PROMOTION_ROW[WHITE];
+    Bitboard promo_capR  = capR & PROMOTION_ROW[WHITE];
+
+    // en passant
+    Bitboard epL = pawnCapL & (1ULL << chess_board->ep_square);
+    Bitboard epR = pawnCapR & (1ULL << chess_board->ep_square);
+
+    if(chess_board->attack_count){
+        push1 &= chess_board->attack_defend_squares;
+        push2 &= chess_board->attack_defend_squares;
+        capL &= chess_board->attack_defend_squares;
+        capR &= chess_board->attack_defend_squares;
+        promo_push &= chess_board->attack_defend_squares;
+        promo_capL &= chess_board->attack_defend_squares;
+        promo_capR &= chess_board->attack_defend_squares;
+        epL &= chess_board->attack_defend_squares;
+        epR &= chess_board->attack_defend_squares;
+    }
+
+    moves = add_pawn_moves(push1, moves, SOUTH);
+    moves = add_pawn_moves(push2, moves, DOUBLE_SOUTH);
+    moves = add_pawn_moves(capL, moves, SOUTH_EAST);
+    moves = add_pawn_moves(capR, moves, SOUTH_WEST);
+    moves = add_ep(epL, moves, SOUTH_EAST);
+    moves = add_ep(epR, moves, SOUTH_WEST);
+    moves = add_prom(promo_push, moves, SOUTH);
+    moves = add_prom(promo_capL, moves, SOUTH_EAST);
+    moves = add_prom(promo_capR, moves, SOUTH_WEST);
+    
+}
+Move* add_prom(Bitboard destinations, Move* moves, int8_t offset){
+    while(destinations){
+        square to = pop_lsb(destinations);
+        square from = to+offset;
+        for(int8_t type = BISHOP; type <= QUEEN; type++){
+            *moves++ = Move(from, to, PROMOTION, type);
+        }
+    }
+}
+
+Move* add_ep(Bitboard destinations, Move* moves, int8_t offset){
+    if(destinations){
+        square to = pop_lsb(destinations);
+        *moves++ = Move(to+offset, to, EN_PASSANT);
+    }
+}
+
+Move* add_pawn_moves(Bitboard destinations, Move* moves, int8_t offset){
+    while(destinations){
+        square to = pop_lsb(destinations);
+        *moves++ = Move(to+offset, to);
+    }return moves;
+}
+
+
 bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
     // Checks if a pos is attacked by a piece
 
@@ -191,14 +267,7 @@ extern const CastlingRights CASTLING_FLAG[2][2] = {
 };
 
 // cs: 0 = king-side, 1 = queen-side
-Move* add_castling(
-    Move* moves,
-    chess_board* board,
-    one_side* player,
-    one_side* enemy,
-    square king_pos,
-    bool is_white
-) {
+Move* add_castling(Move* moves,chess_board* board, one_side* player, one_side* enemy, square king_pos, bool is_white) {
     if (board->attack_count)
         return moves;
 
@@ -235,7 +304,6 @@ Move* add_castling(
     return moves;
 }
 
-
 Move* find_king_save_squares(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position){
     Bitboard possible_king_moves = KING_MOVES_MASK[king_position] & ~player->side_all;
     player->save_king_squares = 0LL;
@@ -248,7 +316,6 @@ Move* find_king_save_squares(Move* moves, chess_board* chess_board, one_side* pl
         }
     }return moves;
 }
-
 
 void setup_fen_position(chess_board& board, const std::string& fen)
 {
@@ -454,3 +521,4 @@ std::string board_to_fen(const chess_board& board)
 
     return fen;
 }
+

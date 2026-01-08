@@ -18,6 +18,12 @@ extern Bitboard PAWN_ATTACK_LOOKUP_TABLE[2][64];
 extern MagicTableEntry BISHOP_MAGIC[64];
 extern MagicTableEntry ROOK_MAGIC[64];
 
+extern Bitboard PAWN_ROW[2];
+extern Bitboard PROMOTION_ROW[2];
+
+extern Bitboard BOARD_RANK[8];
+extern Bitboard BOARD_FILE[8];
+
 int sq(int file, int rank);
 
 U64 rook_relevant_mask(int s);

@@ -56,5 +56,13 @@
         "cinttypes": "cpp",
         "map": "cpp",
         "set": "cpp"
-    }
+    },
+    "cSpell.words": [
+        "Bitboard",
+        "bitboards",
+        "clzll",
+        "ctzll",
+        "enpassant",
+        "popcountll"
+    ]
 }

@@ -67,7 +67,7 @@ struct chess_board
     one_side black;
 
     bool whites_turn;
-    int8_t ep_square;
+    square ep_square;
 
     int16_t halve_move_counter;
     int16_t full_move_counter;

@@ -48,6 +48,9 @@ struct Move{
     constexpr Move(square from, square to, int8_t special_move_type)
         : move((from << 6) | to | (special_move_type << 14)) {}
 
+    constexpr Move(square from, square to, int8_t special_move_type, int8_t type)
+        : move((from << 6) | to | (special_move_type << 14) | (type << 12)) {}
+
     constexpr square from_sq(const Move& m) {
         return square((m.move >> 6) & 0x3F);
     }
