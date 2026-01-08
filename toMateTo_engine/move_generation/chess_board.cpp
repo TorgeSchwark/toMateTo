@@ -1,5 +1,11 @@
 #include "chess_board.h"
 
+int RESULT_COUNT = 9;
+
+#define BB_SHIFT(bb, s, color) \
+    ((color) ?  ((bb) << (s)) : ((bb) >> (s)) )
+
+
 int msb_index(Bitboard bb) {
     return 63 - __builtin_clzll(bb);
 }
@@ -28,6 +34,8 @@ Move* find_all_moves(Move* moves, chess_board* chess_board){
             }
 
             moves = find_knight_moves(moves, chess_board, &(chess_board->white), &(chess_board->black));
+
+            moves = find_pawn_moves(moves, chess_board, &(chess_board->white), &(chess_board->black));
 
             moves = find_bishop_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
             moves = find_rook_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.rooks));
@@ -130,105 +138,115 @@ Move* find_knight_moves(Move* moves, chess_board* chess_board, one_side* player,
 
 void find_different_pawn_moves(Bitboard pawns, bool is_white, Bitboard empty, Bitboard enemy, chess_board* chess_board, Bitboard* results){
     // single push
-    Bitboard push1 = (pawns << FORWARD[is_white]) & empty;
+
+    results[PUSH1] = BB_SHIFT(pawns, FORWARD, is_white) & empty;
 
     // double push
-    Bitboard push2 =
-        ((pawns & PAWN_ROW[is_white]) << FORWARD[is_white]) & empty;
-    push2 = (push2 << FORWARD[is_white]) & empty;
+    results[PUSH2] =
+        BB_SHIFT((pawns & PAWN_ROW[is_white]), FORWARD, is_white) & empty;
+    results[PUSH2] = BB_SHIFT(results[PUSH2], FORWARD, is_white) & empty;
 
     // captures
-    Bitboard pawnCapL = (pawns << FORWARD_LEFT[is_white]) & ~BOARD_FILE[FILE_A];
-    Bitboard pawnCapR = (pawns << FORWARD_RIGHT[is_white]) & ~BOARD_FILE[FILE_H];
+    Bitboard pawnCapL = BB_SHIFT(pawns, FORWARD_LEFT, is_white) & (~BOARD_FILE[FILE_A]);
+    Bitboard pawnCapR = BB_SHIFT(pawns, FORWARD_RIGHT, is_white) & ~BOARD_FILE[FILE_H];
 
     // normal captures
-    Bitboard capL = pawnCapL & enemy;
-    Bitboard capR = pawnCapR & enemy;
+    results[CAPL] = pawnCapL & enemy;
+    results[CAPR]= pawnCapR & enemy;
 
     // promotions
-    Bitboard promo_push = push1 & PROMOTION_ROW[is_white];
-    push1 &= ~PROMOTION_ROW[is_white];
-    Bitboard promo_capL  = capL & PROMOTION_ROW[is_white];
-    Bitboard promo_capR  = capR & PROMOTION_ROW[is_white];
+    results[PROMO_PUSH] = results[PUSH1] & PROMOTION_ROW[is_white];
+    results[PUSH1] &= ~PROMOTION_ROW[is_white];
+    results[PROMO_CAPL] = results[CAPL] & PROMOTION_ROW[is_white];
+    results[PROMO_CAPR]  = results[CAPR] & PROMOTION_ROW[is_white];
 
     // en passant
-    Bitboard epL = pawnCapL & (1ULL << chess_board->ep_square);
-    Bitboard epR = pawnCapR & (1ULL << chess_board->ep_square);
+    if(!((1LL << (chess_board->ep_square-color_dir(FORWARD, is_white))) & chess_board->pinned_pieces)){
+        results[EPL] = pawnCapL & (1ULL << chess_board->ep_square);
+        results[EPR] = pawnCapR & (1ULL << chess_board->ep_square);
+    }else{
+        results[EPL] = 0LL;
+        results[EPR] = 0LL;
+    }
+}
+
+Move* add_all_pawn_moves(Bitboard* results, Move* moves, bool color){
+    moves = add_pawn_moves(results[PUSH1], moves, FORWARD, color);
+    moves = add_pawn_moves(results[PUSH2], moves, DOUBLE_FORWARD, color);
+    moves = add_pawn_moves(results[CAPL], moves, FORWARD_LEFT, color);
+    moves = add_pawn_moves(results[CAPR], moves, FORWARD_RIGHT, color);
+    moves = add_ep(results[EPL], moves, FORWARD_LEFT, color);
+    moves = add_ep(results[EPR], moves, FORWARD_RIGHT, color);
+    moves = add_prom(results[PROMO_PUSH], moves, FORWARD, color);
+    moves = add_prom(results[PROMO_CAPL], moves, FORWARD_LEFT, color);
+    moves = add_prom(results[PROMO_CAPR], moves, FORWARD_RIGHT, color);
+    return moves;
 }
 
 Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy){
     Bitboard empty = ~chess_board->complete_board;
     Bitboard pawns = player->pawns;
 
-    Bitboard pinned_pawns = pawns &= chess_board->pinned_pieces;
+    Bitboard pinned_pawns = pawns & chess_board->pinned_pieces;
     pawns &= ~pinned_pawns;
     
-    Bitboard results[9];
+    Bitboard results[RESULT_COUNT] = {0LL};
+    Bitboard results_pinned[RESULT_COUNT];
     find_different_pawn_moves(pawns, chess_board->whites_turn, empty, enemy->side_all, chess_board, results);
     if(!chess_board->attack_count){
         // TODO:: sadly cant be implemented like this since allowed squares is the whole line and that not efficiently fixable
         if(pinned_pawns){
             // Pinned pawns can only walk if king is not under attack
+            while(pinned_pawns){
+                printf("here");
 
-            Bitboard allowed_squares = 0LL;
-            Bitboard pinned_copy = pinned_pawns;
-            while(pinned_copy){
-                square pinned_pawn = pop_lsb(pinned_copy);
-                allowed_squares |= SQUARES_ON_THE_LINE[pinned_pawn][player->king];
-            }
-            Bitboard results_pinned[9];
-            find_different_pawn_moves(pinned_pawns, chess_board->whites_turn, empty, enemy->side_all, chess_board, results);
-            for(int i = 0; i < 9; i++){
-                // no two pinned pawn can go on a square that is allowed for a different piece!
-                results_pinned[i] &= allowed_squares;
-            }
-                
+                square pinned_pawn_square = pop_lsb(pinned_pawns);
+                Bitboard pinned_pawn = 1LL << pinned_pawn_square;
+                Bitboard allowed_squares = SQUARES_ON_THE_LINE[pinned_pawn_square][__builtin_ctzll(player->king)];
+
+                find_different_pawn_moves(pinned_pawn ,chess_board->whites_turn, empty, enemy->side_all, chess_board, results_pinned);
+                for (int i = 0; i < RESULT_COUNT; ++i){
+                    if(results_pinned[i]){
+                        print_bitboard(results_pinned[i]);
+                    }
+                }
+                for (int i = 0; i < RESULT_COUNT; ++i)
+                    results[i] |= (allowed_squares & results_pinned[i]);
+            }            
         }
     }else{
-        results[PUSH1] &= chess_board->attack_defend_squares;
-        results[PUSH2] &= chess_board->attack_defend_squares;
-        results[CAPL] &= chess_board->attack_defend_squares;
-        results[CAPR] &= chess_board->attack_defend_squares;
-        results[PROMO_PUSH] &= chess_board->attack_defend_squares;
-        results[PROMO_CAPL] &= chess_board->attack_defend_squares;
-        results[PROMO_CAPR] &= chess_board->attack_defend_squares;
-        results[EPL] &= chess_board->attack_defend_squares;
-        results[EPR] &= chess_board->attack_defend_squares;
+        for (int i = 0; i < RESULT_COUNT; ++i){
+            print_bitboard(results[i]);
+            results[i] &= chess_board->attack_defend_squares;
+        }
     }
     
+    moves =  add_all_pawn_moves(results, moves, chess_board->whites_turn);
 
-    moves = add_pawn_moves(results[PUSH1], moves, FORWARD[chess_board->whites_turn]);
-    moves = add_pawn_moves(results[PUSH2], moves, DOUBLE_FORWARD[chess_board->whites_turn]);
-    moves = add_pawn_moves(results[CAPL], moves, FORWARD_LEFT[chess_board->whites_turn]);
-    moves = add_pawn_moves(results[CAPR], moves, FORWARD_RIGHT[chess_board->whites_turn]);
-    moves = add_ep(results[EPL], moves, FORWARD_LEFT[chess_board->whites_turn]);
-    moves = add_ep(results[EPR], moves, FORWARD_RIGHT[chess_board->whites_turn]);
-    moves = add_prom(results[PROMO_PUSH], moves, FORWARD[chess_board->whites_turn]);
-    moves = add_prom(results[PROMO_CAPL], moves, FORWARD_LEFT[chess_board->whites_turn]);
-    moves = add_prom(results[PROMO_CAPR], moves, FORWARD_RIGHT[chess_board->whites_turn]);
-    
+    return moves;
+
 }
-Move* add_prom(Bitboard destinations, Move* moves, int8_t offset){
+Move* add_prom(Bitboard destinations, Move* moves, int8_t offset, bool color){
     while(destinations){
         square to = pop_lsb(destinations);
-        square from = to-offset;
+        square from = to - color_dir(offset, color);
         for(int8_t type = BISHOP; type <= QUEEN; type++){
             *moves++ = Move(from, to, PROMOTION, type);
         }
-    }
+    }return moves;
 }
 
-Move* add_ep(Bitboard destinations, Move* moves, int8_t offset){
+Move* add_ep(Bitboard destinations, Move* moves, int8_t offset, bool color){
     if(destinations){
         square to = pop_lsb(destinations);
-        *moves++ = Move(to-offset, to, EN_PASSANT);
-    }
+        *moves++ = Move(to-color_dir(offset, color), to, EN_PASSANT);
+    }return moves;
 }
 
-Move* add_pawn_moves(Bitboard destinations, Move* moves, int8_t offset){
+Move* add_pawn_moves(Bitboard destinations, Move* moves, int8_t offset, bool color){
     while(destinations){
         square to = pop_lsb(destinations);
-        *moves++ = Move(to-offset, to);
+        *moves++ = Move(to-color_dir(offset, color), to);
     }return moves;
 }
 

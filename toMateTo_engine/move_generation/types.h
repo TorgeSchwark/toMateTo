@@ -18,13 +18,10 @@ enum PieceType: std::int8_t{
     NO_PIECE_TYPE, PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING
 };
 
-const int8_t FORWARD[2];
-
-const int8_t FORWARD_LEFT[2];
-
-const int8_t FORWARD_RIGHT[2];
-
-const int8_t DOUBLE_FORWARD[2];
+constexpr int8_t FORWARD        = 8;
+constexpr int8_t FORWARD_LEFT   = 7;
+constexpr int8_t FORWARD_RIGHT  = 9;
+constexpr int8_t DOUBLE_FORWARD = 16;
 
 enum MoveType {
     NORMAL,

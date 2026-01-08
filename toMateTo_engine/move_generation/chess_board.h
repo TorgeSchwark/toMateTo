@@ -16,7 +16,11 @@
 void set_index_zero(Bitboard* bitboard, Bitboard index); 
 int msb_index(Bitboard bb);
 void set_index_one(Bitboard* bitboard, Bitboard index);
+extern int RESULT_COUNT;
 
+static inline int8_t color_dir(int8_t magnitude, bool white) {
+    return white ? magnitude : -magnitude;
+}
 
 struct one_side 
 {
@@ -154,6 +158,17 @@ struct chess_board
         complete_board =  white.side_all | black.side_all;
     }
 };
+
+Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy);
+
+Move* add_all_pawn_moves(Bitboard* results, Move* moves, bool color);
+
+Move* add_prom(Bitboard destinations, Move* moves, int8_t offset, bool color);
+
+Move* add_ep(Bitboard destinations, Move* moves, int8_t offset, bool color);
+
+Move* add_pawn_moves(Bitboard destinations, Move* moves, int8_t offset, bool color);
+
 Move* add_normal_moves(square from, Bitboard destinations, Move* moves);
 
 Move* find_all_moves(Move* moves, chess_board* chess_board);

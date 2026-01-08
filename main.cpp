@@ -23,7 +23,7 @@ int main() {
     init_pinned_tables_rook_and_bishop();
     init_attack_tables_rock_and_bishop();
 
-    setup_fen_position(chess_board, "r3k2r/pppppppp/8/8/5q2/8/P1PPP1PP/R3K2R w KQkq - 0 1");
+    setup_fen_position(chess_board, "rnbqk1nr/pppppppp/8/1b6/2P5/8/8/5K2 w KQkq - 0 1");
 
 
     // Example move test
