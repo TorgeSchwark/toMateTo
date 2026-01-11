@@ -248,14 +248,14 @@ inline Bitboard pins_magic(int square, Bitboard blocked, const MagicTableEntry t
     return magic_lookup(blocked, table[square]);
 }
 
-inline Bitboard is_diagonal_attacked(one_side* enemy,  int pos_ind, Bitboard relevant_squares){
-    Bitboard relevant_attackers_and_defenders = relevant_squares & (enemy->queen | enemy->bishop);
+inline Bitboard is_diagonal_attacked(chess_board* chess_board,  int pos_ind, Bitboard relevant_squares){
+    Bitboard relevant_attackers_and_defenders = relevant_squares & chess_board->complete_board;
     return pins_magic(pos_ind, relevant_attackers_and_defenders, PINNED_PIECES_BISHOP_MAGIC);
 }
 
-inline Bitboard is_straight_attacked(one_side* enemy, int pos_ind, Bitboard relevant_squares){
-    // für die attacks muss hier wirklich gefragt werden ob die figur eine gegnereischer Rook oder Queen ist!
-    Bitboard relevant_attackers_and_defenders = relevant_squares & (enemy->rooks | enemy->queen);
+inline Bitboard is_straight_attacked(chess_board* chess_board, int pos_ind, Bitboard relevant_squares){
+    // für die attacks muss hier wirklich gefragt werden ob die figur eine gegnereischer Rook oder Queen
+    Bitboard relevant_attackers_and_defenders = relevant_squares & chess_board->complete_board;
     return pins_magic(pos_ind, relevant_attackers_and_defenders, PINNED_PIECES_ROOK_MAGIC);
 }
 

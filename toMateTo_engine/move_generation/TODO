@@ -1,8 +1,6 @@
 write Speed test function.
 rename these: get_straight_attackers_pluss_side, ...
-
-
-BUG in is_straight attacked: 
+BUG PROB IN MAGIC TABLES introduced randomness in is_save_square! prob due to reodering since move tables seem to be flaweless!
 
 
 IDEE for pins
