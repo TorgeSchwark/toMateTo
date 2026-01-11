@@ -1,4 +1,9 @@
 write Speed test function.
+rename these: get_straight_attackers_pluss_side, ...
+
+
+BUG in is_straight attacked: 
+
 
 IDEE for pins
 1. ich verwende einen magic hash table: 

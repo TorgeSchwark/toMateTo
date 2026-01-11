@@ -22,30 +22,35 @@ int try_all_moves(chess_board* cb, int depth) {
     int num_moves = end - moves;
     if (depth == 1 || (!num_moves)){
         int count = (end - moves);
-        // printf("all moves in that fuck shit");
-        // for (int i = 0; i < count; ++i) {
-        //         std::cout << moves[i].move_to_string() << "\n";
-        //     }
+        printf("all moves in that fuck shit");
+        for (int i = 0; i < count; ++i) {
+                std::cout << moves[i].move_to_string() << "\n";
+            }
         return num_moves;
     }
 
     for (Move* m = moves; m != end; ++m) {
 
         // // 🔒 Nur h2 -> h4 zulassen, wenn depth == 3
-        // if (depth == 4) {
-        //     if (!(m->from_sq() == B2 && m->to_sq() == B3)) {
-        //         continue; // alle anderen Züge überspringen
-        //     }
-        // }else if(depth == 3){
-        //    if (!(m->from_sq() == E7 && m->to_sq() == E6)) {
-        //         continue; // alle anderen Züge überspringen
-        //     } 
-        // }
-        // else if(depth == 2){
-        //    if (!(m->from_sq() == C1 && m->to_sq() == A3)) {
-        //         continue; // alle anderen Züge überspringen
-        //     } 
-        // }
+        if (depth == 4) {
+            if (!(m->from_sq() == B1 && m->to_sq() == A3)) {
+                continue; // alle anderen Züge überspringen
+            }
+        }else if(depth == 3){
+           if (!(m->from_sq() == D7 && m->to_sq() == D6)) {
+                continue; // alle anderen Züge überspringen
+            } 
+        }
+        else if(depth == 2){
+           if (!(m->from_sq() == A3 && m->to_sq() == B5)) {
+                continue; // alle anderen Züge überspringen
+            } 
+        }
+        else if(depth == 20){
+           if (!(m->from_sq() == A3 && m->to_sq() == B5)) {
+                continue; // alle anderen Züge überspringen
+            } 
+        }
 
 
         StateInfo st;
@@ -53,10 +58,10 @@ int try_all_moves(chess_board* cb, int depth) {
 
         int check_perft = try_all_moves(cb, depth - 1);
 
-        if (depth == 4) {
-            printf("%s\n", m->move_to_string().c_str());
-            printf("number: %i\n\n", check_perft);
-        }
+        // if (depth == 2) {
+        //     printf("%s\n", m->move_to_string().c_str());
+        //     printf("number: %i\n\n", check_perft);
+        // }
 
         count += check_perft;
         undo_move(cb, *m, st);
@@ -495,22 +500,19 @@ bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy,
     // returns a Bitboard where every square between nearest attacker and the square is marked! 
     Bitboard relevant_squares = get_straight_attackers_pluss_side(enemy, pos_ind);
     // with this we get only the attacking piece itself and every piece in the line of attack
-    if (is_straight_attacked(chess_board, pos_ind, relevant_squares)){
+    if (is_straight_attacked(enemy, pos_ind, relevant_squares)){
         return false;
     }
-    // if (pos_ind = E7){
-    //     printf(" \n lookup_value \n");
-    //     print_bitboard(ATTACK_PATTERN_BISHOP_MAGIC[pos_ind].mask);
-    //     print_bitboard((enemy->bishop | enemy->queen));
-    //     print_bitboard((enemy->bishop | enemy->queen) & ATTACK_PATTERN_BISHOP_MAGIC[pos_ind].mask);
-    // }
+    
     // return directions where an attacker exists until attacker including attacker!
     relevant_squares = get_diagonal_attackers_pluss_side(enemy, pos_ind);
-    // if (pos_ind = E7){
+    // if (pos_ind = D7){
     //     print_bitboard(relevant_squares);
+    //     print_bitboard(is_diagonal_attacked(enemy, pos_ind, relevant_squares));
+    //     print_bitboard(is_straight_attacked(enemy, pos_ind, relevant_squares));
     // }
     // this will mark attackers and every blocking piece both enemy blocking and team
-    if(is_diagonal_attacked(chess_board, pos_ind, relevant_squares)){
+    if(is_diagonal_attacked(enemy, pos_ind, relevant_squares)){
         return false;
     }
 
@@ -536,12 +538,12 @@ void find_pin_information(chess_board* chess_board, one_side* player, one_side* 
     // is the + sides also needed here i think no because pinned piece cant be at border
     Bitboard relevant_squares = get_straight_attackers(enemy, pos_ind);
     Bitboard pinned_pieces_straight = get_straight_pins(enemy, player, pos_ind, relevant_squares);
-    Bitboard straight_attackers = is_straight_attacked(chess_board, pos_ind, relevant_squares);
+    Bitboard straight_attackers = is_straight_attacked(enemy, pos_ind, relevant_squares);
     
     // Diagonal block
     relevant_squares = get_diagonal_attackers(enemy, pos_ind);
     Bitboard pinned_pieces_diagonal = get_diagonal_pins(enemy, player, pos_ind, relevant_squares);
-    Bitboard diagonal_attackers = is_diagonal_attacked(chess_board, pos_ind, relevant_squares);
+    Bitboard diagonal_attackers = is_diagonal_attacked(enemy, pos_ind, relevant_squares);
 
     // Knights and Pawns
     Bitboard knight_attackers = KNIGHT_LOOKUP_TABLE[pos_ind] & enemy->knights;
