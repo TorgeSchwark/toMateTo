@@ -12,17 +12,39 @@ int try_all_moves(chess_board* cb, int depth) {
     Move moves[256];
     Move* end = find_all_moves(moves, cb);
     int num_moves = end - moves;
-    if (depth == 1 || (!num_moves))
+    if (depth == 1 || (!num_moves)){
+        // int count = (end - moves);
+        // printf("all moves in that fuck shit");
+        // for (int i = 0; i < count; ++i) {
+        //         std::cout << moves[i].move_to_string() << "\n";
+        //     }
         return num_moves;
+    }
 
     for (Move* m = moves; m != end; ++m) {
-        StateInfo st;
 
+        // 🔒 Nur h2 -> h4 zulassen, wenn depth == 3
+        // if (depth == 3) {
+        //     if (!(m->from_sq() == H2 && m->to_sq() == H4)) {
+        //         continue; // alle anderen Züge überspringen
+        //     }
+        // }else if(depth == 2){
+        //    if (!(m->from_sq() == B8 && m->to_sq() == A6)) {
+        //         continue; // alle anderen Züge überspringen
+        //     } 
+        // }
+
+        StateInfo st;
         make_move(cb, *m, st);
 
-        // recurse
-        count += try_all_moves(cb, depth - 1);
+        int check_perft = try_all_moves(cb, depth - 1);
 
+        // if (depth == 1) {
+        //     printf("%s\n", m->move_to_string().c_str());
+        //     printf("number: %i\n\n", check_perft);
+        // }
+
+        count += check_perft;
         undo_move(cb, *m, st);
     }
     return count;
@@ -352,8 +374,8 @@ void find_different_pawn_moves(Bitboard pawns, bool is_white, Bitboard empty, Bi
     results[PUSH2] = BB_SHIFT(results[PUSH2], FORWARD, is_white) & empty;
 
     // captures
-    Bitboard pawnCapL = BB_SHIFT(pawns, FORWARD_LEFT, is_white) & (~BOARD_FILE[FILE_A]);
-    Bitboard pawnCapR = BB_SHIFT(pawns, FORWARD_RIGHT, is_white) & ~BOARD_FILE[FILE_H];
+    Bitboard pawnCapL = BB_SHIFT(pawns, FORWARD_LEFT, is_white) & (~BOARD_FILE[FILE_H]);
+    Bitboard pawnCapR = BB_SHIFT(pawns, FORWARD_RIGHT, is_white) & (~BOARD_FILE[FILE_A]);
 
     // normal captures
     results[CAPL] = pawnCapL & enemy;

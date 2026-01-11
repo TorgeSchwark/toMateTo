@@ -42,9 +42,10 @@ struct Move{
     constexpr Move(std::uint16_t d) :
         move(d) {};
 
+
     constexpr Move(square from, square to)
         : move((from << 6) | to) {}
-
+    
     constexpr Move(square from, square to, int8_t special_move_type)
         : move((from << 6) | to | (special_move_type << 14)) {}
 
