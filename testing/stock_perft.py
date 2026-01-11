@@ -14,17 +14,21 @@ def perft(board, depth):
 
 board = chess.Board()
 
-# 🔹 1. Root-Zug: h2 -> h4
-root_move = chess.Move.from_uci("h2h4")
-assert root_move in board.legal_moves
+# 1️⃣ b2 -> b3
+move1 = chess.Move.from_uci("b2b3")
+assert move1 in board.legal_moves
+board.push(move1)
 
-board.push(root_move)
+# 2️⃣ a7 -> a6
+move2 = chess.Move.from_uci("a7a6")
+assert move2 in board.legal_moves
+board.push(move2)
 
-print("After h2h4:\n")
+print("After b2b3 a7a6:\n")
 
 total = 0
 
-# 🔹 2. Alle Folgezüge, perft(1)
+# 3️⃣ Alle Folgezüge, perft(1)
 for move in board.legal_moves:
     board.push(move)
     nodes = perft(board, 1)
