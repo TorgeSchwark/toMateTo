@@ -51,17 +51,23 @@ struct Move{
     constexpr Move(square from, square to, int8_t special_move_type, int8_t type)
         : move((from << 6) | to | (special_move_type << 14) | (type << 12)) {}
 
-    constexpr square from_sq(const Move& m) {
-        return square((m.move >> 6) & 0x3F);
+    constexpr square from_sq() const {
+        return square((move >> 6) & 0x3F);
+    }
+    constexpr square promo_piece() const {
+        return square((move >> 12) & 0x3);
     }
 
-    constexpr square to_sq(const Move& m) {
-        return square(m.move & 0x3F);
+    constexpr square move_flag() const {
+        return square((move >> 14) & 0x3);
     }
-    
+
+    constexpr square to_sq() const {
+        return square(move & 0x3F);
+    }
     inline std::string move_to_string() {
-        square from = from_sq(move);
-        square to   = to_sq(move);
+        square from = from_sq();
+        square to   = to_sq();
 
         return square_to_string(from) + " -> " + square_to_string(to);
     }
@@ -72,13 +78,6 @@ struct Move{
 
 inline constexpr Bitboard KNIGHT_MOVES[4] = {17,15,10,6};
 inline constexpr int8_t NORMAL_MOVE = 1;
-
-
-
-
-
-
-
 
 inline std::string piece_to_string(PieceType piece) {
     switch (piece) {

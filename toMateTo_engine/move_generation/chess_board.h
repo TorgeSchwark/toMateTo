@@ -13,6 +13,7 @@
 #include "toMateTo_engine/table_generation/magic_king_tables.h"
 #include "toMateTo_engine/move_generation/types.h"
 
+
 void set_index_zero(Bitboard* bitboard, Bitboard index); 
 int msb_index(Bitboard bb);
 void set_index_one(Bitboard* bitboard, Bitboard index);
@@ -64,6 +65,45 @@ struct one_side
 
 
 };
+
+
+inline void remove_piece(one_side& s, PieceType pt, square sq) {
+    Bitboard b = ~(1ULL << sq);
+    switch (pt) {
+        case PAWN:   s.pawns   &= b; break;
+        case KNIGHT: s.knights &= b; break;
+        case BISHOP: s.bishop  &= b; break;
+        case ROOK:   s.rooks   &= b; break;
+        case QUEEN:  s.queen   &= b; break;
+        case KING:   s.king    &= b; break;
+        default: break;
+    }
+}
+
+inline void add_piece(one_side& s, PieceType pt, square sq) {
+    Bitboard b = (1ULL << sq);
+    switch (pt) {
+        case PAWN:   s.pawns   |= b; break;
+        case KNIGHT: s.knights |= b; break;
+        case BISHOP: s.bishop  |= b; break;
+        case ROOK:   s.rooks   |= b; break;
+        case QUEEN:  s.queen   |= b; break;
+        case KING:   s.king    |= b; break;
+        default: break;
+    }
+}
+
+inline PieceType piece_on(const one_side& s, square sq) {
+    Bitboard b = 1ULL << sq;
+    if (s.pawns   & b) return PAWN;
+    if (s.knights & b) return KNIGHT;
+    if (s.bishop  & b) return BISHOP;
+    if (s.rooks   & b) return ROOK;
+    if (s.queen   & b) return QUEEN;
+    if (s.king    & b) return KING;
+    return NO_PIECE_TYPE;
+}
+
 
 struct chess_board
 {
@@ -158,6 +198,12 @@ struct chess_board
         complete_board =  white.side_all | black.side_all;
     }
 };
+
+int try_all_moves(chess_board* cb, int depth);
+
+void make_move(chess_board* cb, Move m, StateInfo& st);
+
+void undo_move(chess_board* cb, Move m, const StateInfo& st);
 
 Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy);
 

@@ -5,6 +5,190 @@ int RESULT_COUNT = 9;
 #define BB_SHIFT(bb, s, color) \
     ((color) ?  ((bb) << (s)) : ((bb) >> (s)) )
 
+int try_all_moves(chess_board* cb, int depth) {
+    
+
+    int count = 0;
+    Move moves[256];
+    Move* end = find_all_moves(moves, cb);
+    int num_moves = end - moves;
+    if (depth == 1 || (!num_moves))
+        return num_moves;
+
+    for (Move* m = moves; m != end; ++m) {
+        StateInfo st;
+
+        make_move(cb, *m, st);
+
+        // recurse
+        count += try_all_moves(cb, depth - 1);
+
+        undo_move(cb, *m, st);
+    }
+    return count;
+}
+
+
+
+void make_move(chess_board* cb, Move m, StateInfo& st) {
+    one_side& us   = cb->whites_turn ? cb->white : cb->black;
+    one_side& them = cb->whites_turn ? cb->black : cb->white;
+
+    square from = m.from_sq();
+    square to   = m.to_sq();
+    int flag    = m.move_flag();
+
+    // ---------- save undo info ----------
+    st.epSquare = cb->ep_square;
+    st.castling = cb->castling_rights;
+    st.rule50   = cb->halve_move_counter;
+    st.captured = NO_PIECE_TYPE;
+
+    PieceType moving = piece_on(us, from);
+
+    // ---------- handle captures ----------
+    if (flag == 2) { // en passant
+        square cap = to + (cb->whites_turn ? -8 : 8);
+        st.captured = PAWN;
+        remove_piece(them, PAWN, cap);
+    } else {
+        PieceType cap = piece_on(them, to);
+        if (cap != NO_PIECE_TYPE) {
+            st.captured = cap;
+            remove_piece(them, cap, to);
+        }
+    }
+
+    // ---------- move piece ----------
+    remove_piece(us, moving, from);
+    add_piece(us, moving, to);
+
+    // ---------- promotion ----------
+    if (flag == 1) {
+        remove_piece(us, PAWN, to);
+        add_piece(us, (PieceType)m.promo_piece(), to);
+    }
+
+    // ---------- castling ----------
+    if (flag == 3) {
+        if (to == G1) { // white king side
+            remove_piece(us, ROOK, H1);
+            add_piece(us, ROOK, F1);
+        } else if (to == C1) {
+            remove_piece(us, ROOK, A1);
+            add_piece(us, ROOK, D1);
+        } else if (to == G8) {
+            remove_piece(us, ROOK, H8);
+            add_piece(us, ROOK, F8);
+        } else if (to == C8) {
+            remove_piece(us, ROOK, A8);
+            add_piece(us, ROOK, D8);
+        }
+    }
+
+    if (moving == KING) {
+        if (cb->whites_turn)
+            cb->castling_rights &= ~(WHITE_KING_SIDE | WHITE_QUEEN_SIDE);
+        else
+            cb->castling_rights &= ~(BLACK_KING_SIDE | BLACK_QUEEN_SIDE);
+    }
+
+
+    if (moving == ROOK) {
+        if (from == A1) cb->castling_rights &= ~WHITE_QUEEN_SIDE;
+        if (from == H1) cb->castling_rights &= ~WHITE_KING_SIDE;
+        if (from == A8) cb->castling_rights &= ~BLACK_QUEEN_SIDE;
+        if (from == H8) cb->castling_rights &= ~BLACK_KING_SIDE;
+    }
+
+    if (st.captured == ROOK) {
+        if (to == A1) cb->castling_rights &= ~WHITE_QUEEN_SIDE;
+        if (to == H1) cb->castling_rights &= ~WHITE_KING_SIDE;
+        if (to == A8) cb->castling_rights &= ~BLACK_QUEEN_SIDE;
+        if (to == H8) cb->castling_rights &= ~BLACK_KING_SIDE;
+    }
+
+
+    // ---------- update EP square ----------
+    cb->ep_square = SQ_NONE;
+    if (moving == PAWN && abs(to - from) == 16) {
+        cb->ep_square = (from + to) / 2;
+    }
+
+    // ---------- update counters ----------
+    cb->halve_move_counter =
+        (moving == PAWN || st.captured != NO_PIECE_TYPE) ? 0 : cb->halve_move_counter + 1;
+
+    if (!cb->whites_turn)
+        cb->full_move_counter++;
+
+    // ---------- update bitboards ----------
+    (*cb).update_board();
+
+    // ---------- switch side ----------
+    cb->whites_turn ^= 1;
+}
+
+void undo_move(chess_board* cb, Move m, const StateInfo& st) {
+
+    // ---------- restore side to move ----------
+    cb->whites_turn ^= 1;
+
+    one_side& us   = cb->whites_turn ? cb->white : cb->black;
+    one_side& them = cb->whites_turn ? cb->black : cb->white;
+
+    square from = m.from_sq();
+    square to   = m.to_sq();
+    int flag    = m.move_flag();
+
+    // ---------- restore state ----------
+    cb->ep_square          = st.epSquare;
+    cb->castling_rights    = st.castling;
+    cb->halve_move_counter = st.rule50;
+
+    if (!cb->whites_turn)
+        cb->full_move_counter--;
+
+    // ---------- undo castling rook move ----------
+    if (flag == 3) {
+        if (to == G1) {
+            remove_piece(us, ROOK, F1);
+            add_piece(us, ROOK, H1);
+        } else if (to == C1) {
+            remove_piece(us, ROOK, D1);
+            add_piece(us, ROOK, A1);
+        } else if (to == G8) {
+            remove_piece(us, ROOK, F8);
+            add_piece(us, ROOK, H8);
+        } else if (to == C8) {
+            remove_piece(us, ROOK, D8);
+            add_piece(us, ROOK, A8);
+        }
+    }
+
+    // ---------- undo move (promotion or normal) ----------
+    if (flag == 1) { // promotion
+        remove_piece(us, (PieceType)m.promo_piece(), to);
+        add_piece(us, PAWN, from);
+    } else {
+        PieceType moving = piece_on(us, to);
+        remove_piece(us, moving, to);
+        add_piece(us, moving, from);
+    }
+
+    // ---------- restore captured piece ----------
+    if (st.captured != NO_PIECE_TYPE) {
+        if (flag == 2) { // en passant
+            square cap = to + (cb->whites_turn ? -8 : 8);
+            add_piece(them, PAWN, cap);
+        } else {
+            add_piece(them, st.captured, to);
+        }
+    }
+
+    // ---------- rebuild derived bitboards ----------
+    cb->update_board();
+}
 
 int msb_index(Bitboard bb) {
     return 63 - __builtin_clzll(bb);
@@ -44,7 +228,28 @@ Move* find_all_moves(Move* moves, chess_board* chess_board){
             moves = find_rook_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
         }
     }else{
+        square black_king_square = __builtin_ctzll(chess_board->black.king);
 
+        find_pin_information(chess_board, &(chess_board->black), &(chess_board->white), black_king_square);
+
+        moves = find_king_save_squares(moves, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square);
+        moves = add_castling(moves, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square, chess_board->whites_turn);
+
+        if(chess_board->attack_count < 2){
+            if(chess_board->attack_count == 1){
+                chess_board->attack_defend_squares = SQUARES_IN_BETWEEN[black_king_square][__builtin_ctzll(chess_board->attacking_pieces)];
+            }
+
+            moves = find_knight_moves(moves, chess_board, &(chess_board->black), &(chess_board->white));
+
+            moves = find_pawn_moves(moves, chess_board, &(chess_board->black), &(chess_board->white));
+
+            moves = find_bishop_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.bishop));
+            moves = find_rook_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.rooks));
+
+            moves = find_bishop_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.queen));
+            moves = find_rook_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.queen));
+        }
     }
     return moves;
 }
@@ -198,25 +403,18 @@ Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, o
         if(pinned_pawns){
             // Pinned pawns can only walk if king is not under attack
             while(pinned_pawns){
-                printf("here");
-
                 square pinned_pawn_square = pop_lsb(pinned_pawns);
                 Bitboard pinned_pawn = 1LL << pinned_pawn_square;
                 Bitboard allowed_squares = SQUARES_ON_THE_LINE[pinned_pawn_square][__builtin_ctzll(player->king)];
 
                 find_different_pawn_moves(pinned_pawn ,chess_board->whites_turn, empty, enemy->side_all, chess_board, results_pinned);
-                for (int i = 0; i < RESULT_COUNT; ++i){
-                    if(results_pinned[i]){
-                        print_bitboard(results_pinned[i]);
-                    }
-                }
+                
                 for (int i = 0; i < RESULT_COUNT; ++i)
                     results[i] |= (allowed_squares & results_pinned[i]);
             }            
         }
     }else{
         for (int i = 0; i < RESULT_COUNT; ++i){
-            print_bitboard(results[i]);
             results[i] &= chess_board->attack_defend_squares;
         }
     }
@@ -226,6 +424,7 @@ Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, o
     return moves;
 
 }
+
 Move* add_prom(Bitboard destinations, Move* moves, int8_t offset, bool color){
     while(destinations){
         square to = pop_lsb(destinations);
@@ -249,7 +448,6 @@ Move* add_pawn_moves(Bitboard destinations, Move* moves, int8_t offset, bool col
         *moves++ = Move(to-color_dir(offset, color), to);
     }return moves;
 }
-
 
 bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
     // Checks if a pos is attacked by a piece
@@ -313,7 +511,6 @@ extern const CastlingRights CASTLING_FLAG[2][2] = {
     { WHITE_KING_SIDE,  WHITE_QUEEN_SIDE }
 };
 
-// cs: 0 = king-side, 1 = queen-side
 Move* add_castling(Move* moves,chess_board* board, one_side* player, one_side* enemy, square king_pos, bool is_white) {
     if (board->attack_count)
         return moves;

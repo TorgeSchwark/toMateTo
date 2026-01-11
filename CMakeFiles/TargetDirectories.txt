@@ -1,0 +1,3 @@
+/home/MyProjects/toMateTo/CMakeFiles/toMateTo.dir
+/home/MyProjects/toMateTo/CMakeFiles/edit_cache.dir
+/home/MyProjects/toMateTo/CMakeFiles/rebuild_cache.dir

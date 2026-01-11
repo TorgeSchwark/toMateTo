@@ -23,15 +23,21 @@ int main() {
     init_pinned_tables_rook_and_bishop();
     init_attack_tables_rock_and_bishop();
 
-    setup_fen_position(chess_board, "rnbqk1nr/pppppppp/8/1b6/2P5/8/8/5K2 w KQkq - 0 1");
+    setup_fen_position(chess_board, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
 
     // Example move test
     const int repetitions =  1; // currently 13000000*32 in that pos per s so 416M/s legal!!
+    int test = 3;
+    auto perft_speed_start = std::chrono::high_resolution_clock::now();
+    int count_moves = try_all_moves(&chess_board, 6);
+    auto perft_speed_end = std::chrono::high_resolution_clock::now();
+    auto duration_perft = std::chrono::duration_cast<std::chrono::milliseconds>(perft_speed_end - perft_speed_start);
+    printf("\n total_move %d in %li \n", count_moves, duration_perft.count());
+
     auto start_time = std::chrono::high_resolution_clock::now();
     Move moves[256];
     Move* result;
-
     for (int i = 0; i < repetitions; ++i) {
         result = find_all_moves(moves, &chess_board);
     }
