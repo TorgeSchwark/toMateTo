@@ -87,6 +87,40 @@ U64 bishop_relevant_mask(int s) {
     return mask;
 }
 
+U64 rook_relevant_mask_attack(int s) {
+    int rank = s / 8;
+    int file = s % 8;
+    U64 mask = 0ULL;
+
+    // left
+    for (int f = file-1; f >= 0; --f) mask |= (1ULL << sq(f, rank));
+    // right
+    for (int f = file+1; f <= 7; ++f) mask |= (1ULL << sq(f, rank));
+    // down
+    for (int r = rank-1; r >= 0; --r) mask |= (1ULL << sq(file, r));
+    // up
+    for (int r = rank+1; r <= 7; ++r) mask |= (1ULL << sq(file, r));
+
+    return mask;
+}
+
+
+U64 bishop_relevant_mask_attack(int s) {
+    int rank = s / 8;
+    int file = s % 8;
+    U64 mask = 0ULL;
+
+    // NW
+    for (int f=file-1, r=rank+1; f>=0 && r<=7; --f, ++r) mask |= (1ULL << sq(f,r));
+    // NE
+    for (int f=file+1, r=rank+1; f<=7 && r<=7; ++f, ++r) mask |= (1ULL << sq(f,r));
+    // SW
+    for (int f=file-1, r=rank-1; f>=0 && r>=0; --f, --r) mask |= (1ULL << sq(f,r));
+    // SE
+    for (int f=file+1, r=rank-1; f<=7 && r>=0; ++f, --r) mask |= (1ULL << sq(f,r));
+
+    return mask;
+}
 
 // ------------------ Compute rook attacks for a square given a full occupancy -------------------
 U64 rook_attacks_on_the_fly(int sqr, U64 occ) {

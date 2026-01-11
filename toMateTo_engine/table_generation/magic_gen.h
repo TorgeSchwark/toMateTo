@@ -26,6 +26,10 @@ extern Bitboard BOARD_FILE[8];
 
 int sq(int file, int rank);
 
+U64 bishop_relevant_mask_attack(int s);
+
+U64 rook_relevant_mask_attack(int s);
+
 U64 rook_relevant_mask(int s);
 
 U64 bishop_relevant_mask(int s);

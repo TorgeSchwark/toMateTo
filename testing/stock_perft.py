@@ -20,11 +20,11 @@ assert move1 in board.legal_moves
 board.push(move1)
 
 # 2️⃣ a7 -> a6
-move2 = chess.Move.from_uci("a7a6")
+move2 = chess.Move.from_uci("e7e6")
 assert move2 in board.legal_moves
 board.push(move2)
 
-print("After b2b3 a7a6:\n")
+# print("After b2b3 a7a6:\n")
 
 total = 0
 

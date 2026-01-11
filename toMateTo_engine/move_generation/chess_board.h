@@ -227,7 +227,7 @@ Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, o
 
 Move* find_king_save_squares(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position);
 
-bool is_save_square(Move* moves, one_side* player, one_side* enemy, Bitboard pos);
+bool is_save_square(Move* moves, one_side* player, one_side* enemy, square pos);
 
 int8_t attack_amounts_to_square(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind);
 
@@ -258,7 +258,7 @@ inline Bitboard is_straight_attacked(chess_board* chess_board, int pos_ind, Bitb
     return pins_magic(pos_ind, relevant_attackers_and_defenders, PINNED_PIECES_ROOK_MAGIC);
 }
 
-inline Bitboard attackers_magic(int square,Bitboard attackers,const MagicTableEntry table[],const MagicTableEntry pattern[]){
+inline Bitboard attackers_magic(int square, Bitboard attackers,const MagicTableEntry table[],const MagicTableEntry pattern[]){
     Bitboard masked = attackers & table[square].mask;
     return magic_lookup(masked, pattern[square]);
 }
@@ -286,6 +286,15 @@ Move* add_castling(Move* moves, chess_board* board, one_side* player, one_side* 
 inline Bitboard get_straight_attackers(one_side* enemy, square pos_ind) {
     return attackers_magic(pos_ind, enemy->rooks | enemy->queen, ROOK_MAGIC, ATTACK_PATTERN_ROOK_MAGIC);
 }
+
+inline Bitboard get_straight_attackers_pluss_side(one_side* enemy, square pos_ind) {
+    return attackers_magic(pos_ind, enemy->rooks | enemy->queen, ROOK_MAGIC, ROOK_MAGIC);
+}
+
+inline Bitboard get_diagonal_attackers_pluss_side(one_side* enemy, int pos_ind) {
+    return attackers_magic(pos_ind, enemy->bishop | enemy->queen, BISHOP_MAGIC, BISHOP_MAGIC);
+}
+
 
 inline Bitboard bishop_magic(int square, const chess_board* board, const one_side* player){
     return sliding_magic(square, board->complete_board, BISHOP_MAGIC, ~player->side_all);
