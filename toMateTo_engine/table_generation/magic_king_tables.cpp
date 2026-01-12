@@ -9,6 +9,8 @@ MagicTableEntry PINNED_PIECES_BISHOP_MAGIC[64];
 MagicTableEntry ATTACK_PATTERN_ROOK_MAGIC[64];
 MagicTableEntry ATTACK_PATTERN_BISHOP_MAGIC[64];
 
+Bitboard DIRECTION_RAYS[64][8];
+
 Bitboard SQUARES_ON_THE_LINE[64][64];
 Bitboard SQUARES_IN_BETWEEN[64][64];
 
@@ -480,6 +482,43 @@ void init_square_on_the_line_table()
             }
 
             SQUARES_ON_THE_LINE[from][to] = bb;
+        }
+    }
+}
+
+inline bool same_rank(int a, int b) {
+    return (a / 8) == (b / 8);
+}
+
+inline bool on_board(int sq) {
+    return sq >= 0 && sq < 64;
+}
+
+void init_direction_rays() {
+
+    for (int sq = 0; sq < 64; ++sq) {
+
+        for (int dir = 0; dir < 8; ++dir) {
+
+            Bitboard ray = 0;
+            int cur = sq;
+
+            while (true) {
+                int next = cur + DIR_DELTA[dir];
+
+                if (!on_board(next))
+                    break;
+
+                // Prevent horizontal / diagonal wrap
+                int df = file_of(next) - file_of(cur);
+                if (df > 1 || df < -1)
+                    break;
+
+                ray |= (1ULL << next);
+                cur = next;
+            }
+
+            DIRECTION_RAYS[sq][dir] = ray;
         }
     }
 }

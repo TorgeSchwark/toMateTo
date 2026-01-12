@@ -22,32 +22,33 @@ int try_all_moves(chess_board* cb, int depth) {
     int num_moves = end - moves;
     if (depth == 1 || (!num_moves)){
         int count = (end - moves);
-        // printf("all moves in that fuck shit");
-        // for (int i = 0; i < count; ++i) {
-        //         std::cout << moves[i].move_to_string() << "\n";
-        //     }
+        // for (Move* i = moves; i < end; ++i) {
+        //     printf("here! \n");
+        //     printf("%s\n", i->move_to_string().c_str());
+
+        // }
         return num_moves;
     }
 
     for (Move* m = moves; m != end; ++m) {
 
         // // 🔒 Nur h2 -> h4 zulassen, wenn depth == 3
-        // if (depth == 4) {
-        //     if (!(m->from_sq() == B1 && m->to_sq() == A3)) {
+        // if (depth == 5) {
+        //     if (!(m->from_sq() == D2 && m->to_sq() == D4)) {
         //         continue; // alle anderen Züge überspringen
         //     }
-        // }else if(depth == 3){
-        //    if (!(m->from_sq() == D7 && m->to_sq() == D6)) {
+        // }else if(depth == 4){
+        //    if (!(m->from_sq() == E7 && m->to_sq() == E5)) {
+        //         continue; // alle anderen Züge überspringen
+        //     } 
+        // }
+        // else if(depth == 3){
+        //    if (!(m->from_sq() == E1 && m->to_sq() == D2)) {
         //         continue; // alle anderen Züge überspringen
         //     } 
         // }
         // else if(depth == 2){
-        //    if (!(m->from_sq() == A3 && m->to_sq() == B5)) {
-        //         continue; // alle anderen Züge überspringen
-        //     } 
-        // }
-        // else if(depth == 20){
-        //    if (!(m->from_sq() == A3 && m->to_sq() == B5)) {
+        //    if (!(m->from_sq() == F8 && m->to_sq() == B4)) {
         //         continue; // alle anderen Züge überspringen
         //     } 
         // }
@@ -419,13 +420,13 @@ void find_different_pawn_moves(Bitboard pawns, bool is_white, Bitboard empty, Bi
 Move* add_all_pawn_moves(Bitboard* results, Move* moves, bool color){
     moves = add_pawn_moves(results[PUSH1], moves, FORWARD, color);
     moves = add_pawn_moves(results[PUSH2], moves, DOUBLE_FORWARD, color);
-    moves = add_pawn_moves(results[CAPL], moves, FORWARD_LEFT, color);
-    moves = add_pawn_moves(results[CAPR], moves, FORWARD_RIGHT, color);
-    moves = add_ep(results[EPL], moves, FORWARD_LEFT, color);
-    moves = add_ep(results[EPR], moves, FORWARD_RIGHT, color);
+    moves = add_pawn_moves(results[CAPL], moves, FORWARD_LEFT[color], color);
+    moves = add_pawn_moves(results[CAPR], moves, FORWARD_RIGHT[color], color);
+    moves = add_ep(results[EPL], moves, FORWARD_LEFT[color], color);
+    moves = add_ep(results[EPR], moves, FORWARD_RIGHT[color], color);
     moves = add_prom(results[PROMO_PUSH], moves, FORWARD, color);
-    moves = add_prom(results[PROMO_CAPL], moves, FORWARD_LEFT, color);
-    moves = add_prom(results[PROMO_CAPR], moves, FORWARD_RIGHT, color);
+    moves = add_prom(results[PROMO_CAPL], moves, FORWARD_LEFT[color], color);
+    moves = add_prom(results[PROMO_CAPR], moves, FORWARD_RIGHT[color], color);
     return moves;
 }
 
@@ -460,7 +461,7 @@ Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, o
         }
     }
     
-    moves =  add_all_pawn_moves(results, moves, chess_board->whites_turn);
+    moves = add_all_pawn_moves(results, moves, chess_board->whites_turn);
 
     return moves;
 
@@ -490,7 +491,7 @@ Move* add_pawn_moves(Bitboard destinations, Move* moves, int8_t offset, bool col
     }return moves;
 }
 
-bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind){
+bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard original_square){
     // Checks if a pos is attacked by a piece
     
     // Bitboard relevant_squares = get_straight_attackers(enemy, pos_ind);
@@ -506,11 +507,11 @@ bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy,
     // if(is_diagonal_attacked(chess_board, pos_ind, relevant_squares) & (enemy->queen|enemy->bishop)){
     //     return false;
     // }
-    if(is_straight_attacked_new(chess_board, player, enemy, pos_ind)){
+    if(is_straight_attacked_new(chess_board, player, enemy, pos_ind, original_square)){
         return false;
     }
 
-    if(is_diagonal_attacked_new(chess_board, player, enemy, pos_ind)){
+    if(is_diagonal_attacked_new(chess_board, player, enemy, pos_ind, original_square)){
         return false;
     }
 
@@ -534,14 +535,14 @@ void find_pin_information(chess_board* chess_board, one_side* player, one_side* 
 
     // Straight block
     // is the + sides also needed here i think no because pinned piece cant be at border
-    Bitboard relevant_squares = get_straight_attackers(enemy, pos_ind);
+    Bitboard relevant_squares = get_straight_attackers_new(enemy, pos_ind);
     Bitboard pinned_pieces_straight = get_straight_pins(enemy, player, pos_ind, relevant_squares);
-    Bitboard straight_attackers = is_straight_attacked_new(chess_board, player, enemy, pos_ind);
+    Bitboard straight_attackers = is_straight_attacked_new(chess_board, player, enemy, pos_ind, 0LL);
     
     // Diagonal block
-    relevant_squares = get_diagonal_attackers(enemy, pos_ind);
+    relevant_squares = get_diagonal_attackers_new(enemy, pos_ind);
     Bitboard pinned_pieces_diagonal = get_diagonal_pins(enemy, player, pos_ind, relevant_squares);
-    Bitboard diagonal_attackers = is_diagonal_attacked_new(chess_board, player, enemy, pos_ind);
+    Bitboard diagonal_attackers = is_diagonal_attacked_new(chess_board, player, enemy, pos_ind, 0LL);
 
     // Knights and Pawns
     Bitboard knight_attackers = KNIGHT_LOOKUP_TABLE[pos_ind] & enemy->knights;
@@ -581,7 +582,8 @@ Move* add_castling(Move* moves,chess_board* board, one_side* player, one_side* e
         bool safe = true;
         while (check) {
             square sq = pop_lsb(check);
-            if (!is_save_square(board, player, enemy, sq)) {
+            // this could be a bug to use 0LL 
+            if (!is_save_square(board, player, enemy, sq, 0LL)) {
                 safe = false;
                 break;
             }
@@ -603,7 +605,7 @@ Move* find_king_save_squares(Move* moves, chess_board* chess_board, one_side* pl
     player->save_king_squares = 0LL;
     while(possible_king_moves){
         square to = pop_lsb(possible_king_moves);
-        if(is_save_square(chess_board, player, enemy, to)){ // there can be a piece as long as the square is not under attack
+        if(is_save_square(chess_board, player, enemy, to, player->king)){ // there can be a piece as long as the square is not under attack
             // this whole function could be split in only parallel moves and the rest so this is not done for every free square:
             player->save_king_squares |= (1ULL << to);
             *moves++ = Move(king_position, to);

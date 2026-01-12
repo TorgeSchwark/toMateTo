@@ -22,6 +22,7 @@ int main() {
     init_king_mask();
     init_pinned_tables_rook_and_bishop();
     init_attack_tables_rock_and_bishop();
+    init_direction_rays();
 
     setup_fen_position(chess_board, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
@@ -30,7 +31,7 @@ int main() {
     const int repetitions =  1; // currently 13000000*32 in that pos per s so 416M/s legal!!
     int test = 3;
     auto perft_speed_start = std::chrono::high_resolution_clock::now();
-    int count_moves = try_all_moves(&chess_board, 4);
+    int count_moves = try_all_moves(&chess_board, 5);
     auto perft_speed_end = std::chrono::high_resolution_clock::now();
     auto duration_perft = std::chrono::duration_cast<std::chrono::milliseconds>(perft_speed_end - perft_speed_start);
     printf("\n total_move %d in %li \n", count_moves, duration_perft.count());

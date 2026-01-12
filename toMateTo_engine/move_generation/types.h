@@ -21,6 +21,17 @@ enum squares : int8_t {
 };
 
 
+enum RayDir : uint8_t {
+    NORTH, SOUTH, EAST, WEST,
+    NE, NW, SE, SW
+};
+
+constexpr int8_t DIR_DELTA[8] = {
+    8,  -8,  1, -1,
+    9,   7, -7, -9
+};
+
+
 typedef uint64_t U64;
 
 typedef U64 (*attack_like_fn)(int square, U64 occ);
@@ -32,8 +43,8 @@ enum PieceType: std::int8_t{
 };
 
 constexpr int8_t FORWARD        = 8;
-constexpr int8_t FORWARD_LEFT   = 7;
-constexpr int8_t FORWARD_RIGHT  = 9;
+constexpr int8_t FORWARD_LEFT[2]   = {9, 7};
+constexpr int8_t FORWARD_RIGHT[2]  = {7, 9};
 constexpr int8_t DOUBLE_FORWARD = 16;
 
 enum MoveType {

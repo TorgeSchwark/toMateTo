@@ -15,6 +15,8 @@ extern MagicTableEntry ATTACK_PATTERN_BISHOP_MAGIC[64];
 extern Bitboard SQUARES_IN_BETWEEN[64][64];
 extern Bitboard SQUARES_ON_THE_LINE[64][64];
 
+extern Bitboard DIRECTION_RAYS[64][8];
+
 // Marks squares in between + the to square. No not a line the to field
 extern Bitboard CASTLE_FREE[2][2];
 
@@ -41,6 +43,8 @@ void init_square_on_the_line_table();
 
 static inline int file_of(int sq) { return sq & 7; }
 static inline int rank_of(int sq) { return sq >> 3; }
+
+void init_direction_rays();
 
 #endif
 
