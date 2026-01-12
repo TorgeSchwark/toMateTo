@@ -22,35 +22,35 @@ int try_all_moves(chess_board* cb, int depth) {
     int num_moves = end - moves;
     if (depth == 1 || (!num_moves)){
         int count = (end - moves);
-        printf("all moves in that fuck shit");
-        for (int i = 0; i < count; ++i) {
-                std::cout << moves[i].move_to_string() << "\n";
-            }
+        // printf("all moves in that fuck shit");
+        // for (int i = 0; i < count; ++i) {
+        //         std::cout << moves[i].move_to_string() << "\n";
+        //     }
         return num_moves;
     }
 
     for (Move* m = moves; m != end; ++m) {
 
         // // 🔒 Nur h2 -> h4 zulassen, wenn depth == 3
-        if (depth == 4) {
-            if (!(m->from_sq() == B1 && m->to_sq() == A3)) {
-                continue; // alle anderen Züge überspringen
-            }
-        }else if(depth == 3){
-           if (!(m->from_sq() == D7 && m->to_sq() == D6)) {
-                continue; // alle anderen Züge überspringen
-            } 
-        }
-        else if(depth == 2){
-           if (!(m->from_sq() == A3 && m->to_sq() == B5)) {
-                continue; // alle anderen Züge überspringen
-            } 
-        }
-        else if(depth == 20){
-           if (!(m->from_sq() == A3 && m->to_sq() == B5)) {
-                continue; // alle anderen Züge überspringen
-            } 
-        }
+        // if (depth == 4) {
+        //     if (!(m->from_sq() == B1 && m->to_sq() == A3)) {
+        //         continue; // alle anderen Züge überspringen
+        //     }
+        // }else if(depth == 3){
+        //    if (!(m->from_sq() == D7 && m->to_sq() == D6)) {
+        //         continue; // alle anderen Züge überspringen
+        //     } 
+        // }
+        // else if(depth == 2){
+        //    if (!(m->from_sq() == A3 && m->to_sq() == B5)) {
+        //         continue; // alle anderen Züge überspringen
+        //     } 
+        // }
+        // else if(depth == 20){
+        //    if (!(m->from_sq() == A3 && m->to_sq() == B5)) {
+        //         continue; // alle anderen Züge überspringen
+        //     } 
+        // }
 
 
         StateInfo st;
