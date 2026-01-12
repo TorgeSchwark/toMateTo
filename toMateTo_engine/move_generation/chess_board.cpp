@@ -493,30 +493,24 @@ Move* add_pawn_moves(Bitboard destinations, Move* moves, int8_t offset, bool col
 bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind){
     // Checks if a pos is attacked by a piece
     
-    // if (pos_ind = E7){
-    //     printf(" we are here \n");
-    //     print_bitboard(chess_board->complete_board);
-    // }
-    // returns a Bitboard where every square between nearest attacker and the square is marked! 
-    Bitboard relevant_squares = get_straight_attackers(enemy, pos_ind);
+    // Bitboard relevant_squares = get_straight_attackers(enemy, pos_ind);
 
-    if (pos_ind = D7){
-        print_bitboard(relevant_squares);
-        // print_bitboard(is_diagonal_attacked(chess_board, pos_ind, relevant_squares));
-        print_bitboard(relevant_squares & (enemy->rooks | enemy->queen));
-        print_bitboard(relevant_squares & chess_board->complete_board);
-        print_bitboard(is_straight_attacked(chess_board, pos_ind, relevant_squares));
-    }
-    // with this we get only the attacking piece itself and every piece in the line of attack
-    if (is_straight_attacked(chess_board, pos_ind, relevant_squares) & (enemy->queen|enemy->rooks)){
+    // if (is_straight_attacked(chess_board, pos_ind, relevant_squares) & (enemy->queen|enemy->rooks)){
+    //     return false;
+    // }
+    
+    // // return directions where an attacker exists until attacker including attacker!
+    // relevant_squares = get_diagonal_attackers_pluss_side(enemy, pos_ind);
+    
+    // // this will mark attackers and every blocking piece both enemy blocking and team
+    // if(is_diagonal_attacked(chess_board, pos_ind, relevant_squares) & (enemy->queen|enemy->bishop)){
+    //     return false;
+    // }
+    if(is_straight_attacked_new(chess_board, player, enemy, pos_ind)){
         return false;
     }
-    
-    // return directions where an attacker exists until attacker including attacker!
-    relevant_squares = get_diagonal_attackers_pluss_side(enemy, pos_ind);
-    
-    // this will mark attackers and every blocking piece both enemy blocking and team
-    if(is_diagonal_attacked(chess_board, pos_ind, relevant_squares) & (enemy->queen|enemy->bishop)){
+
+    if(is_diagonal_attacked_new(chess_board, player, enemy, pos_ind)){
         return false;
     }
 
@@ -542,12 +536,12 @@ void find_pin_information(chess_board* chess_board, one_side* player, one_side* 
     // is the + sides also needed here i think no because pinned piece cant be at border
     Bitboard relevant_squares = get_straight_attackers(enemy, pos_ind);
     Bitboard pinned_pieces_straight = get_straight_pins(enemy, player, pos_ind, relevant_squares);
-    Bitboard straight_attackers = is_straight_attacked(chess_board, pos_ind, relevant_squares);
+    Bitboard straight_attackers = is_straight_attacked_new(chess_board, player, enemy, pos_ind);
     
     // Diagonal block
     relevant_squares = get_diagonal_attackers(enemy, pos_ind);
     Bitboard pinned_pieces_diagonal = get_diagonal_pins(enemy, player, pos_ind, relevant_squares);
-    Bitboard diagonal_attackers = is_diagonal_attacked(chess_board, pos_ind, relevant_squares);
+    Bitboard diagonal_attackers = is_diagonal_attacked_new(chess_board, player, enemy, pos_ind);
 
     // Knights and Pawns
     Bitboard knight_attackers = KNIGHT_LOOKUP_TABLE[pos_ind] & enemy->knights;

@@ -259,6 +259,9 @@ inline Bitboard is_straight_attacked(chess_board* chess_board, int pos_ind, Bitb
     return pins_magic(pos_ind, relevant_attackers_and_defenders, PINNED_PIECES_ROOK_MAGIC);
 }
 
+
+
+
 inline Bitboard attackers_magic(int square, Bitboard attackers,const MagicTableEntry table[],const MagicTableEntry pattern[]){
     Bitboard masked = attackers & table[square].mask;
     return magic_lookup(masked, pattern[square]);
@@ -303,6 +306,19 @@ inline Bitboard bishop_magic(int square, const chess_board* board, const one_sid
 
 inline Bitboard rook_magic(int square,const chess_board* board, const one_side* player){
     return sliding_magic(square, board->complete_board, ROOK_MAGIC, ~player->side_all);
+}
+
+inline Bitboard is_diagonal_attacked_new(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind){
+    Bitboard diagonal_moves = bishop_magic(pos_ind, chess_board, player);
+
+    return (diagonal_moves & (enemy->bishop | enemy->queen));
+}
+
+inline Bitboard is_straight_attacked_new(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind){
+    // für die attacks muss hier wirklich gefragt werden ob die figur eine gegnereischer Rook oder Queen
+    Bitboard straight_moves = rook_magic(pos_ind, chess_board, player);
+
+    return (straight_moves & (enemy->rooks | enemy->queen));
 }
 
 void setup_fen_position(chess_board& board, const std::string& fen);

@@ -1,6 +1,10 @@
 write Speed test function.
-rename these: get_straight_attackers_pluss_side, ...
-BUG PROB IN MAGIC TABLES introduced randomness in is_save_square! prob due to reodering since move tables seem to be flaweless!
+
+1. find straight attackers, has to include boarder in the .mask!
+2. then we get all squares untill enemy. 
+3. is attacked does and with all and returns if it is actually attacked!
+
+Gibt es mehr attacker combinationen als pinned / move ?! 
 
 
 IDEE for pins
