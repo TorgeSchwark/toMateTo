@@ -46,11 +46,11 @@ struct Move{
     constexpr Move(square from, square to)
         : move((from << 6) | to) {}
     
-    constexpr Move(square from, square to, int8_t special_move_type)
-        : move((from << 6) | to | (special_move_type << 14)) {}
+    constexpr Move(square from, square to, MoveType special_move_type)
+        : move((from << 6) | to | (special_move_type)) {}
 
-    constexpr Move(square from, square to, int8_t special_move_type, int8_t type)
-        : move((from << 6) | to | (special_move_type << 14) | (type << 12)) {}
+    constexpr Move(square from, square to, MoveType special_move_type, int8_t type)
+        : move((from << 6) | to | (special_move_type) | (type << 12)) {}
 
     constexpr square from_sq() const {
         return square((move >> 6) & 0x3F);

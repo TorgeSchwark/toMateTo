@@ -287,7 +287,7 @@ void save_magic_data(const char *filename, MagicTableEntry table[64]) {
     printf("all_saved");
 }
 
-void init_magic_rook_or_bishop(char *piece)
+void init_magic_rook_or_bishop(const char *piece)
 {
     int is_rook = (strcmp(piece, "rook") == 0);
     int magic_done = 0;

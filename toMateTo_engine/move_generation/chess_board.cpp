@@ -21,48 +21,16 @@ int try_all_moves(chess_board* cb, int depth) {
     Move* end = find_all_moves(moves, cb);
     int num_moves = end - moves;
     if (depth == 1 || (!num_moves)){
-        int count = (end - moves);
-        // for (Move* i = moves; i < end; ++i) {
-        //     printf("here! \n");
-        //     printf("%s\n", i->move_to_string().c_str());
-
-        // }
         return num_moves;
     }
 
     for (Move* m = moves; m != end; ++m) {
-
-        // // 🔒 Nur h2 -> h4 zulassen, wenn depth == 3
-        // if (depth == 5) {
-        //     if (!(m->from_sq() == D2 && m->to_sq() == D4)) {
-        //         continue; // alle anderen Züge überspringen
-        //     }
-        // }else if(depth == 4){
-        //    if (!(m->from_sq() == E7 && m->to_sq() == E5)) {
-        //         continue; // alle anderen Züge überspringen
-        //     } 
-        // }
-        // else if(depth == 3){
-        //    if (!(m->from_sq() == E1 && m->to_sq() == D2)) {
-        //         continue; // alle anderen Züge überspringen
-        //     } 
-        // }
-        // else if(depth == 2){
-        //    if (!(m->from_sq() == F8 && m->to_sq() == B4)) {
-        //         continue; // alle anderen Züge überspringen
-        //     } 
-        // }
-
 
         StateInfo st;
         make_move(cb, *m, st);
 
         int check_perft = try_all_moves(cb, depth - 1);
 
-        // if (depth == 2) {
-        //     printf("%s\n", m->move_to_string().c_str());
-        //     printf("number: %i\n\n", check_perft);
-        // }
 
         count += check_perft;
         undo_move(cb, *m, st);

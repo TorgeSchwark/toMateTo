@@ -48,7 +48,7 @@ void load_magic_data(const char *filename, MagicTableEntry table[64]);
 
 void save_magic_data(const char *filename, MagicTableEntry table[64]);
 
-void init_magic_rook_or_bishop(char *piece);
+void init_magic_rook_or_bishop(const char *piece);
 
 void load_magic_tables();
 

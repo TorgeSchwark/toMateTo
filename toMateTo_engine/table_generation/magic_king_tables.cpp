@@ -309,7 +309,7 @@ void init_king_mask() {
     }
 }
 
-void init_attack_tables_rook_or_bishop(char *piece)
+void init_attack_tables_rook_or_bishop(const char *piece)
 {   
     char rook_path[256];
     char bishop_path[256];
@@ -335,7 +335,7 @@ void init_attack_tables_rook_or_bishop(char *piece)
     
 }
 
-void init_pinned_tables_rook_or_bishop(char *piece)
+void init_pinned_tables_rook_or_bishop(const char *piece)
 {
     char rook_path[256];
     char bishop_path[256];
