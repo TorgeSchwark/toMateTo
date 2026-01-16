@@ -17,6 +17,7 @@ add_executable(toMateTo
     ${ENGINE_DIR}/table_generation/magic_helper_functions.cpp
     ${ENGINE_DIR}/table_generation/magic_gen.cpp
     ${ENGINE_DIR}/move_generation/move_stack.cpp
+    ${ENGINE_DIR}/testing/debugging.cpp
 )
 
 target_include_directories(toMateTo

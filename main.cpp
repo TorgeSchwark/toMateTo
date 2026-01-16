@@ -7,6 +7,8 @@
 #include "toMateTo_engine/table_generation/knight_tables.h"
 #include "toMateTo_engine/table_generation/magic_gen.h"
 #include "toMateTo_engine/table_generation/magic_king_tables.h"
+#include "toMateTo_engine/testing/debugging.h"
+
 
 int main() {
     chess_board chess_board;
@@ -25,7 +27,7 @@ int main() {
     init_direction_rays();
 
     setup_fen_position(chess_board, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-
+    perft_debugging("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 2); 
 
     // Example move test
     const int repetitions =  1; // currently 13000000*32 in that pos per s so 416M/s legal!!
