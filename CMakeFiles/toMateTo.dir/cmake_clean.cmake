@@ -15,6 +15,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/magic_helper_functions.cpp.o.d"
   "CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/magic_king_tables.cpp.o"
   "CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/magic_king_tables.cpp.o.d"
+  "CMakeFiles/toMateTo.dir/toMateTo_engine/testing/debugging.cpp.o"
+  "CMakeFiles/toMateTo.dir/toMateTo_engine/testing/debugging.cpp.o.d"
   "toMateTo"
   "toMateTo.pdb"
 )

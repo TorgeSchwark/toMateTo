@@ -321,6 +321,30 @@ toMateTo_engine/table_generation/magic_king_tables.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/magic_king_tables.cpp.s
 .PHONY : toMateTo_engine/table_generation/magic_king_tables.cpp.s
 
+toMateTo_engine/testing/debugging.o: toMateTo_engine/testing/debugging.cpp.o
+.PHONY : toMateTo_engine/testing/debugging.o
+
+# target to build an object file
+toMateTo_engine/testing/debugging.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/testing/debugging.cpp.o
+.PHONY : toMateTo_engine/testing/debugging.cpp.o
+
+toMateTo_engine/testing/debugging.i: toMateTo_engine/testing/debugging.cpp.i
+.PHONY : toMateTo_engine/testing/debugging.i
+
+# target to preprocess a source file
+toMateTo_engine/testing/debugging.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/testing/debugging.cpp.i
+.PHONY : toMateTo_engine/testing/debugging.cpp.i
+
+toMateTo_engine/testing/debugging.s: toMateTo_engine/testing/debugging.cpp.s
+.PHONY : toMateTo_engine/testing/debugging.s
+
+# target to generate assembly for a file
+toMateTo_engine/testing/debugging.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/testing/debugging.cpp.s
+.PHONY : toMateTo_engine/testing/debugging.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -354,6 +378,9 @@ help:
 	@echo "... toMateTo_engine/table_generation/magic_king_tables.o"
 	@echo "... toMateTo_engine/table_generation/magic_king_tables.i"
 	@echo "... toMateTo_engine/table_generation/magic_king_tables.s"
+	@echo "... toMateTo_engine/testing/debugging.o"
+	@echo "... toMateTo_engine/testing/debugging.i"
+	@echo "... toMateTo_engine/testing/debugging.s"
 .PHONY : help
 
 

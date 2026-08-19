@@ -1,2 +1,3 @@
 build/
 toMateTo_engine/testing/stockfish-ubuntu-x86-64-avx2
+testing/stockfish_bin

@@ -52,4 +52,6 @@ void init_magic_rook_or_bishop(const char *piece);
 
 void load_magic_tables();
 
+void init_pawn_attack_lookup();
+
 #endif

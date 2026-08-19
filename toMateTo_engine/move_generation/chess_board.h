@@ -199,7 +199,7 @@ struct chess_board
     }
 };
 
-int try_all_moves(chess_board* cb, int depth);
+long long try_all_moves(chess_board* cb, int depth);
 
 void make_move(chess_board* cb, Move m, StateInfo& st);
 

@@ -14,20 +14,20 @@ def perft(board, depth):
 
 board = chess.Board()
 
-# # 1️⃣ b2 -> b3
-move1 = chess.Move.from_uci("d2d4")
-assert move1 in board.legal_moves
-board.push(move1)
+# # # 1️⃣ b2 -> b3
+# move1 = chess.Move.from_uci("e2e4")
+# assert move1 in board.legal_moves
+# board.push(move1)
 
-# 2️⃣ a7 -> a6
-move2 = chess.Move.from_uci("e7e5")
-assert move2 in board.legal_moves
-board.push(move2)
+# # 2️⃣ a7 -> a6
+# move2 = chess.Move.from_uci("d7d5")
+# assert move2 in board.legal_moves
+# board.push(move2)
 
-# 2️⃣ a7 -> a6
-move2 = chess.Move.from_uci("e1d2")
-assert move2 in board.legal_moves
-board.push(move2)
+# # 2️⃣ e -> a6
+# move2 = chess.Move.from_uci("e1e2")
+# assert move2 in board.legal_moves
+# board.push(move2)
 
 # print("After b2b3 a7a6:\n")
 
@@ -36,7 +36,7 @@ total = 0
 # 3️⃣ Alle Folgezüge, perft(1)
 for move in board.legal_moves:
     board.push(move)
-    nodes = perft(board, 1)
+    nodes = perft(board, 6)
     board.pop()
 
     print(f"{move.uci()}: {nodes}")

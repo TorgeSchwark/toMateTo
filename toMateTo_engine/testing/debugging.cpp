@@ -1,118 +1,143 @@
 #include "debugging.h"
 
 
-
-struct Process {
-    int in_fd;   // write to child
-    int out_fd;  // read from child
-    pid_t pid;
-};
-
-int stockfish_move_count(Process& sf, const std::string& fen) {
-    char buf[512];
-
-    // Position setzen
-    std::string cmd = "position fen " + fen + "\n";
-    write(sf.in_fd, cmd.c_str(), cmd.size());
-
-    write(sf.in_fd, "isready\n", 8);
-    while (read(sf.out_fd, buf, sizeof(buf)) > 0) {
-        if (strstr(buf, "readyok")) break;
-    }
-
-    // Perft depth 1
-    write(sf.in_fd, "go perft 1\n", 11);
-
-    int nodes = -1;
-    while (read(sf.out_fd, buf, sizeof(buf)) > 0) {
-        if (strstr(buf, "Nodes searched")) {
-            sscanf(buf, "info string Nodes searched: %d", &nodes);
-            break;
-        }
-    }
-
-    return nodes;
-}
-
-
 Process start_stockfish(const char* path) {
     int in_pipe[2];
     int out_pipe[2];
-    pipe(in_pipe);
-    pipe(out_pipe);
 
-    pid_t pid = fork();
-    if (pid == 0) {
-        dup2(in_pipe[0], STDIN_FILENO);
-        dup2(out_pipe[1], STDOUT_FILENO);
-        close(in_pipe[1]);
-        close(out_pipe[0]);
-        execl(path, path, nullptr);
-        _exit(1);
+    if (pipe(in_pipe) == -1) {
+        perror("pipe in");
+        exit(1);
     }
 
+    if (pipe(out_pipe) == -1) {
+        perror("pipe out");
+        exit(1);
+    }
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        exit(1);
+    }
+
+    if (pid == 0) {
+        // Child: Stockfish
+        dup2(in_pipe[0], STDIN_FILENO);
+        dup2(out_pipe[1], STDOUT_FILENO);
+
+        close(in_pipe[1]);
+        close(out_pipe[0]);
+
+        execl(path, path, nullptr);
+        _exit(1); // exec failed
+    }
+
+    // Parent
     close(in_pipe[0]);
     close(out_pipe[1]);
 
-    return { in_pipe[1], out_pipe[0], pid };
+    return Process{
+        .in_fd  = in_pipe[1],
+        .out_fd = out_pipe[0],
+        .pid    = pid
+    };
+}
+
+
+int stockfish_move_count(Process& sf, const std::string& fen) {
+    char buf[256];
+    std::string acc;
+
+    dprintf(sf.in_fd, "position fen %s\n", fen.c_str());
+    dprintf(sf.in_fd, "go perft 1\n");
+
+    while (true) {
+        ssize_t n = read(sf.out_fd, buf, sizeof(buf));
+        if (n <= 0)
+            return -1;
+
+        acc.append(buf, n);
+
+        size_t pos;
+        while ((pos = acc.find('\n')) != std::string::npos) {
+            std::string line = acc.substr(0, pos);
+            acc.erase(0, pos + 1);
+
+            if (line.rfind("Nodes searched:", 0) == 0) {
+                int nodes;
+                sscanf(line.c_str(), "Nodes searched: %d", &nodes);
+                return nodes;
+            }
+        }
+    }
+}
+
+
+
+Process start_and_init_stockfish() {
+    auto sf = start_stockfish("stockfish");
+
+    dprintf(sf.in_fd, "uci\n");
+
+    char buf[256];
+    std::string acc;
+    while (true) {
+        ssize_t n = read(sf.out_fd, buf, sizeof(buf));
+        acc.append(buf, n);
+        if (acc.find("uciok") != std::string::npos)
+            break;
+    }
+
+    return sf;
 }
 
 
 void perft_debugging(const std::string& fen, int depth) {
-    printf("so far");
+    Process sf = start_and_init_stockfish();
 
-    chess_board chess_board;
-    chess_board.setup_chess_board();
-    setup_fen_position(chess_board, fen);
+    chess_board board;
+    board.setup_chess_board();
+    setup_fen_position(board, fen);
 
+    perft_debug_recursive(board, depth, sf);
+}
+
+
+
+void perft_debug_recursive(
+    chess_board& board,
+    int depth,
+    Process& sf
+) {
     Move moves[256];
-    Move* end = find_all_moves(moves, &chess_board);
-    int num_moves = end - moves;
+    Move* end = find_all_moves(moves, &board);
+    int engine_moves = end - moves;
 
-    // Stockfish starten (einmal pro Aufruf ok für Debugging)
-    printf("so far");
-
-    auto sf = start_stockfish("./toMateTo/testing/stockfish-ubuntu-x86-64-avx2");
-    write(sf.in_fd, "uci\n", 4);
-
-    char buf[256];
-    while (read(sf.out_fd, buf, sizeof(buf)) > 0) {
-        if (strstr(buf, "uciok")) break;
-    }
-
+    std::string fen = board_to_fen(board);
     int sf_moves = stockfish_move_count(sf, fen);
 
-    // 🔴 Abweichung → ausgeben und abbrechen
-    if (num_moves != sf_moves) {
-        printf("\n❌ MOVE COUNT MISMATCH\n");
-        printf("FEN: %s\n", fen.c_str());
-        printf("Engine moves: %d\n", num_moves);
-        printf("Stockfish:   %d\n\n", sf_moves);
+    if (engine_moves != sf_moves) {
+        fprintf(stderr, "\n❌ MOVE COUNT MISMATCH\n");
+        fprintf(stderr, "FEN: %s\n", fen.c_str());
+        fprintf(stderr, "Engine: %d  Stockfish: %d\n",
+                engine_moves, sf_moves);
 
-        chess_board.print_board();
-
-        printf("\nMoves found by engine:\n");
-        for (int i = 0; i < num_moves; ++i) {
-            printf("%s\n", moves[i].move_to_string().c_str());
-        }
+        board.print_board();
+        for (int i = 0; i < engine_moves; ++i)
+            fprintf(stderr, "%s\n", moves[i].move_to_string().c_str());
 
         return;
     }
 
-    // ✅ Tiefe 0 erreicht
-    if (depth <= 1)
+    if (depth == 1)
         return;
 
-    // 🔁 Rekursiv: nach jedem Zug tiefer
-    for (int i = 0; i < num_moves; ++i) {
-        Move m = moves[i];
+    for (int i = 0; i < engine_moves; ++i) {
         StateInfo st;
-
-        make_move(&chess_board, m, st);
-
-        std::string next_fen = board_to_fen(chess_board);
-        perft_debugging(next_fen, depth - 1);
-
-        undo_move(&chess_board, m, st);
+        make_move(&board, moves[i], st);
+        perft_debug_recursive(board, depth - 1, sf);
+        undo_move(&board, moves[i], st);
     }
 }
+

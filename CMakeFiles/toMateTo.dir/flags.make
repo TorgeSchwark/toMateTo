@@ -6,5 +6,5 @@ CXX_DEFINES = -DASSET_DIR_PATH=\"/home/MyProjects/toMateTo/chess_gui/chess_image
 
 CXX_INCLUDES = -I/home/MyProjects/toMateTo/. -I/home/MyProjects/toMateTo/chess_gui -I/home/MyProjects/toMateTo/toMateTo_engine
 
-CXX_FLAGS = -pg -O3 -std=gnu++20
+CXX_FLAGS = -pg -O3 -march=native -mtune=native -std=gnu++20
 

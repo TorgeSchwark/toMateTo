@@ -13,23 +13,44 @@ int RESULT_COUNT = 9;
 
 
 
-int try_all_moves(chess_board* cb, int depth) {
+long long try_all_moves(chess_board* cb, int depth) {
     
 
-    int count = 0;
+    long long count = 0;
     Move moves[256];
     Move* end = find_all_moves(moves, cb);
     int num_moves = end - moves;
     if (depth == 1 || (!num_moves)){
+        // for (Move* m = moves; m != end; ++m) {
+        //     printf("%s %d moves\n", m->move_to_string().c_str(), num_moves);
+        // }
         return num_moves;
     }
 
     for (Move* m = moves; m != end; ++m) {
 
+        // if(depth == 5 && !(m->from_sq() == E2 && m->to_sq() == E4)){
+        //     continue;
+        // }
+        // if(depth == 4 && !(m->from_sq() == D7 && m->to_sq() == D5)){
+        //     continue;
+        // }
+        // if(depth == 3 && !(m->from_sq() == E1 && m->to_sq() == E2)){
+        //     continue;
+        // }
+        // if(depth == 2 && !(m->from_sq() == D5 && m->to_sq() == E4)){
+        //     continue;
+        // }
+
         StateInfo st;
         make_move(cb, *m, st);
 
-        int check_perft = try_all_moves(cb, depth - 1);
+        long long check_perft = try_all_moves(cb, depth - 1);
+
+        if (depth == 7) {
+            printf("%s %d moves\n", m->move_to_string().c_str(), check_perft);
+        }
+
 
 
         count += check_perft;
@@ -58,6 +79,7 @@ void make_move(chess_board* cb, Move m, StateInfo& st) {
 
     // ---------- handle captures ----------
     if (flag == 2) { // en passant
+        //TODO theres a function for this!
         square cap = to + (cb->whites_turn ? -8 : 8);
         st.captured = PAWN;
         remove_piece(them, PAWN, cap);
@@ -275,7 +297,7 @@ Move* find_bishop_moves(Move* moves, chess_board* chess_board, one_side* player,
     while(bishops){
 
         square bishop_square = pop_lsb(bishops);
-        bool is_pinned = bishop_square&chess_board->pinned_pieces;
+        bool is_pinned = (1LL<<bishop_square)&chess_board->pinned_pieces;
         if(is_pinned && (chess_board->attack_count)){
             return moves;
         }    
@@ -290,7 +312,7 @@ Move* find_bishop_moves(Move* moves, chess_board* chess_board, one_side* player,
         }else if(is_pinned){
             // if we get here and piece is pinned it means king is not attacked!
             // only walk on pinned line!
-            bishop_destinations |= SQUARES_ON_THE_LINE[bishop_square][player->king];
+            bishop_destinations &= SQUARES_ON_THE_LINE[bishop_square][__builtin_ctzll(player->king)];
         }// else king is not attacked and piece not pinned!
 
         moves = add_normal_moves(bishop_square, bishop_destinations, moves);
@@ -302,7 +324,7 @@ Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, o
     Bitboard rooks = *rook;
     while(rooks){
         square rook_square = pop_lsb(rooks);    
-        bool is_pinned = rook_square&chess_board->pinned_pieces;
+        bool is_pinned = (1LL<<rook_square)&chess_board->pinned_pieces;
         // piece cant move to save king if pinned.
         if(is_pinned && (chess_board->attack_count)){
             return moves;
@@ -318,7 +340,7 @@ Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, o
         }else if(is_pinned){
             // if we get here and piece is pinned it means king is not attacked!
             // only walk on pinned line!
-            rook_destinations |= SQUARES_ON_THE_LINE[rook_square][player->king];
+            rook_destinations &= SQUARES_ON_THE_LINE[rook_square][__builtin_ctzll(player->king)];
         }// else king is not attacked and piece not pinned!
 
         moves = add_normal_moves(rook_square, rook_destinations, moves);
@@ -327,18 +349,12 @@ Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, o
 }
 
 Move* find_knight_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy) {
-    Bitboard knights = player->knights;
+    Bitboard knights = player->knights & (~chess_board->pinned_pieces); // pinned nights cant walk
     Bitboard negative_player = ~player->side_all;
     while (knights) {
 
         square knight_square= pop_lsb(knights);
-        bool is_pinned = knight_square&chess_board->pinned_pieces;
-
-        // pinned knight cant move!
-        if(is_pinned){
-            return moves;
-        }  
-
+         
         Bitboard knight_destinations = KNIGHT_LOOKUP_TABLE[knight_square] & negative_player;
 
         if(chess_board->attack_count){
@@ -375,14 +391,13 @@ void find_different_pawn_moves(Bitboard pawns, bool is_white, Bitboard empty, Bi
     results[PROMO_CAPL] = results[CAPL] & PROMOTION_ROW[is_white];
     results[PROMO_CAPR]  = results[CAPR] & PROMOTION_ROW[is_white];
 
+    // This cant happen!?
+    // if(!((1LL << (chess_board->ep_square-color_dir(FORWARD, is_white))) & chess_board->pinned_pieces)){
+
     // en passant
-    if(!((1LL << (chess_board->ep_square-color_dir(FORWARD, is_white))) & chess_board->pinned_pieces)){
-        results[EPL] = pawnCapL & (1ULL << chess_board->ep_square);
-        results[EPR] = pawnCapR & (1ULL << chess_board->ep_square);
-    }else{
-        results[EPL] = 0LL;
-        results[EPR] = 0LL;
-    }
+    results[EPL] = pawnCapL & (1ULL << chess_board->ep_square);
+    results[EPR] = pawnCapR & (1ULL << chess_board->ep_square);
+    
 }
 
 Move* add_all_pawn_moves(Bitboard* results, Move* moves, bool color){
@@ -411,6 +426,7 @@ Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, o
     if(!chess_board->attack_count){
         // TODO:: sadly cant be implemented like this since allowed squares is the whole line and that not efficiently fixable
         if(pinned_pawns){
+
             // Pinned pawns can only walk if king is not under attack
             while(pinned_pawns){
                 square pinned_pawn_square = pop_lsb(pinned_pawns);

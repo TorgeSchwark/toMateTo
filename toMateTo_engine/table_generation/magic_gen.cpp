@@ -340,6 +340,26 @@ inline int sq_index(int x, int y) {
     return y * 8 + x;
 }
 
+void init_pawn_attack_lookup() {
+    for (int sq = 0; sq < 64; ++sq) {
+        Bitboard bb = Bitboard(1ULL) << sq;
+
+        // Weiß (Index 1): schlägt nach oben
+        Bitboard white_attacks = 0ULL;
+        if ((bb & FILE_A) == 0) white_attacks |= bb << 7; // links oben
+        if ((bb & FILE_H) == 0) white_attacks |= bb << 9; // rechts oben
+
+        // Schwarz (Index 0): schlägt nach unten
+        Bitboard black_attacks = 0ULL;
+        if ((bb & FILE_A) == 0) black_attacks |= bb >> 9; // links unten
+        if ((bb & FILE_H) == 0) black_attacks |= bb >> 7; // rechts unten
+
+        PAWN_ATTACK_LOOKUP_TABLE[1][sq] = white_attacks;
+        PAWN_ATTACK_LOOKUP_TABLE[0][sq] = black_attacks;
+    }
+}
+
+
 void generate_pawn_lookup_table() {
 
     for (int sq = 0; sq < 64; ++sq) {
