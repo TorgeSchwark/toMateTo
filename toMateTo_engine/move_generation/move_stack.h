@@ -16,6 +16,26 @@
 // bit 14-15: special move flag: promotion (1), en passant (2), castling (3)
 // NOTE: en passant bit is set only when a pawn can be captured
 
+inline std::string piece_to_string_shorts(PieceType piece, bool is_white)
+{
+    switch (piece+2)
+    {
+        case BISHOP:
+            return is_white ? "B" : "b";
+
+        case KNIGHT:
+            return is_white ? "N" : "n";
+
+        case ROOK:
+            return is_white ? "R" : "r";
+
+        case QUEEN:
+            return is_white ? "Q" : "q";
+        default:
+            return "";
+    }
+}
+
 inline void print_bitboard(Bitboard bb) {
     std::cout << "\n";
     for (int rank = 7; rank >= 0; --rank) {
@@ -55,8 +75,8 @@ struct Move{
     constexpr square from_sq() const {
         return square((move >> 6) & 0x3F);
     }
-    constexpr square promo_piece() const {
-        return square((move >> 12) & 0x3);
+    constexpr PieceType promo_piece() const {
+        return PieceType((move >> 12) & 0x3);
     }
 
     constexpr square move_flag() const {
@@ -66,11 +86,16 @@ struct Move{
     constexpr square to_sq() const {
         return square(move & 0x3F);
     }
-    inline std::string move_to_string() {
+    inline std::string move_to_string(bool is_white) {
         square from = from_sq();
         square to   = to_sq();
+        PieceType promo_piec = promo_piece();
 
-        return square_to_string(from) + " -> " + square_to_string(to);
+        if(move_flag() == 1){
+            return square_to_string(from) + square_to_string(to) + piece_to_string_shorts(promo_piec, is_white);
+        }else{
+            return square_to_string(from) + square_to_string(to);
+        }
     }
 
 
@@ -91,6 +116,7 @@ inline std::string piece_to_string(PieceType piece) {
         default: return "Unknown";
     }
 }
+
 
 inline std::string move_type_to_string(int type) {
     switch (type) {

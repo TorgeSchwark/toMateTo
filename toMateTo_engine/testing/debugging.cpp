@@ -125,7 +125,7 @@ void perft_debug_recursive(
 
         board.print_board();
         for (int i = 0; i < engine_moves; ++i)
-            fprintf(stderr, "%s\n", moves[i].move_to_string().c_str());
+            fprintf(stderr, "%s\n", moves[i].move_to_string(board.whites_turn).c_str());
 
         return;
     }

@@ -340,19 +340,72 @@ inline int sq_index(int x, int y) {
     return y * 8 + x;
 }
 
-void init_pawn_attack_lookup() {
-    for (int sq = 0; sq < 64; ++sq) {
-        Bitboard bb = Bitboard(1ULL) << sq;
+void init_pawn_attack_lookup()
+{
+    for (int sq = 0; sq < 64; ++sq)
+    {
+        int x = sq % 8;
+        int y = sq / 8;
 
-        // Weiß (Index 1): schlägt nach oben
         Bitboard white_attacks = 0ULL;
-        if ((bb & FILE_A) == 0) white_attacks |= bb << 7; // links oben
-        if ((bb & FILE_H) == 0) white_attacks |= bb << 9; // rechts oben
-
-        // Schwarz (Index 0): schlägt nach unten
         Bitboard black_attacks = 0ULL;
-        if ((bb & FILE_A) == 0) black_attacks |= bb >> 9; // links unten
-        if ((bb & FILE_H) == 0) black_attacks |= bb >> 7; // rechts unten
+
+
+        // =========================================================
+        // Weißer Bauer
+        //
+        // Weiß schlägt nach oben:
+        // (-1, +1) und (+1, +1)
+        // =========================================================
+
+        if (is_on_board(x, y, -1, +1))
+        {
+            int target_sq =
+                (y + 1) * 8 + (x - 1);
+
+            white_attacks |=
+                Bitboard(1ULL) << target_sq;
+        }
+
+        if (is_on_board(x, y, +1, +1))
+        {
+            int target_sq =
+                (y + 1) * 8 + (x + 1);
+
+            white_attacks |=
+                Bitboard(1ULL) << target_sq;
+        }
+
+
+        // =========================================================
+        // Schwarzer Bauer
+        //
+        // Schwarz schlägt nach unten:
+        // (-1, -1) und (+1, -1)
+        // =========================================================
+
+        if (is_on_board(x, y, -1, -1))
+        {
+            int target_sq =
+                (y - 1) * 8 + (x - 1);
+
+            black_attacks |=
+                Bitboard(1ULL) << target_sq;
+        }
+
+        if (is_on_board(x, y, +1, -1))
+        {
+            int target_sq =
+                (y - 1) * 8 + (x + 1);
+
+            black_attacks |=
+                Bitboard(1ULL) << target_sq;
+        }
+
+
+        // =========================================================
+        // Speichern
+        // =========================================================
 
         PAWN_ATTACK_LOOKUP_TABLE[1][sq] = white_attacks;
         PAWN_ATTACK_LOOKUP_TABLE[0][sq] = black_attacks;

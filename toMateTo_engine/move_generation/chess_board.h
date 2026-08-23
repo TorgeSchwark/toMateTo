@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <bit>
+#include <map>
 
 #include "toMateTo_engine/move_generation/move_stack.h"
 #include "toMateTo_engine/table_generation/knight_tables.h"
@@ -199,7 +200,13 @@ struct chess_board
     }
 };
 
-long long try_all_moves(chess_board* cb, int depth);
+uint64_t try_all_moves_recursive(
+    chess_board* cb,
+    int depth);
+
+std::map<std::string, uint64_t> try_all_moves(
+    chess_board* cb,
+    int depth);
 
 void make_move(chess_board* cb, Move m, StateInfo& st);
 
@@ -278,12 +285,12 @@ inline Bitboard attackers_magic(int square, Bitboard attackers,const MagicTableE
 }
 
 inline Bitboard get_straight_pins(one_side* enemy, one_side* player,int pos_ind, Bitboard attack_mask){
-    Bitboard blocked = attack_mask & (enemy->knights | enemy->bishop | enemy->pawns | player->side_all);
+    Bitboard blocked = attack_mask & (enemy->knights | enemy->bishop | enemy->pawns| enemy->king | player->side_all);
     return pins_magic(pos_ind, blocked, PINNED_PIECES_ROOK_MAGIC);
 }
 
 inline Bitboard get_diagonal_pins(one_side* enemy, one_side* player, int pos_ind, Bitboard attack_mask){
-    Bitboard blocked = attack_mask & (enemy->knights | enemy->rooks | enemy->pawns | player->side_all);
+    Bitboard blocked = attack_mask & (enemy->knights | enemy->rooks | enemy->pawns | enemy->king | player->side_all);
     return pins_magic(pos_ind, blocked, PINNED_PIECES_BISHOP_MAGIC);
 }
 
@@ -371,6 +378,8 @@ inline Bitboard rook_magic_remove_original(int square,const chess_board* board, 
 
 inline Bitboard is_diagonal_attacked_new(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard remove_mask){
     Bitboard diagonal_moves = bishop_magic_remove_original(pos_ind, chess_board, player, remove_mask);
+
+    // print_bitboard(diagonal_moves);
 
     return (diagonal_moves & (enemy->bishop | enemy->queen));
 }

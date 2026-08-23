@@ -13,53 +13,72 @@ int RESULT_COUNT = 9;
 
 
 
-long long try_all_moves(chess_board* cb, int depth) {
-    
+std::map<std::string, uint64_t> try_all_moves(
+    chess_board* cb,
+    int depth)
+{
+    std::map<std::string, uint64_t> result;
 
-    long long count = 0;
     Move moves[256];
     Move* end = find_all_moves(moves, cb);
-    int num_moves = end - moves;
-    if (depth == 1 || (!num_moves)){
-        // for (Move* m = moves; m != end; ++m) {
-        //     printf("%s %d moves\n", m->move_to_string().c_str(), num_moves);
-        // }
-        return num_moves;
-    }
 
     for (Move* m = moves; m != end; ++m) {
 
-        // if(depth == 5 && !(m->from_sq() == E2 && m->to_sq() == E4)){
-        //     continue;
-        // }
-        // if(depth == 4 && !(m->from_sq() == D7 && m->to_sq() == D5)){
-        //     continue;
-        // }
-        // if(depth == 3 && !(m->from_sq() == E1 && m->to_sq() == E2)){
-        //     continue;
-        // }
-        // if(depth == 2 && !(m->from_sq() == D5 && m->to_sq() == E4)){
-        //     continue;
-        // }
-
         StateInfo st;
+
         make_move(cb, *m, st);
 
-        long long check_perft = try_all_moves(cb, depth - 1);
+        uint64_t count;
 
-        if (depth == 7) {
-            printf("%s %d moves\n", m->move_to_string().c_str(), check_perft);
+        if (depth == 1) {
+            count = 1;
+        }
+        else {
+            count = try_all_moves_recursive(
+                cb,
+                depth - 1
+            );
         }
 
+        result[m->move_to_string(cb->whites_turn)] = count;
 
-
-        count += check_perft;
         undo_move(cb, *m, st);
     }
-    return count;
+
+    return result;
 }
 
+uint64_t try_all_moves_recursive(
+    chess_board* cb,
+    int depth)
+{
+    Move moves[256];
+    Move* end = find_all_moves(moves, cb);
 
+    int num_moves = end - moves;
+
+    if (depth == 1) {
+        return num_moves;
+    }
+
+    uint64_t count = 0;
+
+    for (Move* m = moves; m != end; ++m) {
+
+        StateInfo st;
+
+        make_move(cb, *m, st);
+
+        count += try_all_moves_recursive(
+            cb,
+            depth - 1
+        );
+
+        undo_move(cb, *m, st);
+    }
+
+    return count;
+}
 
 void make_move(chess_board* cb, Move m, StateInfo& st) {
     one_side& us   = cb->whites_turn ? cb->white : cb->black;
@@ -389,7 +408,9 @@ void find_different_pawn_moves(Bitboard pawns, bool is_white, Bitboard empty, Bi
     results[PROMO_PUSH] = results[PUSH1] & PROMOTION_ROW[is_white];
     results[PUSH1] &= ~PROMOTION_ROW[is_white];
     results[PROMO_CAPL] = results[CAPL] & PROMOTION_ROW[is_white];
+    results[CAPL] &= ~PROMOTION_ROW[is_white];
     results[PROMO_CAPR]  = results[CAPR] & PROMOTION_ROW[is_white];
+    results[CAPR] &= ~PROMOTION_ROW[is_white];
 
     // This cant happen!?
     // if(!((1LL << (chess_board->ep_square-color_dir(FORWARD, is_white))) & chess_board->pinned_pieces)){
@@ -510,7 +531,7 @@ bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy,
     return true;
 }
 
-void find_pin_information(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
+void  find_pin_information(chess_board* chess_board, one_side* player, one_side* enemy, Bitboard pos_ind){
     // Finds Number of attacks on the king
     // Stores all pinned Pieces 
     // Stores all pieces attacking the King
@@ -518,6 +539,7 @@ void find_pin_information(chess_board* chess_board, one_side* player, one_side* 
     int8_t count_attacks = 0;
 
     // Straight block
+
     // is the + sides also needed here i think no because pinned piece cant be at border
     Bitboard relevant_squares = get_straight_attackers_new(enemy, pos_ind);
     Bitboard pinned_pieces_straight = get_straight_pins(enemy, player, pos_ind, relevant_squares);

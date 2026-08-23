@@ -177,6 +177,30 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+testing/stockfish_perft.o: testing/stockfish_perft.cpp.o
+.PHONY : testing/stockfish_perft.o
+
+# target to build an object file
+testing/stockfish_perft.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o
+.PHONY : testing/stockfish_perft.cpp.o
+
+testing/stockfish_perft.i: testing/stockfish_perft.cpp.i
+.PHONY : testing/stockfish_perft.i
+
+# target to preprocess a source file
+testing/stockfish_perft.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.i
+.PHONY : testing/stockfish_perft.cpp.i
+
+testing/stockfish_perft.s: testing/stockfish_perft.cpp.s
+.PHONY : testing/stockfish_perft.s
+
+# target to generate assembly for a file
+testing/stockfish_perft.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.s
+.PHONY : testing/stockfish_perft.cpp.s
+
 toMateTo_engine/move_generation/chess_board.o: toMateTo_engine/move_generation/chess_board.cpp.o
 .PHONY : toMateTo_engine/move_generation/chess_board.o
 
@@ -360,6 +384,9 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... testing/stockfish_perft.o"
+	@echo "... testing/stockfish_perft.i"
+	@echo "... testing/stockfish_perft.s"
 	@echo "... toMateTo_engine/move_generation/chess_board.o"
 	@echo "... toMateTo_engine/move_generation/chess_board.i"
 	@echo "... toMateTo_engine/move_generation/chess_board.s"

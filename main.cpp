@@ -8,6 +8,7 @@
 #include "toMateTo_engine/table_generation/magic_gen.h"
 #include "toMateTo_engine/table_generation/magic_king_tables.h"
 #include "toMateTo_engine/testing/debugging.h"
+#include "testing/stockfish_perft.h"
 
 
 int main() {
@@ -27,38 +28,27 @@ int main() {
     init_pawn_attack_lookup();
     init_direction_rays();
     
-    setup_fen_position(chess_board, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    // perft_debugging("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 2); 
-
-    // Example move test
-    const int repetitions =  1; // currently 13000000*32 in that pos per s so 416M/s legal!!
-    int test = 3;
-    auto perft_speed_start = std::chrono::high_resolution_clock::now();
-    long long count_moves = try_all_moves(&chess_board, 7);
-    auto perft_speed_end = std::chrono::high_resolution_clock::now();
-    auto duration_perft = std::chrono::duration_cast<std::chrono::milliseconds>(perft_speed_end - perft_speed_start);
-    printf("\n total_move %lld in %li \n", count_moves, duration_perft.count());
-
-    // auto start_time = std::chrono::high_resolution_clock::now();
-    // Move moves[256];
-    // Move* result;
-    // for (int i = 0; i < repetitions; ++i) {
-    //     result = find_all_moves(moves, &chess_board);
-    // }
-    // auto end_time = std::chrono::high_resolution_clock::now();
-    // auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-
-    // // print results
-    // int count = (result - moves);
-    // for (int i = 0; i < count; ++i) {
-    //         std::cout << moves[i].move_to_string() << "\n";
-    //     }
+    setup_fen_position(chess_board, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/P1N2Q2/1PPBBPpP/1R2K2R b Kkq - 0 2");
 
     
+   
+    Move moves[256];
+    Move* end = find_all_moves(moves, &chess_board);
 
-    // std::cout << "Duration: " << duration.count() << "ms\n";
-    // std::cout << moves[0].move_to_string() << "\n";
-    // printf("%d moves \n", count);
+    int num_moves = end - moves;
+
+    std::cout << "Generated moves: " << num_moves << "\n";
+
+    for (Move* m = moves; m != end; ++m) {
+        std::cout << "  "
+                << m->move_to_string(chess_board.whites_turn)
+                << "\n";
+    }
+
+    
+ 
+    // find_perft_error("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ");
+    
     
 
     // Start GUI
