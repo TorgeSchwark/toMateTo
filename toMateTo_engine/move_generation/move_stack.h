@@ -18,7 +18,7 @@
 
 inline std::string piece_to_string_shorts(PieceType piece, bool is_white)
 {
-    switch (piece+2)
+    switch (piece)
     {
         case BISHOP:
             return is_white ? "B" : "b";

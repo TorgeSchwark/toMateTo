@@ -1,6 +1,8 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <chrono>
+#include <map>
+#include <cstdint>
 
 #include "chess_gui/gui.h"
 #include "toMateTo_engine/move_generation/chess_board.h"
@@ -12,8 +14,8 @@
 
 
 int main() {
-    chess_board chess_board;
-    chess_board.setup_chess_board();
+    chess_board gui_board;
+    gui_board.setup_chess_board();
 
     // initialization
     init_knight_table();
@@ -27,34 +29,72 @@ int main() {
     init_attack_tables_rock_and_bishop();
     init_pawn_attack_lookup();
     init_direction_rays();
+    init_rows();
     
-    setup_fen_position(chess_board, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/P1N2Q2/1PPBBPpP/1R2K2R b Kkq - 0 2");
+    // current degub fen: r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/P1N2Q2/1PPBBPpP/1R2K2R b Kkq - 0 2
+    setup_fen_position(gui_board, "1r6/2p5/3p4/1P6/RK3p1k/8/4P1P1/8 w - - 4 3");
 
+    // // perft_debug_depth2_undo("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/P1N2Q2/1PPBBPpP/1R2K2R b Kkq - 0 2");
+    // // g2g1b fehlt stockfish hat 45 Nodes ToMateTo Missing
     
    
-    Move moves[256];
-    Move* end = find_all_moves(moves, &chess_board);
+    // Move moves[256];
+    // Move* end = find_all_moves(moves, &gui_board);
 
-    int num_moves = end - moves;
+    // int num_moves = end - moves;
 
-    std::cout << "Generated moves: " << num_moves << "\n";
+    // std::cout << "Generated moves: " << num_moves << "\n";
 
-    for (Move* m = moves; m != end; ++m) {
-        std::cout << "  "
-                << m->move_to_string(chess_board.whites_turn)
-                << "\n";
-    }
+    // for (Move* m = moves; m != end; ++m) {
+    //     std::cout << "  "
+    //             << m->move_to_string(gui_board.whites_turn)
+    //             << "\n";
+    // }
 
+
+    //test_position();
     
  
-    // find_perft_error("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ");
+   find_perft_error("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1");
     
     
+    // chess_board board;
 
+    // board.setup_chess_board();
+
+    // setup_fen_position(
+    //     board,
+    //     "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/P1N2Q2/1PPBBPpP/1R2K2R b Kkq - 0 2"
+    // );
+
+    // std::map<std::string, uint64_t> result =
+    //     try_all_moves(&board, 2);
+
+    // uint64_t total = 0;
+
+    // std::cout << "\n";
+    // std::cout << "========================================\n";
+    // std::cout << "DEPTH 2\n";
+    // std::cout << "========================================\n";
+
+    // for (const auto& [move, count] : result) {
+
+    //     std::cout
+    //         << move
+    //         << ": "
+    //         << count
+    //         << "\n";
+
+    //     total += count;
+    // }
+
+    // std::cout << "========================================\n";
+    // std::cout << "TOTAL: " << total << "\n";
+    // std::cout << "========================================\n";
     // Start GUI
     init_gui();
 
-    while (update_gui(chess_board)) {
+    while (update_gui(gui_board)) {
         // maybe later: input handling, moves, etc.
     }
 

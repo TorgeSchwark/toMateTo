@@ -39,7 +39,7 @@ typedef U64 (*attack_fn)(int square, U64 occ);
 typedef U64 (*mask_fn)(int square);
 
 enum PieceType: std::int8_t{
-    NO_PIECE_TYPE, PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING
+    BISHOP, KNIGHT, ROOK, QUEEN, KING, NO_PIECE_TYPE, PAWN, 
 };
 
 constexpr int8_t FORWARD        = 8;

@@ -376,12 +376,24 @@ inline Bitboard rook_magic_remove_original(int square,const chess_board* board, 
     return sliding_magic(square, board->complete_board & (~remove_mask), ROOK_MAGIC, ~player->side_all);
 }
 
+// finds the first attacker in a straight but ignoring Pawns!
+inline Bitboard rook_magic_remove_original_ray_pawns(int square,const chess_board* board, const one_side* player, Bitboard remove_mask){
+    return sliding_magic(square, board->complete_board & (~(remove_mask | board->white.pawns | board->black.pawns)), ROOK_MAGIC);
+}
+
 inline Bitboard is_diagonal_attacked_new(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard remove_mask){
     Bitboard diagonal_moves = bishop_magic_remove_original(pos_ind, chess_board, player, remove_mask);
 
     // print_bitboard(diagonal_moves);
 
     return (diagonal_moves & (enemy->bishop | enemy->queen));
+}
+
+inline Bitboard attackers_straigt_ray_pawns(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard remove_mask){
+    // für die attacks muss hier wirklich gefragt werden ob die figur eine gegnereischer Rook oder Queen
+    Bitboard straight_moves = rook_magic_remove_original_ray_pawns(pos_ind, chess_board, player, remove_mask);
+    // nur die auf der Geraden Linie 
+    return (straight_moves & (enemy->rooks | enemy->queen));
 }
 
 inline Bitboard is_straight_attacked_new(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard remove_mask){

@@ -529,6 +529,7 @@ static std::string debug_perft_position(
                 *m,
                 st
             );
+            
 
 
             std::string newHistory =
@@ -702,3 +703,84 @@ std::string find_perft_error(std::string fen)
 
 //     return 0;
 // }
+
+void test_position()
+{
+    chess_board board;
+
+    setup_fen_position(
+        board,
+        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/P1N2Q2/1PPBBPpP/1R2K2R b Kkq - 0 2"
+    );
+
+    std::cout << "Initial white king: "
+              << __builtin_ctzll(board.white.king)
+              << std::endl;
+
+    std::cout << "Initial black king: "
+              << __builtin_ctzll(board.black.king)
+              << std::endl;
+
+
+    // Züge nacheinander ausführen
+    const std::vector<std::string> moves = {
+        "a6b5",
+        "f3g2",
+        "a7a5",
+        "e1g1",
+        "e7c5",
+
+    };
+
+    for (const std::string& move_string : moves)
+    {
+        Move moves_buffer[256];
+        Move* end = find_all_moves(moves_buffer, &board);
+
+        bool found = false;
+
+        for (Move* m = moves_buffer; m != end; ++m)
+        {
+            // Wichtig: move_to_string() vor make_move()
+            // weil sich whites_turn nach make_move() ändert
+            if (m->move_to_string(board.whites_turn) == move_string)
+            {
+                StateInfo st;
+
+                std::cout << "\nExecuting: " << move_string << std::endl;
+
+                make_move(&board, *m, st);
+
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            std::cout << "ERROR: Move not found: "
+                      << move_string << std::endl;
+            break;
+        }
+        print_bitboard(board.white.king);
+        // Nach make_move() wurde whites_turn bereits umgeschaltet.
+        // Der gerade gezogene Spieler ist also die jeweils andere Farbe.
+        std::cout << "White king square: ";
+
+        if (board.white.king)
+            std::cout << __builtin_ctzll(board.white.king);
+        else
+            std::cout << "MISSING";
+
+        std::cout << std::endl;
+
+        std::cout << "Black king square: ";
+
+        if (board.black.king)
+            std::cout << __builtin_ctzll(board.black.king);
+        else
+            std::cout << "MISSING";
+
+        std::cout << std::endl;
+    }
+}

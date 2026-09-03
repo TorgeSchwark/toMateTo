@@ -50,5 +50,7 @@ uint64_t get_node_count(const std::string& output);
 
 std::string find_perft_error(std::string fen);
 
+void test_position();
+
 #endif 
 

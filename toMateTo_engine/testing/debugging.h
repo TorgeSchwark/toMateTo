@@ -44,5 +44,6 @@ void perft_debug_recursive(
     Process& sf
 );
 
+void perft_debug_depth2_undo(const std::string& fen);
 
 #endif 

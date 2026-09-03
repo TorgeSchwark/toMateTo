@@ -11,6 +11,8 @@ MagicTableEntry ATTACK_PATTERN_BISHOP_MAGIC[64];
 
 Bitboard DIRECTION_RAYS[64][8];
 
+Bitboard ROWS[8];
+
 Bitboard SQUARES_ON_THE_LINE[64][64];
 Bitboard SQUARES_IN_BETWEEN[64][64];
 
@@ -31,6 +33,14 @@ square CASTLE_TO[2][2] = {
 };
 
 int directions[8][2] = {{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1},{0,1}};
+
+void init_rows()
+{
+    for (int rank = 0; rank < 8; ++rank)
+    {
+        ROWS[rank] = 0xFFULL << (rank * 8);
+    }
+}
 
 void init_king_move_mask(){
     for(int x = 0; x < 8; x ++){

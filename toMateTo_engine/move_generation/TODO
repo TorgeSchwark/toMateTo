@@ -1,5 +1,2 @@
-At the moment: if white removes a pinned piece while en passant, the move is not Legal even though it should. Bug not tested for Black because insufficient depth.
-En passant move cant free a pin! 
 
-
-PLEASE!!!! : Automatic debug function!!
+EP pinnes überarbeiten / überdenken!
