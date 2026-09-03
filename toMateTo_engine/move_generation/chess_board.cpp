@@ -558,6 +558,10 @@ bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy,
         return false;
     }
 
+    if(KING_MOVES_MASK[pos_ind] & enemy->king){
+        return false;
+    }
+
     return true;
 }
 
