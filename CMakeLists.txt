@@ -18,6 +18,8 @@ add_executable(toMateTo
     ${ENGINE_DIR}/table_generation/magic_gen.cpp
     ${ENGINE_DIR}/move_generation/move_stack.cpp
     ${ENGINE_DIR}/testing/debugging.cpp
+    ${ENGINE_DIR}/toMateTo/toMateTo.cpp
+    ${ENGINE_DIR}/toMateTo/eval.cpp
     ./testing/stockfish_perft.cpp
     ./testing/move_gen_speed_testing.cpp
 )

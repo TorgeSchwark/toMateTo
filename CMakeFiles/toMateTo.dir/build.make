@@ -195,10 +195,38 @@ CMakeFiles/toMateTo.dir/toMateTo_engine/testing/debugging.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/toMateTo.dir/toMateTo_engine/testing/debugging.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/MyProjects/toMateTo/toMateTo_engine/testing/debugging.cpp -o CMakeFiles/toMateTo.dir/toMateTo_engine/testing/debugging.cpp.s
 
+CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.o: CMakeFiles/toMateTo.dir/flags.make
+CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.o: toMateTo_engine/toMateTo/toMateTo.cpp
+CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.o: CMakeFiles/toMateTo.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/MyProjects/toMateTo/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.o -MF CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.o.d -o CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.o -c /home/MyProjects/toMateTo/toMateTo_engine/toMateTo/toMateTo.cpp
+
+CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/MyProjects/toMateTo/toMateTo_engine/toMateTo/toMateTo.cpp > CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.i
+
+CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/MyProjects/toMateTo/toMateTo_engine/toMateTo/toMateTo.cpp -o CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.s
+
+CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.o: CMakeFiles/toMateTo.dir/flags.make
+CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.o: toMateTo_engine/toMateTo/eval.cpp
+CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.o: CMakeFiles/toMateTo.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/MyProjects/toMateTo/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.o -MF CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.o.d -o CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.o -c /home/MyProjects/toMateTo/toMateTo_engine/toMateTo/eval.cpp
+
+CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/MyProjects/toMateTo/toMateTo_engine/toMateTo/eval.cpp > CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.i
+
+CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/MyProjects/toMateTo/toMateTo_engine/toMateTo/eval.cpp -o CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.s
+
 CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o: CMakeFiles/toMateTo.dir/flags.make
 CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o: testing/stockfish_perft.cpp
 CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o: CMakeFiles/toMateTo.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/MyProjects/toMateTo/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/MyProjects/toMateTo/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o -MF CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o.d -o CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o -c /home/MyProjects/toMateTo/testing/stockfish_perft.cpp
 
 CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.i: cmake_force
@@ -212,7 +240,7 @@ CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.s: cmake_force
 CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o: CMakeFiles/toMateTo.dir/flags.make
 CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o: testing/move_gen_speed_testing.cpp
 CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o: CMakeFiles/toMateTo.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/MyProjects/toMateTo/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/MyProjects/toMateTo/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o -MF CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o.d -o CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o -c /home/MyProjects/toMateTo/testing/move_gen_speed_testing.cpp
 
 CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.i: cmake_force
@@ -234,6 +262,8 @@ toMateTo_OBJECTS = \
 "CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/magic_gen.cpp.o" \
 "CMakeFiles/toMateTo.dir/toMateTo_engine/move_generation/move_stack.cpp.o" \
 "CMakeFiles/toMateTo.dir/toMateTo_engine/testing/debugging.cpp.o" \
+"CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.o" \
+"CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.o" \
 "CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o" \
 "CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o"
 
@@ -249,6 +279,8 @@ toMateTo: CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/magic_helper_
 toMateTo: CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/magic_gen.cpp.o
 toMateTo: CMakeFiles/toMateTo.dir/toMateTo_engine/move_generation/move_stack.cpp.o
 toMateTo: CMakeFiles/toMateTo.dir/toMateTo_engine/testing/debugging.cpp.o
+toMateTo: CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.o
+toMateTo: CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.o
 toMateTo: CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o
 toMateTo: CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o
 toMateTo: CMakeFiles/toMateTo.dir/build.make
@@ -256,7 +288,7 @@ toMateTo: /usr/lib/x86_64-linux-gnu/libsfml-graphics.so.2.6.1
 toMateTo: /usr/lib/x86_64-linux-gnu/libsfml-window.so.2.6.1
 toMateTo: /usr/lib/x86_64-linux-gnu/libsfml-system.so.2.6.1
 toMateTo: CMakeFiles/toMateTo.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/MyProjects/toMateTo/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Linking CXX executable toMateTo"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/MyProjects/toMateTo/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Linking CXX executable toMateTo"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/toMateTo.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

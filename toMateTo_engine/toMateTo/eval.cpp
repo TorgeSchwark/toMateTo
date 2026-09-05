@@ -1,56 +1,70 @@
 #include "eval.h"
 
-#define PAWN   0
-#define KNIGHT 1
-#define BISHOP 2
-#define ROOK   3
-#define QUEEN  4
-#define KING   5
+#define PESTO_PAWN   0
+#define PESTO_KNIGHT 1
+#define PESTO_BISHOP 2
+#define PESTO_ROOK   3
+#define PESTO_QUEEN  4
+#define PESTO_KING   5
 
-/* board representation */
-#define WHITE  0
-#define BLACK  1
+#define PESTO_WHITE 0
+#define PESTO_BLACK 1
 
-#define WHITE_PAWN      (2*PAWN   + WHITE)
-#define BLACK_PAWN      (2*PAWN   + BLACK)
-#define WHITE_KNIGHT    (2*KNIGHT + WHITE)
-#define BLACK_KNIGHT    (2*KNIGHT + BLACK)
-#define WHITE_BISHOP    (2*BISHOP + WHITE)
-#define BLACK_BISHOP    (2*BISHOP + BLACK)
-#define WHITE_ROOK      (2*ROOK   + WHITE)
-#define BLACK_ROOK      (2*ROOK   + BLACK)
-#define WHITE_QUEEN     (2*QUEEN  + WHITE)
-#define BLACK_QUEEN     (2*QUEEN  + BLACK)
-#define WHITE_KING      (2*KING   + WHITE)
-#define BLACK_KING      (2*KING   + BLACK)
-#define EMPTY           (BLACK_KING  +  1)
+#define PESTO_WHITE_PAWN      (2 * PESTO_PAWN   + PESTO_WHITE)
+#define PESTO_BLACK_PAWN      (2 * PESTO_PAWN   + PESTO_BLACK)
 
-#define PCOLOR(p) ((p)&1)
+#define PESTO_WHITE_KNIGHT    (2 * PESTO_KNIGHT + PESTO_WHITE)
+#define PESTO_BLACK_KNIGHT    (2 * PESTO_KNIGHT + PESTO_BLACK)
 
-int side2move;
-int board[64];
+#define PESTO_WHITE_BISHOP    (2 * PESTO_BISHOP + PESTO_WHITE)
+#define PESTO_BLACK_BISHOP    (2 * PESTO_BISHOP + PESTO_BLACK)
 
-#define FLIP(sq) ((sq)^56)
-#define OTHER(side) ((side)^ 1)
+#define PESTO_WHITE_ROOK      (2 * PESTO_ROOK   + PESTO_WHITE)
+#define PESTO_BLACK_ROOK      (2 * PESTO_ROOK   + PESTO_BLACK)
 
-int mg_value[6] = { 82, 337, 365, 477, 1025,  0};
-int eg_value[6] = { 94, 281, 297, 512,  936,  0};
+#define PESTO_WHITE_QUEEN     (2 * PESTO_QUEEN  + PESTO_WHITE)
+#define PESTO_BLACK_QUEEN     (2 * PESTO_QUEEN  + PESTO_BLACK)
 
-/* piece/sq tables */
-/* values from Rofchade: http://www.talkchess.com/forum3/viewtopic.php?f=2&t=68311&start=19 */
+#define PESTO_WHITE_KING      (2 * PESTO_KING   + PESTO_WHITE)
+#define PESTO_BLACK_KING      (2 * PESTO_KING   + PESTO_BLACK)
 
-int mg_pawn_table[64] = {
-      0,   0,   0,   0,   0,   0,  0,   0,
-     98, 134,  61,  95,  68, 126, 34, -11,
-     -6,   7,  26,  31,  65,  56, 25, -20,
-    -14,  13,   6,  21,  23,  12, 17, -23,
-    -27,  -2,  -5,  12,  17,   6, 10, -25,
-    -26,  -4,  -4, -10,   3,   3, 33, -12,
-    -35,  -1, -20, -23, -15,  24, 38, -22,
-      0,   0,   0,   0,   0,   0,  0,   0,
+#define PESTO_EMPTY           12
+
+#define PESTO_FLIP(sq) ((sq) ^ 56)
+
+
+/*
+ * Piece values
+ */
+
+int pesto_mg_value[6] = {
+     82, 337, 365, 477, 1025, 0
 };
 
-int eg_pawn_table[64] = {
+int pesto_eg_value[6] = {
+     94, 281, 297, 512,  936, 0
+};
+
+
+/*
+ * Piece-square tables
+ *
+ * Values from Rofchade:
+ * http://www.talkchess.com/forum3/viewtopic.php?f=2&t=68311&start=19
+ */
+
+int pesto_mg_pawn_table[64] = {
+      0,   0,   0,   0,   0,   0,   0,   0,
+     98, 134,  61,  95,  68, 126,  34, -11,
+     -6,   7,  26,  31,  65,  56,  25, -20,
+    -14,  13,   6,  21,  23,  12,  17, -23,
+    -27,  -2,  -5,  12,  17,   6,  10, -25,
+    -26,  -4,  -4, -10,   3,   3,  33, -12,
+    -35,  -1, -20, -23, -15,  24,  38, -22,
+      0,   0,   0,   0,   0,   0,   0,   0,
+};
+
+int pesto_eg_pawn_table[64] = {
       0,   0,   0,   0,   0,   0,   0,   0,
     178, 173, 158, 134, 147, 132, 165, 187,
      94, 100,  85,  67,  56,  53,  82,  84,
@@ -61,7 +75,7 @@ int eg_pawn_table[64] = {
       0,   0,   0,   0,   0,   0,   0,   0,
 };
 
-int mg_knight_table[64] = {
+int pesto_mg_knight_table[64] = {
     -167, -89, -34, -49,  61, -97, -15, -107,
      -73, -41,  72,  36,  23,  62,   7,  -17,
      -47,  60,  37,  65,  84, 129,  73,   44,
@@ -72,7 +86,7 @@ int mg_knight_table[64] = {
     -105, -21, -58, -33, -17, -28, -19,  -23,
 };
 
-int eg_knight_table[64] = {
+int pesto_eg_knight_table[64] = {
     -58, -38, -13, -28, -31, -27, -63, -99,
     -25,  -8, -25,  -2,  -9, -25, -24, -52,
     -24, -20,  10,   9,  -1,  -9, -19, -41,
@@ -83,7 +97,7 @@ int eg_knight_table[64] = {
     -29, -51, -23, -15, -22, -18, -50, -64,
 };
 
-int mg_bishop_table[64] = {
+int pesto_mg_bishop_table[64] = {
     -29,   4, -82, -37, -25, -42,   7,  -8,
     -26,  16, -18, -13,  30,  59,  18, -47,
     -16,  37,  43,  40,  35,  50,  37,  -2,
@@ -94,40 +108,40 @@ int mg_bishop_table[64] = {
     -33,  -3, -14, -21, -13, -12, -39, -21,
 };
 
-int eg_bishop_table[64] = {
-    -14, -21, -11,  -8, -7,  -9, -17, -24,
-     -8,  -4,   7, -12, -3, -13,  -4, -14,
-      2,  -8,   0,  -1, -2,   6,   0,   4,
-     -3,   9,  12,   9, 14,  10,   3,   2,
-     -6,   3,  13,  19,  7,  10,  -3,  -9,
-    -12,  -3,   8,  10, 13,   3,  -7, -15,
-    -14, -18,  -7,  -1,  4,  -9, -15, -27,
-    -23,  -9, -23,  -5, -9, -16,  -5, -17,
+int pesto_eg_bishop_table[64] = {
+    -14, -21, -11,  -8,  -7,  -9, -17, -24,
+     -8,  -4,   7, -12,  -3, -13,  -4, -14,
+      2,  -8,   0,  -1,  -2,   6,   0,   4,
+     -3,   9,  12,   9,  14,  10,   3,   2,
+     -6,   3,  13,  19,   7,  10,  -3,  -9,
+    -12,  -3,   8,  10,  13,   3,  -7, -15,
+    -14, -18,  -7,  -1,   4,  -9, -15, -27,
+    -23,  -9, -23,  -5,  -9, -16,  -5, -17,
 };
 
-int mg_rook_table[64] = {
-     32,  42,  32,  51, 63,  9,  31,  43,
-     27,  32,  58,  62, 80, 67,  26,  44,
-     -5,  19,  26,  36, 17, 45,  61,  16,
-    -24, -11,   7,  26, 24, 35,  -8, -20,
-    -36, -26, -12,  -1,  9, -7,   6, -23,
-    -45, -25, -16, -17,  3,  0,  -5, -33,
-    -44, -16, -20,  -9, -1, 11,  -6, -71,
-    -19, -13,   1,  17, 16,  7, -37, -26,
+int pesto_mg_rook_table[64] = {
+     32,  42,  32,  51,  63,   9,  31,  43,
+     27,  32,  58,  62,  80,  67,  26,  44,
+     -5,  19,  26,  36,  17,  45,  61,  16,
+    -24, -11,   7,  26,  24,  35,  -8, -20,
+    -36, -26, -12,  -1,   9,  -7,   6, -23,
+    -45, -25, -16, -17,   3,   0,  -5, -33,
+    -44, -16, -20,  -9,  -1,  11,  -6, -71,
+    -19, -13,   1,  17,  16,   7, -37, -26,
 };
 
-int eg_rook_table[64] = {
-    13, 10, 18, 15, 12,  12,   8,   5,
-    11, 13, 13, 11, -3,   3,   8,   3,
-     7,  7,  7,  5,  4,  -3,  -5,  -3,
-     4,  3, 13,  1,  2,   1,  -1,   2,
-     3,  5,  8,  4, -5,  -6,  -8, -11,
-    -4,  0, -5, -1, -7, -12,  -8, -16,
-    -6, -6,  0,  2, -9,  -9, -11,  -3,
-    -9,  2,  3, -1, -5, -13,   4, -20,
+int pesto_eg_rook_table[64] = {
+     13,  10,  18,  15,  12,  12,   8,   5,
+     11,  13,  13,  11,  -3,   3,   8,   3,
+      7,   7,   7,   5,   4,  -3,  -5,  -3,
+      4,   3,  13,   1,   2,   1,  -1,   2,
+      3,   5,   8,   4,  -5,  -6,  -8, -11,
+     -4,   0,  -5,  -1,  -7, -12,  -8, -16,
+     -6,  -6,   0,   2,  -9,  -9, -11,  -3,
+     -9,   2,   3,  -1,  -5, -13,   4, -20,
 };
 
-int mg_queen_table[64] = {
+int pesto_mg_queen_table[64] = {
     -28,   0,  29,  12,  59,  44,  43,  45,
     -24, -39,  -5,   1, -16,  57,  28,  54,
     -13, -17,   7,   8,  29,  56,  47,  57,
@@ -138,7 +152,7 @@ int mg_queen_table[64] = {
      -1, -18,  -9,  10, -15, -25, -31, -50,
 };
 
-int eg_queen_table[64] = {
+int pesto_eg_queen_table[64] = {
      -9,  22,  22,  27,  27,  19,  10,  20,
     -17,  20,  32,  41,  58,  25,  30,   0,
     -20,   6,   9,  49,  47,  35,  19,   9,
@@ -149,7 +163,7 @@ int eg_queen_table[64] = {
     -33, -28, -22, -43,  -5, -32, -20, -41,
 };
 
-int mg_king_table[64] = {
+int pesto_mg_king_table[64] = {
     -65,  23,  16, -15, -56, -34,   2,  13,
      29,  -1, -20,  -7,  -8,  -4, -38, -29,
      -9,  24,   2, -16, -20,   6,  22, -22,
@@ -160,7 +174,7 @@ int mg_king_table[64] = {
     -15,  36,  12, -54,   8, -28,  24,  14,
 };
 
-int eg_king_table[64] = {
+int pesto_eg_king_table[64] = {
     -74, -35, -18, -18, -11,  15,   4, -17,
     -12,  17,  14,  17,  17,  38,  23,  11,
      10,  17,  23,  15,  20,  45,  44,  13,
@@ -171,69 +185,277 @@ int eg_king_table[64] = {
     -53, -34, -21, -11, -28, -14, -24, -43
 };
 
-int* mg_pesto_table[6] =
+int* pesto_mg_pesto_table[6] =
 {
-    mg_pawn_table,
-    mg_knight_table,
-    mg_bishop_table,
-    mg_rook_table,
-    mg_queen_table,
-    mg_king_table
+    pesto_mg_pawn_table,
+    pesto_mg_knight_table,
+    pesto_mg_bishop_table,
+    pesto_mg_rook_table,
+    pesto_mg_queen_table,
+    pesto_mg_king_table
 };
 
-int* eg_pesto_table[6] =
+int* pesto_eg_pesto_table[6] =
 {
-    eg_pawn_table,
-    eg_knight_table,
-    eg_bishop_table,
-    eg_rook_table,
-    eg_queen_table,
-    eg_king_table
+    pesto_eg_pawn_table,
+    pesto_eg_knight_table,
+    pesto_eg_bishop_table,
+    pesto_eg_rook_table,
+    pesto_eg_queen_table,
+    pesto_eg_king_table
 };
 
-int gamephaseInc[12] = {0,0,1,1,1,1,2,2,4,4,0,0};
-int mg_table[12][64];
-int eg_table[12][64];
+int pesto_gamephaseInc[12] = {
+    0, 0,
+    1, 1,
+    1, 1,
+    2, 2,
+    4, 4,
+    0, 0
+};
 
-void init_tables()
+int pesto_mg_table[12][64];
+int pesto_eg_table[12][64];
+
+
+void pesto_init_tables()
 {
-    int pc, p, sq;
-    for (p = PAWN, pc = WHITE_PAWN; p <= KING; pc += 2, p++) {
-        for (sq = 0; sq < 64; sq++) {
-            mg_table[pc]  [sq] = mg_value[p] + mg_pesto_table[p][sq];
-            eg_table[pc]  [sq] = eg_value[p] + eg_pesto_table[p][sq];
-            mg_table[pc+1][sq] = mg_value[p] + mg_pesto_table[p][FLIP(sq)];
-            eg_table[pc+1][sq] = eg_value[p] + eg_pesto_table[p][FLIP(sq)];
+    int pc;
+    int p;
+    int sq;
+
+    for (
+        p = PESTO_PAWN, pc = PESTO_WHITE_PAWN;
+        p <= PESTO_KING;
+        pc += 2, p++
+    )
+    {
+        for (sq = 0; sq < 64; sq++)
+        {
+
+            pesto_mg_table[pc][sq] =
+                pesto_mg_value[p] +
+                pesto_mg_pesto_table[p][sq];
+
+            pesto_eg_table[pc][sq] =
+                pesto_eg_value[p] +
+                pesto_eg_pesto_table[p][sq];
+
+            pesto_mg_table[pc + 1][sq] =
+                pesto_mg_value[p] +
+                pesto_mg_pesto_table[p][PESTO_FLIP(sq)];
+
+            pesto_eg_table[pc + 1][sq] =
+                pesto_eg_value[p] +
+                pesto_eg_pesto_table[p][PESTO_FLIP(sq)];
         }
     }
 }
 
-int eval()
+static void pesto_eval_side(
+    one_side* side,
+    int color,
+    int* mg,
+    int* eg,
+    int* gamePhase
+)
 {
-    int mg[2];
-    int eg[2];
-    int gamePhase = 0;
+    /*
+     * color:
+     *
+     * PESTO_WHITE -> White
+     * PESTO_BLACK -> Black
+     */
 
-    mg[WHITE] = 0;
-    mg[BLACK] = 0;
-    eg[WHITE] = 0;
-    eg[BLACK] = 0;
+    int offset = color;
 
-    /* evaluate each piece */
-    for (int sq = 0; sq < 64; ++sq) {
-        int pc = board[sq];
-        if (pc != EMPTY) {
-            mg[PCOLOR(pc)] += mg_table[pc][sq];
-            eg[PCOLOR(pc)] += eg_table[pc][sq];
-            gamePhase += gamephaseInc[pc];
-        }
+
+    /*
+     * Pawns
+     */
+
+    Bitboard pawns = side->pawns;
+
+    while (pawns)
+    {
+        square sq = pop_lsb(pawns);
+
+        *mg += pesto_mg_table[PESTO_WHITE_PAWN + offset][sq];
+        *eg += pesto_eg_table[PESTO_WHITE_PAWN + offset][sq];
+
+        *gamePhase += pesto_gamephaseInc[PESTO_PAWN];
     }
 
-    /* tapered eval */
-    int mgScore = mg[side2move] - mg[OTHER(side2move)];
-    int egScore = eg[side2move] - eg[OTHER(side2move)];
-    int mgPhase = gamePhase;
-    if (mgPhase > 24) mgPhase = 24; /* in case of early promotion */
-    int egPhase = 24 - mgPhase;
-    return (mgScore * mgPhase + egScore * egPhase) / 24;
+
+    /*
+     * Knights
+     */
+
+    Bitboard knights = side->knights;
+
+    while (knights)
+    {
+        square sq = pop_lsb(knights);
+
+        *mg += pesto_mg_table[PESTO_WHITE_KNIGHT + offset][sq];
+        *eg += pesto_eg_table[PESTO_WHITE_KNIGHT + offset][sq];
+
+        *gamePhase += pesto_gamephaseInc[PESTO_KNIGHT];
+    }
+
+
+    /*
+     * Bishops
+     */
+
+    Bitboard bishops = side->bishop;
+
+    while (bishops)
+    {
+        square sq = pop_lsb(bishops);
+
+        *mg += pesto_mg_table[PESTO_WHITE_BISHOP + offset][sq];
+        *eg += pesto_eg_table[PESTO_WHITE_BISHOP + offset][sq];
+
+        *gamePhase += pesto_gamephaseInc[PESTO_BISHOP];
+    }
+
+
+    /*
+     * Rooks
+     */
+
+    Bitboard rooks = side->rooks;
+
+    while (rooks)
+    {
+        square sq = pop_lsb(rooks);
+
+        *mg += pesto_mg_table[PESTO_WHITE_ROOK + offset][sq];
+        *eg += pesto_eg_table[PESTO_WHITE_ROOK + offset][sq];
+
+        *gamePhase += pesto_gamephaseInc[PESTO_ROOK];
+    }
+
+
+    /*
+     * Queens
+     */
+
+    Bitboard queens = side->queen;
+
+    while (queens)
+    {
+        square sq = pop_lsb(queens);
+
+        *mg += pesto_mg_table[PESTO_WHITE_QUEEN + offset][sq];
+        *eg += pesto_eg_table[PESTO_WHITE_QUEEN + offset][sq];
+
+        *gamePhase += pesto_gamephaseInc[PESTO_QUEEN];
+    }
+
+
+    /*
+     * King
+     */
+
+    Bitboard kings = side->king;
+
+    while (kings)
+    {
+        square sq = pop_lsb(kings);
+
+        *mg += pesto_mg_table[PESTO_WHITE_KING + offset][sq];
+        *eg += pesto_eg_table[PESTO_WHITE_KING + offset][sq];
+    }
+}
+
+
+int pesto_eval(
+    chess_board* chess_board,
+    one_side* white,
+    one_side* black
+)
+{
+    int pesto_mg[2] = {0, 0};
+    int pesto_eg[2] = {0, 0};
+
+    int pesto_gamePhase = 0;
+
+
+    /*
+     * Evaluate White
+     */
+
+    pesto_eval_side(
+        white,
+        PESTO_WHITE,
+        &pesto_mg[PESTO_WHITE],
+        &pesto_eg[PESTO_WHITE],
+        &pesto_gamePhase
+    );
+
+
+    /*
+     * Evaluate Black
+     */
+
+    pesto_eval_side(
+        black,
+        PESTO_BLACK,
+        &pesto_mg[PESTO_BLACK],
+        &pesto_eg[PESTO_BLACK],
+        &pesto_gamePhase
+    );
+
+
+    /*
+     * Normal PESTO score:
+     *
+     * positive -> good for White
+     * negative -> good for Black
+     */
+
+    int pesto_mgScore =
+        pesto_mg[PESTO_WHITE] -
+        pesto_mg[PESTO_BLACK];
+
+    int pesto_egScore =
+        pesto_eg[PESTO_WHITE] -
+        pesto_eg[PESTO_BLACK];
+
+
+    /*
+     * Tapered evaluation
+     */
+
+    int pesto_mgPhase = pesto_gamePhase;
+
+    if (pesto_mgPhase > 24)
+        pesto_mgPhase = 24;
+
+    int pesto_egPhase = 24 - pesto_mgPhase;
+
+
+    int pesto_score =
+        (
+            pesto_mgScore * pesto_mgPhase +
+            pesto_egScore * pesto_egPhase
+        ) / 24;
+
+
+    /*
+     * Return score relative to side to move.
+     *
+     * White to move:
+     *     White - Black
+     *
+     * Black to move:
+     *     Black - White
+     */
+
+    if (chess_board->whites_turn)
+        return pesto_score;
+
+    return -pesto_score;
 }

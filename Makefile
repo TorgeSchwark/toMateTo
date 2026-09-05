@@ -393,6 +393,54 @@ toMateTo_engine/testing/debugging.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/testing/debugging.cpp.s
 .PHONY : toMateTo_engine/testing/debugging.cpp.s
 
+toMateTo_engine/toMateTo/eval.o: toMateTo_engine/toMateTo/eval.cpp.o
+.PHONY : toMateTo_engine/toMateTo/eval.o
+
+# target to build an object file
+toMateTo_engine/toMateTo/eval.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.o
+.PHONY : toMateTo_engine/toMateTo/eval.cpp.o
+
+toMateTo_engine/toMateTo/eval.i: toMateTo_engine/toMateTo/eval.cpp.i
+.PHONY : toMateTo_engine/toMateTo/eval.i
+
+# target to preprocess a source file
+toMateTo_engine/toMateTo/eval.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.i
+.PHONY : toMateTo_engine/toMateTo/eval.cpp.i
+
+toMateTo_engine/toMateTo/eval.s: toMateTo_engine/toMateTo/eval.cpp.s
+.PHONY : toMateTo_engine/toMateTo/eval.s
+
+# target to generate assembly for a file
+toMateTo_engine/toMateTo/eval.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/eval.cpp.s
+.PHONY : toMateTo_engine/toMateTo/eval.cpp.s
+
+toMateTo_engine/toMateTo/toMateTo.o: toMateTo_engine/toMateTo/toMateTo.cpp.o
+.PHONY : toMateTo_engine/toMateTo/toMateTo.o
+
+# target to build an object file
+toMateTo_engine/toMateTo/toMateTo.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.o
+.PHONY : toMateTo_engine/toMateTo/toMateTo.cpp.o
+
+toMateTo_engine/toMateTo/toMateTo.i: toMateTo_engine/toMateTo/toMateTo.cpp.i
+.PHONY : toMateTo_engine/toMateTo/toMateTo.i
+
+# target to preprocess a source file
+toMateTo_engine/toMateTo/toMateTo.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.i
+.PHONY : toMateTo_engine/toMateTo/toMateTo.cpp.i
+
+toMateTo_engine/toMateTo/toMateTo.s: toMateTo_engine/toMateTo/toMateTo.cpp.s
+.PHONY : toMateTo_engine/toMateTo/toMateTo.s
+
+# target to generate assembly for a file
+toMateTo_engine/toMateTo/toMateTo.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/toMateTo/toMateTo.cpp.s
+.PHONY : toMateTo_engine/toMateTo/toMateTo.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -435,6 +483,12 @@ help:
 	@echo "... toMateTo_engine/testing/debugging.o"
 	@echo "... toMateTo_engine/testing/debugging.i"
 	@echo "... toMateTo_engine/testing/debugging.s"
+	@echo "... toMateTo_engine/toMateTo/eval.o"
+	@echo "... toMateTo_engine/toMateTo/eval.i"
+	@echo "... toMateTo_engine/toMateTo/eval.s"
+	@echo "... toMateTo_engine/toMateTo/toMateTo.o"
+	@echo "... toMateTo_engine/toMateTo/toMateTo.i"
+	@echo "... toMateTo_engine/toMateTo/toMateTo.s"
 .PHONY : help
 
 

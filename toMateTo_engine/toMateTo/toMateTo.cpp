@@ -2,12 +2,34 @@
 
 
 // should handle everything (find best move + time control)
-std::string toMateTo(std::string fen_position){
+std::map<std::string, uint64_t> toMateTo(std::string fen_position){
+
+    std::map<std::string, uint64_t> result;
 
     chess_board board;
     setup_fen_position(board, fen_position);
 
+    Move moves[256];
+
+    float eval;
     
+    Move* end = find_all_moves(moves, &board);
+
+    for (Move* m = moves; m != end; ++m) {
+
+        StateInfo st;
+
+        make_move(&board, *m, st);
+
+        eval = full_search_eval(&board, 5);
+
+        undo_move(&board, *m, st);
+
+        result[m->move_to_string(board.whites_turn)] = eval;
+
+    }
+
+    return result;
 
 }
 
@@ -21,9 +43,9 @@ float full_search_eval(chess_board* chess_board, int depth){
     float current_val = -99999.0;
 
     if(depth == 1){
-        return 0.0;
+        return pesto_eval(chess_board, &chess_board->white, &chess_board->black);
     }
-    for(Move* m; m < end; m++){
+    for(Move* m = moves; m != end; ++m){
         StateInfo st;
 
         make_move(chess_board, *m, st);
