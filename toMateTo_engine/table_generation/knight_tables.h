@@ -9,8 +9,6 @@
 
 extern Bitboard KNIGHT_LOOKUP_TABLE[64];
 
-extern Bitboard BISHOP_LOOCKUP_TABLE[64][4][8];
-
 void generate_knight_tables(Bitboard loockup_table[64][9]);
 
 void init_knight_table();

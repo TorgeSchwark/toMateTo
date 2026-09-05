@@ -177,6 +177,30 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+testing/move_gen_speed_testing.o: testing/move_gen_speed_testing.cpp.o
+.PHONY : testing/move_gen_speed_testing.o
+
+# target to build an object file
+testing/move_gen_speed_testing.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o
+.PHONY : testing/move_gen_speed_testing.cpp.o
+
+testing/move_gen_speed_testing.i: testing/move_gen_speed_testing.cpp.i
+.PHONY : testing/move_gen_speed_testing.i
+
+# target to preprocess a source file
+testing/move_gen_speed_testing.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.i
+.PHONY : testing/move_gen_speed_testing.cpp.i
+
+testing/move_gen_speed_testing.s: testing/move_gen_speed_testing.cpp.s
+.PHONY : testing/move_gen_speed_testing.s
+
+# target to generate assembly for a file
+testing/move_gen_speed_testing.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.s
+.PHONY : testing/move_gen_speed_testing.cpp.s
+
 testing/stockfish_perft.o: testing/stockfish_perft.cpp.o
 .PHONY : testing/stockfish_perft.o
 
@@ -384,6 +408,9 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... testing/move_gen_speed_testing.o"
+	@echo "... testing/move_gen_speed_testing.i"
+	@echo "... testing/move_gen_speed_testing.s"
 	@echo "... testing/stockfish_perft.o"
 	@echo "... testing/stockfish_perft.i"
 	@echo "... testing/stockfish_perft.s"

@@ -57,9 +57,8 @@ uint64_t try_all_moves_recursive(
     Move moves[256];
     Move* end = find_all_moves(moves, cb);
 
-    int num_moves = end - moves;
-
     if (depth == 1) {
+        int num_moves = end - moves;
         return num_moves;
     }
 

@@ -1,10 +1,8 @@
-CMakeFiles/toMateTo.dir/main.cpp.o: /home/MyProjects/toMateTo/main.cpp \
- /usr/include/stdc-predef.h /usr/include/SFML/Graphics.hpp \
- /usr/include/SFML/Window.hpp /usr/include/SFML/System.hpp \
- /usr/include/SFML/Config.hpp /usr/include/SFML/System/Clock.hpp \
- /usr/include/SFML/System/Export.hpp /usr/include/SFML/System/Time.hpp \
- /usr/include/SFML/System/Err.hpp /usr/include/c++/13/ostream \
- /usr/include/c++/13/bits/requires_hosted.h \
+CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o: \
+ /home/MyProjects/toMateTo/testing/move_gen_speed_testing.cpp \
+ /usr/include/stdc-predef.h \
+ /home/MyProjects/toMateTo/testing/move_gen_speed_testing.h \
+ /usr/include/c++/13/iostream /usr/include/c++/13/bits/requires_hosted.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -15,8 +13,9 @@ CMakeFiles/toMateTo.dir/main.cpp.o: /home/MyProjects/toMateTo/main.cpp \
  /usr/include/x86_64-linux-gnu/gnu/stubs.h \
  /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/cpu_defines.h \
- /usr/include/c++/13/pstl/pstl_config.h /usr/include/c++/13/ios \
- /usr/include/c++/13/iosfwd /usr/include/c++/13/bits/stringfwd.h \
+ /usr/include/c++/13/pstl/pstl_config.h /usr/include/c++/13/ostream \
+ /usr/include/c++/13/ios /usr/include/c++/13/iosfwd \
+ /usr/include/c++/13/bits/stringfwd.h \
  /usr/include/c++/13/bits/memoryfwd.h /usr/include/c++/13/bits/postypes.h \
  /usr/include/c++/13/cwchar /usr/include/wchar.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
@@ -163,113 +162,50 @@ CMakeFiles/toMateTo.dir/main.cpp.o: /home/MyProjects/toMateTo/main.cpp \
  /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_inline.h \
  /usr/include/c++/13/bits/locale_facets.tcc \
  /usr/include/c++/13/bits/basic_ios.tcc \
- /usr/include/c++/13/bits/ostream.tcc \
- /usr/include/SFML/System/FileInputStream.hpp \
- /usr/include/SFML/System/InputStream.hpp \
- /usr/include/SFML/System/NonCopyable.hpp \
- /usr/include/SFML/System/Lock.hpp \
- /usr/include/SFML/System/MemoryInputStream.hpp \
- /usr/include/SFML/System/Mutex.hpp /usr/include/SFML/System/Sleep.hpp \
- /usr/include/SFML/System/String.hpp /usr/include/SFML/System/Utf.hpp \
- /usr/include/c++/13/algorithm /usr/include/c++/13/bits/stl_algo.h \
+ /usr/include/c++/13/bits/ostream.tcc /usr/include/c++/13/istream \
+ /usr/include/c++/13/bits/istream.tcc /usr/include/c++/13/sstream \
+ /usr/include/c++/13/bits/sstream.tcc /usr/include/c++/13/chrono \
+ /usr/include/c++/13/bits/chrono.h /usr/include/c++/13/ratio \
+ /usr/include/c++/13/cstdint \
+ /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h /usr/include/stdint.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
+ /usr/include/c++/13/limits /usr/include/c++/13/ctime \
+ /usr/include/c++/13/bits/parse_numbers.h /usr/include/c++/13/vector \
+ /usr/include/c++/13/bits/stl_uninitialized.h \
+ /usr/include/c++/13/bits/stl_vector.h \
+ /usr/include/c++/13/bits/stl_bvector.h \
+ /usr/include/c++/13/bits/vector.tcc /usr/include/c++/13/bits/stl_algo.h \
  /usr/include/c++/13/bits/algorithmfwd.h \
  /usr/include/c++/13/bits/stl_heap.h \
  /usr/include/c++/13/bits/uniform_int_dist.h \
  /usr/include/c++/13/bits/stl_tempbuf.h \
- /usr/include/c++/13/bits/ranges_algo.h \
- /usr/include/c++/13/bits/ranges_algobase.h \
- /usr/include/c++/13/pstl/glue_algorithm_defs.h \
- /usr/include/c++/13/pstl/execution_defs.h /usr/include/c++/13/locale \
- /usr/include/c++/13/bits/locale_facets_nonio.h /usr/include/c++/13/ctime \
- /usr/include/x86_64-linux-gnu/c++/13/bits/time_members.h \
- /usr/include/x86_64-linux-gnu/c++/13/bits/messages_members.h \
- /usr/include/libintl.h /usr/include/c++/13/bits/codecvt.h \
- /usr/include/c++/13/bits/locale_facets_nonio.tcc \
- /usr/include/c++/13/bits/locale_conv.h /usr/include/SFML/System/Utf.inl \
- /usr/include/c++/13/iterator /usr/include/c++/13/bits/stream_iterator.h \
- /usr/include/SFML/System/String.inl /usr/include/SFML/System/Thread.hpp \
- /usr/include/SFML/System/Thread.inl \
- /usr/include/SFML/System/ThreadLocal.hpp \
- /usr/include/SFML/System/ThreadLocalPtr.hpp \
- /usr/include/SFML/System/ThreadLocalPtr.inl \
- /usr/include/SFML/System/Vector2.hpp \
- /usr/include/SFML/System/Vector2.inl \
- /usr/include/SFML/System/Vector3.hpp \
- /usr/include/SFML/System/Vector3.inl \
- /usr/include/SFML/Window/Clipboard.hpp \
- /usr/include/SFML/Window/Export.hpp /usr/include/SFML/Window/Context.hpp \
- /usr/include/SFML/Window/GlResource.hpp \
- /usr/include/SFML/Window/ContextSettings.hpp \
- /usr/include/SFML/Window/Cursor.hpp /usr/include/SFML/Window/Event.hpp \
- /usr/include/SFML/Window/Joystick.hpp \
- /usr/include/SFML/Window/Keyboard.hpp /usr/include/SFML/Window/Mouse.hpp \
- /usr/include/SFML/Window/Sensor.hpp /usr/include/SFML/Window/Touch.hpp \
- /usr/include/SFML/Window/VideoMode.hpp /usr/include/c++/13/vector \
- /usr/include/c++/13/bits/stl_uninitialized.h \
- /usr/include/c++/13/bits/stl_vector.h \
- /usr/include/c++/13/bits/stl_bvector.h \
- /usr/include/c++/13/bits/vector.tcc /usr/include/SFML/Window/Window.hpp \
- /usr/include/SFML/Window/WindowBase.hpp \
- /usr/include/SFML/Window/Vulkan.hpp \
- /usr/include/SFML/Window/WindowHandle.hpp \
- /usr/lib/gcc/x86_64-linux-gnu/13/include/stdint.h /usr/include/stdint.h \
- /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
- /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
- /usr/include/SFML/Window/WindowStyle.hpp \
- /usr/include/SFML/Graphics/BlendMode.hpp \
- /usr/include/SFML/Graphics/Export.hpp \
- /usr/include/SFML/Graphics/CircleShape.hpp \
- /usr/include/SFML/Graphics/Shape.hpp \
- /usr/include/SFML/Graphics/Drawable.hpp \
- /usr/include/SFML/Graphics/RenderStates.hpp \
- /usr/include/SFML/Graphics/Transform.hpp \
- /usr/include/SFML/Graphics/Rect.hpp /usr/include/SFML/Graphics/Rect.inl \
- /usr/include/SFML/Graphics/Transformable.hpp \
- /usr/include/SFML/Graphics/VertexArray.hpp \
- /usr/include/SFML/Graphics/Vertex.hpp \
- /usr/include/SFML/Graphics/Color.hpp \
- /usr/include/SFML/Graphics/PrimitiveType.hpp \
- /usr/include/SFML/Graphics/ConvexShape.hpp \
- /usr/include/SFML/Graphics/Font.hpp /usr/include/SFML/Graphics/Glyph.hpp \
- /usr/include/SFML/Graphics/Texture.hpp \
- /usr/include/SFML/Graphics/Image.hpp /usr/include/c++/13/map \
- /usr/include/c++/13/bits/stl_tree.h \
- /usr/include/c++/13/ext/aligned_buffer.h \
- /usr/include/c++/13/bits/node_handle.h \
- /usr/include/c++/13/bits/stl_map.h \
- /usr/include/c++/13/bits/stl_multimap.h \
- /usr/include/c++/13/bits/erase_if.h \
- /usr/include/SFML/Graphics/RectangleShape.hpp \
- /usr/include/SFML/Graphics/RenderTarget.hpp \
- /usr/include/SFML/Graphics/View.hpp \
- /usr/include/SFML/Graphics/RenderTexture.hpp \
- /usr/include/SFML/Graphics/RenderWindow.hpp \
- /usr/include/SFML/Graphics/Shader.hpp \
- /usr/include/SFML/Graphics/Glsl.hpp /usr/include/SFML/Graphics/Glsl.inl \
- /usr/include/SFML/Graphics/Sprite.hpp \
- /usr/include/SFML/Graphics/Text.hpp \
- /usr/include/SFML/Graphics/VertexBuffer.hpp /usr/include/c++/13/iostream \
- /usr/include/c++/13/istream /usr/include/c++/13/bits/istream.tcc \
- /usr/include/c++/13/chrono /usr/include/c++/13/bits/chrono.h \
- /usr/include/c++/13/ratio /usr/include/c++/13/cstdint \
- /usr/include/c++/13/limits /usr/include/c++/13/bits/parse_numbers.h \
- /usr/include/c++/13/sstream /usr/include/c++/13/bits/sstream.tcc \
  /usr/include/c++/13/bits/shared_ptr.h \
  /usr/include/c++/13/bits/shared_ptr_base.h \
  /usr/include/c++/13/bits/allocated_ptr.h \
  /usr/include/c++/13/bits/unique_ptr.h \
+ /usr/include/c++/13/ext/aligned_buffer.h \
  /usr/include/c++/13/ext/concurrence.h /usr/include/c++/13/bits/align.h \
  /usr/include/c++/13/bits/chrono_io.h /usr/include/c++/13/iomanip \
+ /usr/include/c++/13/locale \
+ /usr/include/c++/13/bits/locale_facets_nonio.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/time_members.h \
+ /usr/include/x86_64-linux-gnu/c++/13/bits/messages_members.h \
+ /usr/include/libintl.h /usr/include/c++/13/bits/codecvt.h \
+ /usr/include/c++/13/bits/locale_facets_nonio.tcc \
+ /usr/include/c++/13/bits/locale_conv.h \
  /usr/include/c++/13/bits/quoted_string.h /usr/include/c++/13/format \
  /usr/include/c++/13/array /usr/include/c++/13/charconv \
  /usr/include/c++/13/optional \
  /usr/include/c++/13/bits/enable_special_members.h \
  /usr/include/c++/13/span /usr/include/c++/13/variant \
- /home/MyProjects/toMateTo/chess_gui/gui.h /usr/include/c++/13/filesystem \
- /usr/include/c++/13/bits/fs_fwd.h /usr/include/c++/13/bits/fs_path.h \
- /usr/include/c++/13/codecvt /usr/include/c++/13/bits/fs_dir.h \
- /usr/include/c++/13/bits/fs_ops.h \
+ /usr/include/c++/13/bits/ranges_algobase.h \
  /home/MyProjects/toMateTo/./toMateTo_engine/move_generation/chess_board.h \
+ /usr/include/c++/13/map /usr/include/c++/13/bits/stl_tree.h \
+ /usr/include/c++/13/bits/node_handle.h \
+ /usr/include/c++/13/bits/stl_map.h \
+ /usr/include/c++/13/bits/stl_multimap.h \
+ /usr/include/c++/13/bits/erase_if.h \
  /home/MyProjects/toMateTo/./toMateTo_engine/move_generation/move_stack.h \
  /home/MyProjects/toMateTo/./toMateTo_engine/move_generation/types.h \
  /home/MyProjects/toMateTo/./toMateTo_engine/table_generation/knight_tables.h \
@@ -283,61 +219,4 @@ CMakeFiles/toMateTo.dir/main.cpp.o: /home/MyProjects/toMateTo/main.cpp \
  /usr/include/x86_64-linux-gnu/bits/string_fortified.h \
  /home/MyProjects/toMateTo/./toMateTo_engine/table_generation/magic_king_tables.h \
  /home/MyProjects/toMateTo/toMateTo_engine/table_generation/knight_tables.h \
- /home/MyProjects/toMateTo/./toMateTo_engine/table_generation/magic_gen.h \
- /home/MyProjects/toMateTo/toMateTo_engine/move_generation/chess_board.h \
- /home/MyProjects/toMateTo/toMateTo_engine/table_generation/knight_tables.h \
- /home/MyProjects/toMateTo/toMateTo_engine/table_generation/magic_gen.h \
- /home/MyProjects/toMateTo/toMateTo_engine/table_generation/magic_king_tables.h \
- /home/MyProjects/toMateTo/toMateTo_engine/testing/debugging.h \
- /usr/include/unistd.h /usr/include/x86_64-linux-gnu/bits/posix_opt.h \
- /usr/include/x86_64-linux-gnu/bits/environments.h \
- /usr/include/x86_64-linux-gnu/bits/confname.h \
- /usr/include/x86_64-linux-gnu/bits/getopt_posix.h \
- /usr/include/x86_64-linux-gnu/bits/getopt_core.h \
- /usr/include/x86_64-linux-gnu/bits/unistd.h \
- /usr/include/x86_64-linux-gnu/bits/unistd-decl.h \
- /usr/include/x86_64-linux-gnu/bits/unistd_ext.h \
- /usr/include/linux/close_range.h \
- /usr/include/x86_64-linux-gnu/sys/wait.h /usr/include/signal.h \
- /usr/include/x86_64-linux-gnu/bits/signum-generic.h \
- /usr/include/x86_64-linux-gnu/bits/signum-arch.h \
- /usr/include/x86_64-linux-gnu/bits/types/sig_atomic_t.h \
- /usr/include/x86_64-linux-gnu/bits/types/siginfo_t.h \
- /usr/include/x86_64-linux-gnu/bits/types/__sigval_t.h \
- /usr/include/x86_64-linux-gnu/bits/siginfo-arch.h \
- /usr/include/x86_64-linux-gnu/bits/siginfo-consts.h \
- /usr/include/x86_64-linux-gnu/bits/siginfo-consts-arch.h \
- /usr/include/x86_64-linux-gnu/bits/types/sigval_t.h \
- /usr/include/x86_64-linux-gnu/bits/types/sigevent_t.h \
- /usr/include/x86_64-linux-gnu/bits/sigevent-consts.h \
- /usr/include/x86_64-linux-gnu/bits/sigaction.h \
- /usr/include/x86_64-linux-gnu/bits/sigcontext.h \
- /usr/include/x86_64-linux-gnu/bits/types/stack_t.h \
- /usr/include/x86_64-linux-gnu/sys/ucontext.h \
- /usr/include/x86_64-linux-gnu/bits/sigstack.h \
- /usr/include/x86_64-linux-gnu/bits/sigstksz.h \
- /usr/include/x86_64-linux-gnu/bits/ss_flags.h \
- /usr/include/x86_64-linux-gnu/bits/types/struct_sigstack.h \
- /usr/include/x86_64-linux-gnu/bits/sigthread.h \
- /usr/include/x86_64-linux-gnu/bits/signal_ext.h \
- /usr/include/x86_64-linux-gnu/bits/types/idtype_t.h \
- /usr/include/c++/13/cstring \
- /home/MyProjects/toMateTo/testing/stockfish_perft.h \
- /usr/include/x86_64-linux-gnu/sys/stat.h \
- /usr/include/x86_64-linux-gnu/bits/stat.h \
- /usr/include/x86_64-linux-gnu/bits/struct_stat.h \
- /usr/include/x86_64-linux-gnu/bits/statx.h /usr/include/linux/stat.h \
- /usr/include/linux/types.h /usr/include/x86_64-linux-gnu/asm/types.h \
- /usr/include/asm-generic/types.h /usr/include/asm-generic/int-ll64.h \
- /usr/include/x86_64-linux-gnu/asm/bitsperlong.h \
- /usr/include/asm-generic/bitsperlong.h /usr/include/linux/posix_types.h \
- /usr/include/linux/stddef.h \
- /usr/include/x86_64-linux-gnu/asm/posix_types.h \
- /usr/include/x86_64-linux-gnu/asm/posix_types_64.h \
- /usr/include/asm-generic/posix_types.h \
- /usr/include/x86_64-linux-gnu/bits/statx-generic.h \
- /usr/include/x86_64-linux-gnu/bits/types/struct_statx_timestamp.h \
- /usr/include/x86_64-linux-gnu/bits/types/struct_statx.h \
- /usr/include/x86_64-linux-gnu/sys/utsname.h \
- /usr/include/x86_64-linux-gnu/bits/utsname.h \
- /home/MyProjects/toMateTo/testing/move_gen_speed_testing.h
+ /home/MyProjects/toMateTo/./toMateTo_engine/table_generation/magic_gen.h

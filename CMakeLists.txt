@@ -19,6 +19,7 @@ add_executable(toMateTo
     ${ENGINE_DIR}/move_generation/move_stack.cpp
     ${ENGINE_DIR}/testing/debugging.cpp
     ./testing/stockfish_perft.cpp
+    ./testing/move_gen_speed_testing.cpp
 )
 
 target_include_directories(toMateTo

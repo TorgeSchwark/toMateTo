@@ -3,6 +3,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/toMateTo.dir/chess_gui/gui.cpp.o.d"
   "CMakeFiles/toMateTo.dir/main.cpp.o"
   "CMakeFiles/toMateTo.dir/main.cpp.o.d"
+  "CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o"
+  "CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o.d"
   "CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o"
   "CMakeFiles/toMateTo.dir/testing/stockfish_perft.cpp.o.d"
   "CMakeFiles/toMateTo.dir/toMateTo_engine/move_generation/chess_board.cpp.o"
