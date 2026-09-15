@@ -24,6 +24,15 @@ static inline int8_t color_dir(int8_t magnitude, bool white) {
     return white ? magnitude : -magnitude;
 }
 
+#define BB_SHIFT(bb, s, color) \
+    ((color) ? ((bb) << (s)) : ((bb) >> (s)))
+
+#define BB_SHIFT_FORWARD_RIGHT(bb, color) \
+    ((color) ? ((bb) << 9) : ((bb) >> 7))
+
+#define BB_SHIFT_FORWARD_LEFT(bb, color) \
+    ((color) ? ((bb) << 7) : ((bb) >> 9))
+
 struct one_side 
 {
     Bitboard knights;
@@ -265,17 +274,6 @@ inline Bitboard pins_magic(int square, Bitboard blocked, const MagicTableEntry t
     return magic_lookup(blocked, table[square]);
 }
 
-inline Bitboard is_diagonal_attacked(chess_board* chess_board,  int pos_ind, Bitboard relevant_squares){
-    Bitboard relevant_attackers_and_defenders = relevant_squares & chess_board->complete_board;
-    return pins_magic(pos_ind, relevant_attackers_and_defenders, PINNED_PIECES_BISHOP_MAGIC);
-}
-
-inline Bitboard is_straight_attacked(chess_board* chess_board, int pos_ind, Bitboard relevant_squares){
-    // für die attacks muss hier wirklich gefragt werden ob die figur eine gegnereischer Rook oder Queen
-    Bitboard relevant_attackers_and_defenders = relevant_squares & chess_board->complete_board;
-    return pins_magic(pos_ind, relevant_attackers_and_defenders, PINNED_PIECES_ROOK_MAGIC);
-}
-
 
 
 
@@ -294,9 +292,6 @@ inline Bitboard get_diagonal_pins(one_side* enemy, one_side* player, int pos_ind
     return pins_magic(pos_ind, blocked, PINNED_PIECES_BISHOP_MAGIC);
 }
 
-inline Bitboard get_diagonal_attackers(one_side* enemy, int pos_ind) {
-    return attackers_magic(pos_ind, (enemy->bishop | enemy->queen), BISHOP_MAGIC, ATTACK_PATTERN_BISHOP_MAGIC);
-}
 
 inline Bitboard sliding_magic(int square, Bitboard occ, const MagicTableEntry table[], Bitboard blockers_mask = ~0ULL){
     return magic_lookup(occ & table[square].mask, table[square]) & blockers_mask;
@@ -304,11 +299,8 @@ inline Bitboard sliding_magic(int square, Bitboard occ, const MagicTableEntry ta
 
 Move* add_castling(Move* moves, chess_board* board, one_side* player, one_side* enemy, square king_pos, bool is_white);
 
-inline Bitboard get_straight_attackers(one_side* enemy, square pos_ind) {
-    return attackers_magic(pos_ind, enemy->rooks | enemy->queen, ROOK_MAGIC, ATTACK_PATTERN_ROOK_MAGIC);
-}
 
-inline Bitboard get_straight_attackers_new(one_side* enemy,
+inline Bitboard get_squares_til_straight_attacker(one_side* enemy,
                                            square pos_ind ) {
 
     Bitboard attackers_mask = 0LL;
@@ -328,7 +320,7 @@ inline Bitboard get_straight_attackers_new(one_side* enemy,
     return attackers_mask;
 }
 
-inline Bitboard get_diagonal_attackers_new(one_side* enemy,
+inline Bitboard get_squares_til_diagonal_attacker(one_side* enemy,
                                            square pos_ind) {
 
     Bitboard attackers_mask = 0LL;
@@ -349,23 +341,20 @@ inline Bitboard get_diagonal_attackers_new(one_side* enemy,
     return attackers_mask;
 }
 
-
-
-inline Bitboard get_straight_attackers_pluss_side(one_side* enemy, square pos_ind) {
-    return attackers_magic(pos_ind, enemy->rooks | enemy->queen, ROOK_MAGIC, ROOK_MAGIC);
-}
-
-inline Bitboard get_diagonal_attackers_pluss_side(one_side* enemy, int pos_ind) {
-    return attackers_magic(pos_ind, (enemy->bishop | enemy->queen), BISHOP_MAGIC, BISHOP_MAGIC);
-}
-
-
 inline Bitboard bishop_magic(int square, const chess_board* board, const one_side* player){
     return sliding_magic(square, board->complete_board, BISHOP_MAGIC, ~player->side_all);
 }
 
+inline Bitboard bishop_magic_captures(int square, const chess_board* board, const one_side* enemy){
+    return sliding_magic(square, board->complete_board, BISHOP_MAGIC, enemy->side_all);
+}
+
 inline Bitboard rook_magic(int square,const chess_board* board, const one_side* player){
     return sliding_magic(square, board->complete_board, ROOK_MAGIC, ~player->side_all);
+}
+
+inline Bitboard rook_magic_captures(int square,const chess_board* board, const one_side* enemy){
+    return sliding_magic(square, board->complete_board, ROOK_MAGIC, enemy->side_all);
 }
 
 inline Bitboard bishop_magic_remove_original(int square, const chess_board* board, const one_side* player, Bitboard remove_mask){
@@ -381,22 +370,19 @@ inline Bitboard rook_magic_remove_original_ray_pawns(int square,const chess_boar
     return sliding_magic(square, board->complete_board & (~(remove_mask | board->white.pawns | board->black.pawns)), ROOK_MAGIC);
 }
 
-inline Bitboard is_diagonal_attacked_new(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard remove_mask){
+inline Bitboard get_diagonal_attackers(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard remove_mask){
     Bitboard diagonal_moves = bishop_magic_remove_original(pos_ind, chess_board, player, remove_mask);
-
-    // print_bitboard(diagonal_moves);
 
     return (diagonal_moves & (enemy->bishop | enemy->queen));
 }
-
-inline Bitboard attackers_straigt_ray_pawns(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard remove_mask){
+inline Bitboard attackers_straight_ray_pawns(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard remove_mask){
     // für die attacks muss hier wirklich gefragt werden ob die figur eine gegnereischer Rook oder Queen
     Bitboard straight_moves = rook_magic_remove_original_ray_pawns(pos_ind, chess_board, player, remove_mask);
     // nur die auf der Geraden Linie 
     return (straight_moves & (enemy->rooks | enemy->queen));
 }
 
-inline Bitboard is_straight_attacked_new(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard remove_mask){
+inline Bitboard get_straight_attackers(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard remove_mask){
     // für die attacks muss hier wirklich gefragt werden ob die figur eine gegnereischer Rook oder Queen
     Bitboard straight_moves = rook_magic_remove_original(pos_ind, chess_board, player, remove_mask);
 

@@ -285,6 +285,7 @@ CMakeFiles/toMateTo.dir/main.cpp.o: /home/MyProjects/toMateTo/main.cpp \
  /home/MyProjects/toMateTo/toMateTo_engine/table_generation/knight_tables.h \
  /home/MyProjects/toMateTo/./toMateTo_engine/table_generation/magic_gen.h \
  /home/MyProjects/toMateTo/toMateTo_engine/move_generation/chess_board.h \
+ /home/MyProjects/toMateTo/toMateTo_engine/move_generation/find_capture_moves.h \
  /home/MyProjects/toMateTo/toMateTo_engine/table_generation/knight_tables.h \
  /home/MyProjects/toMateTo/toMateTo_engine/table_generation/magic_gen.h \
  /home/MyProjects/toMateTo/toMateTo_engine/table_generation/magic_king_tables.h \
@@ -342,5 +343,6 @@ CMakeFiles/toMateTo.dir/main.cpp.o: /home/MyProjects/toMateTo/main.cpp \
  /usr/include/x86_64-linux-gnu/bits/utsname.h \
  /home/MyProjects/toMateTo/testing/move_gen_speed_testing.h \
  /home/MyProjects/toMateTo/toMateTo_engine/toMateTo/toMateTo.h \
+ /home/MyProjects/toMateTo/./toMateTo_engine/move_generation/find_capture_moves.h \
  /home/MyProjects/toMateTo/./toMateTo_engine/toMateTo/eval.h \
  /home/MyProjects/toMateTo/toMateTo_engine/toMateTo/eval.h

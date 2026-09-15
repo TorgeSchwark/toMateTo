@@ -6,8 +6,6 @@ MagicTableEntry PINNED_PIECES_ROOK_MAGIC[64];
 MagicTableEntry PINNED_PIECES_BISHOP_MAGIC[64];
 
 // normal move table but empty directions are not returnt (no atacker)
-MagicTableEntry ATTACK_PATTERN_ROOK_MAGIC[64];
-MagicTableEntry ATTACK_PATTERN_BISHOP_MAGIC[64];
 
 Bitboard DIRECTION_RAYS[64][8];
 
@@ -319,31 +317,6 @@ void init_king_mask() {
     }
 }
 
-void init_attack_tables_rook_or_bishop(const char *piece)
-{   
-    char rook_path[256];
-    char bishop_path[256];
-
-    snprintf(rook_path, sizeof(rook_path), "%s/magic_table_rook.bin", TABLE_DIR_PATH);
-    snprintf(bishop_path, sizeof(bishop_path), "%s/magic_table_bishop.bin", TABLE_DIR_PATH);
-
-    load_magic_data(rook_path, ROOK_MAGIC);
-    load_magic_data(bishop_path, BISHOP_MAGIC);
-
-    int is_rook = (strcmp(piece, "rook") == 0);
-
-    for (int square = 0; square < 64; square++) {
-        if (is_rook)
-            build_reordered_table(square, rook_relevant_mask,
-                                  ROOK_MAGIC, ATTACK_PATTERN_ROOK_MAGIC,
-                                  rook_attacks_patterns_on_the_fly);
-        else
-            build_reordered_table(square, bishop_relevant_mask,
-                                  BISHOP_MAGIC, ATTACK_PATTERN_BISHOP_MAGIC,
-                                  bishop_attacks_patterns_on_the_fly);
-    }
-    
-}
 
 void init_pinned_tables_rook_or_bishop(const char *piece)
 {
@@ -368,13 +341,6 @@ void init_pinned_tables_rook_or_bishop(const char *piece)
                                   BISHOP_MAGIC, PINNED_PIECES_BISHOP_MAGIC,
                                   bishop_attacks_on_the_fly_pinned);
     }
-}
-
-void init_attack_tables_rock_and_bishop(){
-
-    init_attack_tables_rook_or_bishop("rook");
-    init_attack_tables_rook_or_bishop("not rook");
-
 }
 
 void init_pinned_tables_rook_and_bishop(){

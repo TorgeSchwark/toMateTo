@@ -444,18 +444,54 @@ int pesto_eval(
         ) / 24;
 
 
-    /*
-     * Return score relative to side to move.
-     *
-     * White to move:
-     *     White - Black
-     *
-     * Black to move:
-     *     Black - White
-     */
-
     if (chess_board->whites_turn)
         return pesto_score;
 
     return -pesto_score;
+}
+
+int pesto_game_phase(chess_board* board)
+{
+    int gamePhase = 0;
+
+    gamePhase += __builtin_popcountll(
+        board->white.knights | board->black.knights
+    ) * pesto_gamephaseInc[PESTO_KNIGHT];
+
+    gamePhase += __builtin_popcountll(
+        board->white.bishop | board->black.bishop
+    ) * pesto_gamephaseInc[PESTO_BISHOP];
+
+    gamePhase += __builtin_popcountll(
+        board->white.rooks | board->black.rooks
+    ) * pesto_gamephaseInc[PESTO_ROOK];
+
+    gamePhase += __builtin_popcountll(
+        board->white.queen | board->black.queen
+    ) * pesto_gamephaseInc[PESTO_QUEEN];
+
+    // Maximum = 24
+    if (gamePhase > 24)
+        gamePhase = 24;
+
+    return gamePhase;
+}
+
+int pesto_piece_value(
+    PieceType piece,
+    square sq,
+    bool is_white,
+    int gamePhase
+)
+{
+    int color = is_white ? PESTO_WHITE : PESTO_BLACK;
+
+    int table_index = 2 * piece + color;
+
+    int mg = pesto_mg_table[table_index][sq];
+    int eg = pesto_eg_table[table_index][sq];
+
+    int egPhase = 24 - gamePhase;
+
+    return (mg * gamePhase + eg * egPhase) / 24;
 }

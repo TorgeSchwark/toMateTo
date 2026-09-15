@@ -11,4 +11,14 @@ int pesto_eval(
 
 void pesto_init_tables();
 
+
+int pesto_piece_value(
+    PieceType piece,
+    square sq,
+    bool is_white,
+    int gamePhase
+);
+
+int pesto_game_phase(chess_board* board);
+
 #endif

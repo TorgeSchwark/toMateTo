@@ -249,6 +249,30 @@ toMateTo_engine/move_generation/chess_board.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/move_generation/chess_board.cpp.s
 .PHONY : toMateTo_engine/move_generation/chess_board.cpp.s
 
+toMateTo_engine/move_generation/find_capture_moves.o: toMateTo_engine/move_generation/find_capture_moves.cpp.o
+.PHONY : toMateTo_engine/move_generation/find_capture_moves.o
+
+# target to build an object file
+toMateTo_engine/move_generation/find_capture_moves.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/move_generation/find_capture_moves.cpp.o
+.PHONY : toMateTo_engine/move_generation/find_capture_moves.cpp.o
+
+toMateTo_engine/move_generation/find_capture_moves.i: toMateTo_engine/move_generation/find_capture_moves.cpp.i
+.PHONY : toMateTo_engine/move_generation/find_capture_moves.i
+
+# target to preprocess a source file
+toMateTo_engine/move_generation/find_capture_moves.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/move_generation/find_capture_moves.cpp.i
+.PHONY : toMateTo_engine/move_generation/find_capture_moves.cpp.i
+
+toMateTo_engine/move_generation/find_capture_moves.s: toMateTo_engine/move_generation/find_capture_moves.cpp.s
+.PHONY : toMateTo_engine/move_generation/find_capture_moves.s
+
+# target to generate assembly for a file
+toMateTo_engine/move_generation/find_capture_moves.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/move_generation/find_capture_moves.cpp.s
+.PHONY : toMateTo_engine/move_generation/find_capture_moves.cpp.s
+
 toMateTo_engine/move_generation/move_stack.o: toMateTo_engine/move_generation/move_stack.cpp.o
 .PHONY : toMateTo_engine/move_generation/move_stack.o
 
@@ -465,6 +489,9 @@ help:
 	@echo "... toMateTo_engine/move_generation/chess_board.o"
 	@echo "... toMateTo_engine/move_generation/chess_board.i"
 	@echo "... toMateTo_engine/move_generation/chess_board.s"
+	@echo "... toMateTo_engine/move_generation/find_capture_moves.o"
+	@echo "... toMateTo_engine/move_generation/find_capture_moves.i"
+	@echo "... toMateTo_engine/move_generation/find_capture_moves.s"
 	@echo "... toMateTo_engine/move_generation/move_stack.o"
 	@echo "... toMateTo_engine/move_generation/move_stack.i"
 	@echo "... toMateTo_engine/move_generation/move_stack.s"

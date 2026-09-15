@@ -31,6 +31,9 @@ constexpr int8_t DIR_DELTA[8] = {
     9,   7, -7, -9
 };
 
+constexpr int8_t PIECE_VALUE[8] = {
+    3, 3, 5, 9, 127, 0, 1
+};
 
 typedef uint64_t U64;
 

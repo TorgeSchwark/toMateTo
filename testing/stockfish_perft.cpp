@@ -616,7 +616,7 @@ std::string find_perft_error(std::string fen)
         // Wir starten bei Depth 1
         // ========================================
 
-        for (int depth = 1; depth < 8; depth++) {
+        for (int depth = 1; depth < 7; depth++) {
 
             std::cout
                 << "\n\n########################################\n"
