@@ -33,6 +33,7 @@ static inline int8_t color_dir(int8_t magnitude, bool white) {
 #define BB_SHIFT_FORWARD_LEFT(bb, color) \
     ((color) ? ((bb) << 7) : ((bb) >> 9))
 
+
 struct one_side 
 {
     Bitboard knights;
@@ -296,6 +297,8 @@ inline Bitboard get_diagonal_pins(one_side* enemy, one_side* player, int pos_ind
 inline Bitboard sliding_magic(int square, Bitboard occ, const MagicTableEntry table[], Bitboard blockers_mask = ~0ULL){
     return magic_lookup(occ & table[square].mask, table[square]) & blockers_mask;
 }
+
+bool is_in_check(chess_board* chess_board);
 
 Move* add_castling(Move* moves, chess_board* board, one_side* player, one_side* enemy, square king_pos, bool is_white);
 

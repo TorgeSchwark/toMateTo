@@ -8,7 +8,7 @@ Move* find_all_capture_moves(Move* moves, chess_board* chess_board){
 
         find_pin_information(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
 
-        moves = find_king_save_squares(moves, chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
+        moves = find_king_save_squares_captures(moves, chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
         // moves = add_castling(moves, chess_board, &(chess_board->white), &(chess_board->black), white_king_square, chess_board->whites_turn);
 
         if(chess_board->attack_count < 2){
@@ -31,7 +31,7 @@ Move* find_all_capture_moves(Move* moves, chess_board* chess_board){
 
         find_pin_information(chess_board, &(chess_board->black), &(chess_board->white), black_king_square);
 
-        moves = find_king_save_squares(moves, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square);
+        moves = find_king_save_squares_captures(moves, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square);
         // moves = add_castling(moves, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square, chess_board->whites_turn);
 
         if(chess_board->attack_count < 2){
@@ -52,6 +52,20 @@ Move* find_all_capture_moves(Move* moves, chess_board* chess_board){
     }
     return moves;
 }
+
+Move* find_king_save_squares_captures(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position){
+    Bitboard possible_king_moves = (KING_MOVES_MASK[king_position] & ~player->side_all) & enemy->side_all;
+    player->save_king_squares = 0LL;
+    while(possible_king_moves){
+        square to = pop_lsb(possible_king_moves);
+        if(is_save_square(chess_board, player, enemy, to, player->king)){ // there can be a piece as long as the square is not under attack
+            // this whole function could be split in only parallel moves and the rest so this is not done for every free square:
+            player->save_king_squares |= (1ULL << to);
+            *moves++ = Move(king_position, to);
+        }
+    }return moves;
+}
+
 
 Move* find_bishop_capture_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishop){
     Bitboard bishops = *bishop;

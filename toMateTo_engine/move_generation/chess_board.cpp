@@ -245,6 +245,49 @@ void set_index_one(Bitboard* bitboard, Bitboard index) {
     *bitboard |= (1ULL << index);
 }
 
+bool is_in_check(chess_board* board)
+{
+    Bitboard king;
+
+    if (board->whites_turn)
+    {
+        king = board->white.king;
+        square sq = pop_lsb(king);
+        if ( board->white.king == 0)
+        {
+            std::cerr << "ERROR: whites king bitboard is empty!\n";
+            return false;
+        }
+        
+        return !is_save_square(
+            board,
+            &board->white,
+            &board->black,
+            sq,
+            board->white.king
+        );
+    }
+    else
+    {
+        king = board->black.king;
+
+        if ( board->black.king == 0)
+        {
+            std::cerr << "ERROR: black king bitboard is empty!\n";
+            return false;
+        }
+        square sq = pop_lsb(king);
+
+        return !is_save_square(
+            board,
+            &board->black,
+            &board->white,
+            sq,
+            board->black.king
+        );
+    }
+}
+
 Move* find_all_moves(Move* moves, chess_board* chess_board){
 
     if(chess_board->whites_turn){

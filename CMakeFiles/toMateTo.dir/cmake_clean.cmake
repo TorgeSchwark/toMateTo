@@ -13,6 +13,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/toMateTo.dir/toMateTo_engine/move_generation/find_capture_moves.cpp.o.d"
   "CMakeFiles/toMateTo.dir/toMateTo_engine/move_generation/move_stack.cpp.o"
   "CMakeFiles/toMateTo.dir/toMateTo_engine/move_generation/move_stack.cpp.o.d"
+  "CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/TT.cpp.o"
+  "CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/TT.cpp.o.d"
   "CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/knight_tables.cpp.o"
   "CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/knight_tables.cpp.o.d"
   "CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/magic_gen.cpp.o"

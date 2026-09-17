@@ -5,6 +5,8 @@
 
 using Bitboard = uint64_t;
 
+extern int MATE_SCORE;
+
 enum { BLACK = 0, WHITE = 1 };
 enum { KING_SIDE_INDEX = 0, QUEEN_SIDE_INDEX = 1 };
 
@@ -155,5 +157,6 @@ inline CastlingRights& operator|=(CastlingRights& a, CastlingRights b) {
 inline CastlingRights& operator&=(CastlingRights& a, CastlingRights b) {
     return a = a & b;
 }
+
 
 #endif 

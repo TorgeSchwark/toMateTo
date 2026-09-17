@@ -27,4 +27,6 @@ void find_different_pawn_capture_moves(Bitboard pawns, Bitboard empty, one_side*
 
 Move* find_rook_capture_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rook);
 
+Move* find_king_save_squares_captures(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position);
+
 #endif

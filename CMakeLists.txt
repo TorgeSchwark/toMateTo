@@ -15,6 +15,7 @@ add_executable(toMateTo
     ${ENGINE_DIR}/move_generation/find_capture_moves.cpp
     ${ENGINE_DIR}/table_generation/knight_tables.cpp
     ${ENGINE_DIR}/table_generation/magic_king_tables.cpp
+    ${ENGINE_DIR}/table_generation/TT.cpp
     ${ENGINE_DIR}/table_generation/magic_helper_functions.cpp
     ${ENGINE_DIR}/table_generation/magic_gen.cpp
     ${ENGINE_DIR}/move_generation/move_stack.cpp
@@ -34,6 +35,9 @@ target_include_directories(toMateTo
 
 set(CMAKE_CXX_FLAGS_RELEASE
     "-O3 -march=native -mtune=native"
+)
+set(CMAKE_CXX_FLAGS_DEBUG
+    "-g -O0 -fsanitize=address -fno-omit-frame-pointer"
 )
 
 find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)

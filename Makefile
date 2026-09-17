@@ -297,6 +297,30 @@ toMateTo_engine/move_generation/move_stack.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/move_generation/move_stack.cpp.s
 .PHONY : toMateTo_engine/move_generation/move_stack.cpp.s
 
+toMateTo_engine/table_generation/TT.o: toMateTo_engine/table_generation/TT.cpp.o
+.PHONY : toMateTo_engine/table_generation/TT.o
+
+# target to build an object file
+toMateTo_engine/table_generation/TT.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/TT.cpp.o
+.PHONY : toMateTo_engine/table_generation/TT.cpp.o
+
+toMateTo_engine/table_generation/TT.i: toMateTo_engine/table_generation/TT.cpp.i
+.PHONY : toMateTo_engine/table_generation/TT.i
+
+# target to preprocess a source file
+toMateTo_engine/table_generation/TT.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/TT.cpp.i
+.PHONY : toMateTo_engine/table_generation/TT.cpp.i
+
+toMateTo_engine/table_generation/TT.s: toMateTo_engine/table_generation/TT.cpp.s
+.PHONY : toMateTo_engine/table_generation/TT.s
+
+# target to generate assembly for a file
+toMateTo_engine/table_generation/TT.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/toMateTo_engine/table_generation/TT.cpp.s
+.PHONY : toMateTo_engine/table_generation/TT.cpp.s
+
 toMateTo_engine/table_generation/knight_tables.o: toMateTo_engine/table_generation/knight_tables.cpp.o
 .PHONY : toMateTo_engine/table_generation/knight_tables.o
 
@@ -495,6 +519,9 @@ help:
 	@echo "... toMateTo_engine/move_generation/move_stack.o"
 	@echo "... toMateTo_engine/move_generation/move_stack.i"
 	@echo "... toMateTo_engine/move_generation/move_stack.s"
+	@echo "... toMateTo_engine/table_generation/TT.o"
+	@echo "... toMateTo_engine/table_generation/TT.i"
+	@echo "... toMateTo_engine/table_generation/TT.s"
 	@echo "... toMateTo_engine/table_generation/knight_tables.o"
 	@echo "... toMateTo_engine/table_generation/knight_tables.i"
 	@echo "... toMateTo_engine/table_generation/knight_tables.s"
