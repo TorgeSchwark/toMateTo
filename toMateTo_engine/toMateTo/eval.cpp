@@ -260,19 +260,8 @@ static void pesto_eval_side(
     int* gamePhase
 )
 {
-    /*
-     * color:
-     *
-     * PESTO_WHITE -> White
-     * PESTO_BLACK -> Black
-     */
 
     int offset = color;
-
-
-    /*
-     * Pawns
-     */
 
     Bitboard pawns = side->pawns;
 
@@ -285,11 +274,6 @@ static void pesto_eval_side(
 
         *gamePhase += pesto_gamephaseInc[PESTO_PAWN];
     }
-
-
-    /*
-     * Knights
-     */
 
     Bitboard knights = side->knights;
 
@@ -304,10 +288,6 @@ static void pesto_eval_side(
     }
 
 
-    /*
-     * Bishops
-     */
-
     Bitboard bishops = side->bishop;
 
     while (bishops)
@@ -321,10 +301,6 @@ static void pesto_eval_side(
     }
 
 
-    /*
-     * Rooks
-     */
-
     Bitboard rooks = side->rooks;
 
     while (rooks)
@@ -336,11 +312,6 @@ static void pesto_eval_side(
 
         *gamePhase += pesto_gamephaseInc[PESTO_ROOK];
     }
-
-
-    /*
-     * Queens
-     */
 
     Bitboard queens = side->queen;
 
@@ -355,9 +326,6 @@ static void pesto_eval_side(
     }
 
 
-    /*
-     * King
-     */
 
     Bitboard kings = side->king;
 
@@ -382,11 +350,6 @@ int pesto_eval(
 
     int pesto_gamePhase = 0;
 
-
-    /*
-     * Evaluate White
-     */
-
     pesto_eval_side(
         white,
         PESTO_WHITE,
@@ -394,11 +357,6 @@ int pesto_eval(
         &pesto_eg[PESTO_WHITE],
         &pesto_gamePhase
     );
-
-
-    /*
-     * Evaluate Black
-     */
 
     pesto_eval_side(
         black,
@@ -409,13 +367,6 @@ int pesto_eval(
     );
 
 
-    /*
-     * Normal PESTO score:
-     *
-     * positive -> good for White
-     * negative -> good for Black
-     */
-
     int pesto_mgScore =
         pesto_mg[PESTO_WHITE] -
         pesto_mg[PESTO_BLACK];
@@ -424,10 +375,6 @@ int pesto_eval(
         pesto_eg[PESTO_WHITE] -
         pesto_eg[PESTO_BLACK];
 
-
-    /*
-     * Tapered evaluation
-     */
 
     int pesto_mgPhase = pesto_gamePhase;
 
@@ -449,6 +396,21 @@ int pesto_eval(
 
     return -pesto_score;
 }
+
+constexpr int pesto_piece_type(PieceType piece)
+{
+    switch (piece)
+    {
+        case PAWN:   return PESTO_PAWN;
+        case KNIGHT: return PESTO_KNIGHT;
+        case BISHOP: return PESTO_BISHOP;
+        case ROOK:   return PESTO_ROOK;
+        case QUEEN:  return PESTO_QUEEN;
+        case KING:   return PESTO_KING;
+        default:     return -1;
+    }
+}
+
 
 int pesto_game_phase(chess_board* board)
 {
@@ -486,7 +448,7 @@ int pesto_piece_value(
 {
     int color = is_white ? PESTO_WHITE : PESTO_BLACK;
 
-    int table_index = 2 * piece + color;
+    int table_index = 2 * pesto_piece_type(piece) + color;
 
     int mg = pesto_mg_table[table_index][sq];
     int eg = pesto_eg_table[table_index][sq];

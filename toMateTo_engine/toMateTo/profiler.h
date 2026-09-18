@@ -31,6 +31,7 @@ public:
     // ---------------------------------------------------------
     // Chess-engine counters
     // ---------------------------------------------------------
+    inline static uint64_t q_cutoffs = 0;
 
     inline static uint64_t nodes = 0;
     inline static uint64_t q_nodes = 0;
@@ -253,6 +254,10 @@ public:
         std::cout
             << "TT UPPERBOUND:  "
             << tt_upperbound << "\n";
+
+        std::cout
+            << "Delta cuts:  "
+            << q_cutoffs << "\n";
 
         if (tt_lookups > 0)
         {

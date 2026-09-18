@@ -2,6 +2,7 @@
 #include "profiler.h"
 
 int MATE_SCORE = 99999;
+int DELTA_MARGIN = 20;
 
 
 std::map<std::string, int> alpha_beta_toMaTo(std::string fen_position, int depth){
@@ -352,18 +353,50 @@ struct ScoredMove
 {
     Move move;
     int score;
+    int victim_value;
 };
 
-void sort_capture_moves(Move* moves, Move* end, chess_board* board)
+void sort_capture_moves(
+    Move* moves,
+    Move* end,
+    int* victim_values,
+    chess_board* board,
+    int game_phase)
 {
     const int count = static_cast<int>(end - moves);
-
     ScoredMove scored[256];
+
+    const bool is_white = board->whites_turn;
 
     for (int i = 0; i < count; ++i)
     {
-        scored[i].move = moves[i];
-        scored[i].score = mvv_lva_score(board, moves[i]);
+        Move move = moves[i];
+
+        PieceType attacker;
+        PieceType victim;
+
+        if (is_white)
+        {
+            attacker = piece_on(board->white, move.from_sq());
+            victim   = piece_on(board->black, move.to_sq());
+        }
+        else
+        {
+            attacker = piece_on(board->black, move.from_sq());
+            victim   = piece_on(board->white, move.to_sq());
+        }
+
+        int attacker_value = pesto_piece_value(
+            attacker, move.from_sq(), is_white, game_phase);
+
+        int victim_value = pesto_piece_value(
+            victim, move.to_sq(), !is_white, game_phase);
+
+        scored[i] = {
+            move,
+            victim_value * 1000 - attacker_value,
+            victim_value
+        };
     }
 
     std::sort(scored, scored + count,
@@ -373,37 +406,37 @@ void sort_capture_moves(Move* moves, Move* end, chess_board* board)
         });
 
     for (int i = 0; i < count; ++i)
+    {
         moves[i] = scored[i].move;
+        victim_values[i] = scored[i].victim_value;
+    }
 }
 
+bool delta_pruning(chess_board* board, int alpha, Move move, int game_phase, int eval){
+    PieceType victim;
 
+    if(board->whites_turn){
+        victim = piece_on(board->black, move.to_sq());
+    }else{
+        victim = piece_on(board->white, move.to_sq());
+    }
+
+    int victim_value = pesto_piece_value(
+        victim,
+        move.to_sq(),
+        !board->whites_turn,
+        game_phase
+    );
+
+    if (eval + victim_value + DELTA_MARGIN <= alpha){
+        return true;
+    }
+    return false;
+
+}
 
 int quiescence(chess_board* board, int alpha, int beta)
 {
-    static thread_local int q_depth = 0;
-    ++q_depth;
-
-    struct QDepthGuard
-    {
-        int& depth;
-        ~QDepthGuard()
-        {
-            --depth;
-        }
-    } guard{q_depth};
-
-    if (q_depth > 100)
-    {
-        Move moves[256];
-        Move* end = find_all_moves(moves, board);
-        std::cerr << q_depth ;
-        std::cerr << board_to_fen(*board);
-        std::cerr << moves[0].move_to_string(board->whites_turn) << "\n";
-        std::cerr << "QSEARCH DEPTH LIMIT!\n";
-    }
-    if (q_depth > 120){
-        std::abort();
-    }
 
 
     Profiler::Scope profile("quiescence");
@@ -419,11 +452,13 @@ int quiescence(chess_board* board, int alpha, int beta)
 
         for (Move* m = moves; m != end; ++m)
         {
+            
             StateInfo st;
 
             make_move(board, *m, st);
-
+            profile.stop();
             int score = -quiescence(board, -beta, -alpha);
+            profile.start();
 
             undo_move(board, *m, st);
 
@@ -437,6 +472,8 @@ int quiescence(chess_board* board, int alpha, int beta)
         return alpha;
     }
 
+    int game_phase = pesto_game_phase(board);
+
     int stand_pat = pesto_eval(board, &board->white, &board->black);
 
     if (stand_pat >= beta)
@@ -445,20 +482,41 @@ int quiescence(chess_board* board, int alpha, int beta)
     if (stand_pat > alpha)
         alpha = stand_pat;
 
-    // nur Captures
+   // nur Captures
     Move moves[256];
+    int victim_values[256];
+
     Move* end = find_all_capture_moves(moves, board);
 
-    sort_capture_moves(moves, end, board);
+    sort_capture_moves(
+        moves,
+        end,
+        victim_values,
+        board,
+        game_phase
+    );
 
-    for (Move* m = moves; m != end; ++m)
+    const int count = static_cast<int>(end - moves);
+
+    for (int i = 0; i < count; ++i)
     {
+        Move move = moves[i];
+
+        // if (move.move_flag() != PROMOTION && stand_pat + victim_values[i] + DELTA_MARGIN <= alpha)
+        // {
+        //     ++Profiler::q_cutoffs;
+        //     continue;
+        // }
+
         StateInfo st;
-        make_move(board, *m, st);
+
+        make_move(board, move, st);
+
         profile.stop();
         int score = -quiescence(board, -beta, -alpha);
         profile.start();
-        undo_move(board, *m, st);
+
+        undo_move(board, move, st);
 
         if (score >= beta)
             return beta;

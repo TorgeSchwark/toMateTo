@@ -11,6 +11,7 @@ int pesto_eval(
 
 void pesto_init_tables();
 
+constexpr int pesto_piece_type(PieceType piece);
 
 int pesto_piece_value(
     PieceType piece,
