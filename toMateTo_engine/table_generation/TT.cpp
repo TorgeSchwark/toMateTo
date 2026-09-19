@@ -18,7 +18,7 @@ uint64_t zobrist_side;
 // Transposition Table
 // ---------------------------------------------------------
 
-TTEntry transposition_table[TT_SIZE];
+thread_local std::vector<TTEntry> transposition_table(TT_SIZE);
 
 // ---------------------------------------------------------
 // Random number generator

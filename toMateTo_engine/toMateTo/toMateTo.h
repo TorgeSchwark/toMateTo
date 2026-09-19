@@ -19,7 +19,9 @@ std::map<std::string, int> alpha_beta_toMaTo(std::string fen_position, int depth
 
 int alpha_beta(chess_board *board, int depth, int alpha, int beta);
 
-std::string alpha_beta_tt_toMateTo(std::string fen_position, int depth);
+std::string alpha_beta_tt_toMateTo(
+    std::string fen_position,
+    double time_limit_seconds);
 
 std::string alpha_beta_toMateTo(std::string fen_position, int depth);
 

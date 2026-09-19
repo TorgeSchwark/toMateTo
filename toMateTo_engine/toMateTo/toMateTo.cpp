@@ -1,7 +1,7 @@
 #include "toMateTo.h"
 #include "profiler.h"
 
-int MATE_SCORE = 99999;
+int MATE_SCORE = 99998;
 int DELTA_MARGIN = 20;
 
 
@@ -27,9 +27,7 @@ std::map<std::string, int> alpha_beta_toMaTo(std::string fen_position, int depth
 
         make_move(&board, *m, st);
         // get best move by opponent reverse it for how good the pos is for us    
-        std::cout << move_string << " -> "
-          << pesto_eval(&board, &board.white, &board.black)
-          << "\n";
+        
         
         int eval = -alpha_beta(&board, depth - 1, -beta, -alpha);
 
@@ -43,41 +41,63 @@ std::map<std::string, int> alpha_beta_toMaTo(std::string fen_position, int depth
     return result;
 }
 
-std::string alpha_beta_tt_toMateTo(
-    std::string fen_position,
-    int depth)
+#include <chrono>
+
+std::string alpha_beta_tt_toMateTo(std::string fen, double time_limit)
 {
     chess_board board;
-    setup_fen_position(board, fen_position);
+    setup_fen_position(board, fen);
 
-    for (int itt_depth = 1; itt_depth <= depth; ++itt_depth)
+    Move moves[256];
+    Move* end = find_all_moves(moves, &board);
+    if (moves == end) return "";
+
+    const int count = static_cast<int>(end - moves);
+    Move best_move = moves[0];
+    int scores[256];
+
+    const auto start = std::chrono::steady_clock::now();
+    int depth = 1;
+
+    for (; depth <= 64; ++depth)
     {
-        std::cout
-            << "Searching depth "
-            << itt_depth
-            << "...\n";
+        int alpha = -100000, beta = 100000;
+        int best_score = -100000;
+        Move iter_best = best_move;
 
-        alpha_beta(
-            &board,
-            itt_depth,
-            -99999,
-            99999
-        );
+        for (int i = 0; i < count; ++i)
+        {
+            StateInfo st;
+            make_move(&board, moves[i], st);
+            int score = -alpha_beta(&board, depth - 1, -beta, -alpha);
+            undo_move(&board, moves[i], st);
+
+            scores[i] = score;
+            if (score > best_score) { best_score = score; iter_best = moves[i]; }
+            alpha = std::max(alpha, score);
+        }
+        best_move = iter_best;
+
+        // Sortieren: bester Zug zuerst, Rest nach Score
+        int order[256];
+        for (int i = 0; i < count; ++i) order[i] = i;
+        std::stable_sort(order, order + count, [&](int a, int b) {
+            bool ab = moves[a].move == best_move.move;
+            bool bb = moves[b].move == best_move.move;
+            if (ab != bb) return ab;
+            return scores[a] > scores[b];
+        });
+        Move sorted[256];
+        for (int i = 0; i < count; ++i) sorted[i] = moves[order[i]];
+        std::copy(sorted, sorted + count, moves);
+
+        double elapsed = std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - start).count();
+        if (elapsed >= time_limit) break;
     }
 
-    uint64_t hash = calculate_hash(&board);
-
-    TTEntry& entry =
-        transposition_table[hash & (TT_SIZE - 1)];
-
-    if (entry.key == hash)
-    {
-        return entry.best_move.move_to_string(
-            board.whites_turn
-        );
-    }
-
-    return "";
+    std::cerr << "depth " << depth << "\n";
+    return best_move.move_to_string(board.whites_turn);
 }
 
 std::string alpha_beta_toMateTo(std::string fen_position, int depth)
@@ -502,9 +522,9 @@ int quiescence(chess_board* board, int alpha, int beta)
     {
         Move move = moves[i];
 
-        // if (move.move_flag() != PROMOTION && stand_pat + victim_values[i] + DELTA_MARGIN <= alpha)
+        // if (move.move_flag() != 1 && stand_pat + victim_values[i] + DELTA_MARGIN <= alpha)
         // {
-        //     ++Profiler::q_cutoffs;
+        //     // ++Profiler::q_cutoffs;
         //     continue;
         // }
 

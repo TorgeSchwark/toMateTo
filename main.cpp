@@ -8,6 +8,8 @@
 #include "toMateTo_engine/toMateTo/toMateTo.h"
 #include "toMateTo_engine/toMateTo/eval.h"
 #include "toMateTo_engine/toMateTo/profiler.h"
+#include "testing/engine_match.h"
+
 
 const int AMOUNT_TEST_POS_MAIN = 6;
 const std::string FEN_TEST_POSITIONS_MAIN[AMOUNT_TEST_POS_MAIN] = {"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -37,9 +39,9 @@ int main()
     pesto_init_tables();
     init_zobrist();
 
-
-
     
+
+    run_engine_match(1.0, 1500);
 
     // =====================================================
     // TEST POSITION 2

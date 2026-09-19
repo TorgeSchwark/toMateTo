@@ -255,7 +255,6 @@ bool is_in_check(chess_board* board)
         square sq = pop_lsb(king);
         if ( board->white.king == 0)
         {
-            std::cerr << "ERROR: whites king bitboard is empty!\n";
             return false;
         }
         
@@ -273,7 +272,6 @@ bool is_in_check(chess_board* board)
 
         if ( board->black.king == 0)
         {
-            std::cerr << "ERROR: black king bitboard is empty!\n";
             return false;
         }
         square sq = pop_lsb(king);

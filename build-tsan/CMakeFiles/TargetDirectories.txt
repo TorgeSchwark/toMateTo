@@ -1,0 +1,3 @@
+/home/MyProjects/toMateTo/build-tsan/CMakeFiles/toMateTo.dir
+/home/MyProjects/toMateTo/build-tsan/CMakeFiles/edit_cache.dir
+/home/MyProjects/toMateTo/build-tsan/CMakeFiles/rebuild_cache.dir

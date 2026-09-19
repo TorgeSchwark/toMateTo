@@ -1,12 +1,12 @@
 #ifndef TT
 #define TT
 
+#include <vector>
 #include <cstddef>
 #include <cstdint>
 #include "toMateTo_engine/move_generation/types.h"
 #include "toMateTo_engine/move_generation/move_stack.h"
 #include "toMateTo_engine/move_generation/chess_board.h"
-
 enum TTFlag
 {
     EXACT,
@@ -27,7 +27,7 @@ struct TTEntry
 
 
 
-constexpr std::size_t TT_SIZE = 1 << 21;
+constexpr std::size_t TT_SIZE = 1 << 19;
 
 // ---------------------------------------------------------
 // Zobrist hashing
@@ -42,8 +42,8 @@ extern uint64_t zobrist_side;
 // Transposition Table
 // ---------------------------------------------------------
 
-extern TTEntry transposition_table[TT_SIZE];
 
+extern thread_local std::vector<TTEntry> transposition_table;
 // ---------------------------------------------------------
 // Functions
 // ---------------------------------------------------------

@@ -22,6 +22,7 @@ add_executable(toMateTo
     ${ENGINE_DIR}/testing/debugging.cpp
     ${ENGINE_DIR}/toMateTo/toMateTo.cpp
     ${ENGINE_DIR}/toMateTo/eval.cpp
+    ./testing/engine_match.cpp
     ./testing/stockfish_perft.cpp
     ./testing/move_gen_speed_testing.cpp
 )
@@ -36,9 +37,8 @@ target_include_directories(toMateTo
 set(CMAKE_CXX_FLAGS_RELEASE
     "-O3 -march=native -mtune=native"
 )
-set(CMAKE_CXX_FLAGS_DEBUG
-    "-g -O0 -fsanitize=address -fno-omit-frame-pointer"
-)
+set(CMAKE_CXX_FLAGS_DEBUG "-O1 -g -fsanitize=thread -fno-omit-frame-pointer")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=thread")
 
 find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
 

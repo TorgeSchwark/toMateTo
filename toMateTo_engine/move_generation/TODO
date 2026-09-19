@@ -1,7 +1,9 @@
 incremental Eval 
 Incremental hash
 
-Quiescence verbessern: Delta Pruning / Gamma Cutoff
+ALPHA BETA still has no PATT REMIE (mvoe rep as well)
+ply schach matt int tiefen unterscheiden!
+
 Killer Moves + History Heuristic
 Aspiration Windows
 LMR

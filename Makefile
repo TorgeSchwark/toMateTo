@@ -177,6 +177,30 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+testing/engine_match.o: testing/engine_match.cpp.o
+.PHONY : testing/engine_match.o
+
+# target to build an object file
+testing/engine_match.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/testing/engine_match.cpp.o
+.PHONY : testing/engine_match.cpp.o
+
+testing/engine_match.i: testing/engine_match.cpp.i
+.PHONY : testing/engine_match.i
+
+# target to preprocess a source file
+testing/engine_match.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/testing/engine_match.cpp.i
+.PHONY : testing/engine_match.cpp.i
+
+testing/engine_match.s: testing/engine_match.cpp.s
+.PHONY : testing/engine_match.s
+
+# target to generate assembly for a file
+testing/engine_match.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/testing/engine_match.cpp.s
+.PHONY : testing/engine_match.cpp.s
+
 testing/move_gen_speed_testing.o: testing/move_gen_speed_testing.cpp.o
 .PHONY : testing/move_gen_speed_testing.o
 
@@ -504,6 +528,9 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... testing/engine_match.o"
+	@echo "... testing/engine_match.i"
+	@echo "... testing/engine_match.s"
 	@echo "... testing/move_gen_speed_testing.o"
 	@echo "... testing/move_gen_speed_testing.i"
 	@echo "... testing/move_gen_speed_testing.s"

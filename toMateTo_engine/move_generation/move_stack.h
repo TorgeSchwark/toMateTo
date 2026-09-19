@@ -86,16 +86,19 @@ struct Move{
     constexpr square to_sq() const {
         return square(move & 0x3F);
     }
-    inline std::string move_to_string(bool is_white) {
-        square from = from_sq();
-        square to   = to_sq();
-        PieceType promo_piec = promo_piece();
+    inline std::string move_to_string(bool /*is_white*/) const {
+        std::string s = square_to_string(from_sq()) + square_to_string(to_sq());
 
-        if(move_flag() == 1){
-            return square_to_string(from) + square_to_string(to) + piece_to_string_shorts(promo_piec, is_white);
-        }else{
-            return square_to_string(from) + square_to_string(to);
+        if (move_flag() == 1) {
+            switch (promo_piece()) {
+                case KNIGHT: s += 'n'; break;
+                case BISHOP: s += 'b'; break;
+                case ROOK:   s += 'r'; break;
+                case QUEEN:  s += 'q'; break;
+                default: break;
+            }
         }
+        return s;
     }
 
 
