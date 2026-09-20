@@ -9,6 +9,7 @@
 #include "toMateTo_engine/toMateTo/eval.h"
 #include "toMateTo_engine/toMateTo/profiler.h"
 #include "testing/engine_match.h"
+#include "engine_server/engine_server.h"
 
 
 const int AMOUNT_TEST_POS_MAIN = 6;
@@ -18,7 +19,7 @@ const std::string FEN_TEST_POSITIONS_MAIN[AMOUNT_TEST_POS_MAIN] = {"rnbqkbnr/ppp
        "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", 
     };
 
-int main()
+int main(int argc, char** argv)
 {
     // =====================================================
     // INITIALIZATION
@@ -35,10 +36,17 @@ int main()
     init_pawn_attack_lookup();
     init_direction_rays();
     init_rows();
+    Profiler::calibrate_cpu_frequency();
 
     pesto_init_tables();
     init_zobrist();
 
+    if (argc > 1 && std::string(argv[1]) == "--server")
+    {
+        int port = argc > 2 ? std::atoi(argv[2]) : 8080;
+        run_web_server(port, "engine_server", 4);   // 4 = alle vier Kerne
+        return 0;
+    }
     
 
     run_engine_match(2.0, 1500);
@@ -52,7 +60,6 @@ int main()
 
     constexpr int depth = 10;
 
-    Profiler::calibrate_cpu_frequency();
     Profiler::reset();
 
     std::string result =

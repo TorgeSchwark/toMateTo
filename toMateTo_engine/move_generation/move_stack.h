@@ -56,6 +56,8 @@ inline std::string square_to_string(int index) {
 }
 
 
+
+
 struct Move{
 
     Move() = default;
@@ -103,6 +105,27 @@ struct Move{
 
 
     int16_t move;
+};
+
+struct MoveStacks{
+    Move normal_moves[256];
+    Move capture_moves[256];
+
+    Move* normal_end = normal_moves;
+    Move* capture_end = capture_moves;
+
+    inline bool empty() const {
+        return normal_end == normal_moves &&
+               capture_end == capture_moves;
+    }
+
+    inline int normal_size() const {
+        return normal_end - normal_moves;
+    }
+
+    inline int capture_size() const {
+        return capture_end - capture_moves;
+    }
 };
 
 inline constexpr Bitboard KNIGHT_MOVES[4] = {17,15,10,6};

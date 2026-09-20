@@ -210,21 +210,19 @@ struct chess_board
     }
 };
 
-uint64_t try_all_moves_recursive(
-    chess_board* cb,
+std::map<std::string, uint64_t> try_all_moves(
+    chess_board* board,
     int depth);
 
-std::map<std::string, uint64_t> try_all_moves(
-    chess_board* cb,
-    int depth);
+uint64_t perft(chess_board* board, int depth);
 
 void make_move(chess_board* cb, Move m, StateInfo& st);
 
 void undo_move(chess_board* cb, Move m, const StateInfo& st);
 
-Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy);
+void find_pawn_moves(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy);
 
-Move* add_all_pawn_moves(Bitboard* results, Move* moves, bool color);
+void add_all_pawn_moves(Bitboard* results, MoveStacks* moves, bool color);
 
 Move* add_prom(Bitboard destinations, Move* moves, int8_t offset, bool color);
 
@@ -232,17 +230,17 @@ Move* add_ep(Bitboard destinations, Move* moves, int8_t offset, bool color);
 
 Move* add_pawn_moves(Bitboard destinations, Move* moves, int8_t offset, bool color);
 
-Move* add_normal_moves(square from, Bitboard destinations, Move* moves);
+void add_normal_moves(square from, Bitboard destinations, Bitboard enemys, MoveStacks* moves);
 
-Move* find_all_moves(Move* moves, chess_board* chess_board);
+void find_all_moves(MoveStacks* move_stacks, chess_board* chess_board);
 
-Move* find_knight_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy);
+void find_knight_moves(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy);
 
-Move* find_bishop_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishops);
+void find_bishop_moves(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishops);
 
-Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rooks);
+void find_rook_moves(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rooks);
 
-Move* find_king_save_squares(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position);
+void find_king_save_squares(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position);
 
 bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard original_square);
 
@@ -300,7 +298,7 @@ inline Bitboard sliding_magic(int square, Bitboard occ, const MagicTableEntry ta
 
 bool is_in_check(chess_board* chess_board);
 
-Move* add_castling(Move* moves, chess_board* board, one_side* player, one_side* enemy, square king_pos, bool is_white);
+void add_castling(MoveStacks* moves, chess_board* board, one_side* player, one_side* enemy, square king_pos, bool is_white);
 
 
 inline Bitboard get_squares_til_straight_attacker(one_side* enemy,

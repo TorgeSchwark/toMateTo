@@ -26,23 +26,23 @@ public:
         uint64_t calls = 0;
     };
 
-    inline static std::map<std::string, Stats> stats;
+    inline static thread_local std::map<std::string, Stats> stats;
 
     // ---------------------------------------------------------
     // Chess-engine counters
     // ---------------------------------------------------------
-    inline static uint64_t q_cutoffs = 0;
+    inline static thread_local uint64_t q_cutoffs = 0;
 
-    inline static uint64_t nodes = 0;
-    inline static uint64_t q_nodes = 0;
+    inline static thread_local uint64_t nodes = 0;
+    inline static thread_local uint64_t q_nodes = 0;
 
-    inline static uint64_t tt_lookups = 0;
-    inline static uint64_t tt_hits = 0;
-    inline static uint64_t tt_cutoffs = 0;
+    inline static thread_local uint64_t tt_lookups = 0;
+    inline static thread_local uint64_t tt_hits = 0;
+    inline static thread_local uint64_t tt_cutoffs = 0;
 
-    inline static uint64_t tt_exact = 0;
-    inline static uint64_t tt_lowerbound = 0;
-    inline static uint64_t tt_upperbound = 0;
+    inline static thread_local uint64_t tt_exact = 0;
+    inline static thread_local uint64_t tt_lowerbound = 0;
+    inline static thread_local uint64_t tt_upperbound = 0;
 
     // ---------------------------------------------------------
     // CPU frequency

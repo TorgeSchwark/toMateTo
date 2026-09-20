@@ -339,15 +339,18 @@ static void pesto_eval_side(
 }
 
 
-int pesto_eval(
+
+
+PestoEvalResult pesto_eval(
     chess_board* chess_board,
     one_side* white,
     one_side* black
 )
 {
+    Profiler::Scope profile("eval");
+
     int pesto_mg[2] = {0, 0};
     int pesto_eg[2] = {0, 0};
-
     int pesto_gamePhase = 0;
 
     pesto_eval_side(
@@ -366,7 +369,6 @@ int pesto_eval(
         &pesto_gamePhase
     );
 
-
     int pesto_mgScore =
         pesto_mg[PESTO_WHITE] -
         pesto_mg[PESTO_BLACK];
@@ -375,14 +377,8 @@ int pesto_eval(
         pesto_eg[PESTO_WHITE] -
         pesto_eg[PESTO_BLACK];
 
-
-    int pesto_mgPhase = pesto_gamePhase;
-
-    if (pesto_mgPhase > 24)
-        pesto_mgPhase = 24;
-
+    int pesto_mgPhase = std::min(pesto_gamePhase, 24);
     int pesto_egPhase = 24 - pesto_mgPhase;
-
 
     int pesto_score =
         (
@@ -390,11 +386,10 @@ int pesto_eval(
             pesto_egScore * pesto_egPhase
         ) / 24;
 
+    if (!chess_board->whites_turn)
+        pesto_score = -pesto_score;
 
-    if (chess_board->whites_turn)
-        return pesto_score;
-
-    return -pesto_score;
+    return {pesto_score, pesto_mgPhase};
 }
 
 constexpr int pesto_piece_type(PieceType piece)

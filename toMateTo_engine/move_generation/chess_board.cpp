@@ -3,74 +3,71 @@
 int RESULT_COUNT = 9;
 
 
+uint64_t perft(chess_board* board, int depth){
+    if(depth == 0)
+        return 1;
+
+    MoveStacks moves;
+    find_all_moves(&moves, board);
+
+    uint64_t nodes = 0;
+
+    for(Move* m = moves.capture_moves; m != moves.capture_end; ++m){
+        StateInfo st;
+        make_move(board, *m, st);
+
+        nodes += perft(board, depth - 1);
+
+        undo_move(board, *m, st);
+    }
+
+    for(Move* m = moves.normal_moves; m != moves.normal_end; ++m){
+        StateInfo st;
+        make_move(board, *m, st);
+
+        nodes += perft(board, depth - 1);
+
+        undo_move(board, *m, st);
+    }
+
+    return nodes;
+}
+
 
 std::map<std::string, uint64_t> try_all_moves(
-    chess_board* cb,
+    chess_board* board,
     int depth)
 {
     std::map<std::string, uint64_t> result;
 
-    Move moves[256];
-    Move* end = find_all_moves(moves, cb);
+    MoveStacks moves;
+    find_all_moves(&moves, board);
 
-    for (Move* m = moves; m != end; ++m) {
+    for(Move* m = moves.capture_moves; m != moves.capture_end; ++m){
+        std::string move = m->move_to_string(board->whites_turn);
 
         StateInfo st;
+        make_move(board, *m, st);
 
-        make_move(cb, *m, st);
+        result[move] = perft(board, depth - 1);
 
-        uint64_t count;
+        undo_move(board, *m, st);
+    }
 
-        if (depth == 1) {
-            count = 1;
-        }
-        else {
-            count = try_all_moves_recursive(
-                cb,
-                depth - 1
-            );
-        }
+    for(Move* m = moves.normal_moves; m != moves.normal_end; ++m){
+        std::string move = m->move_to_string(board->whites_turn);
 
+        StateInfo st;
+        make_move(board, *m, st);
 
-        undo_move(cb, *m, st);
+        result[move] = perft(board, depth - 1);
 
-        result[m->move_to_string(cb->whites_turn)] = count;
-
+        undo_move(board, *m, st);
     }
 
     return result;
 }
 
-uint64_t try_all_moves_recursive(
-    chess_board* cb,
-    int depth)
-{
-    Move moves[256];
-    Move* end = find_all_moves(moves, cb);
-
-    if (depth == 1) {
-        int num_moves = end - moves;
-        return num_moves;
-    }
-
-    uint64_t count = 0;
-
-    for (Move* m = moves; m != end; ++m) {
-
-        StateInfo st;
-
-        make_move(cb, *m, st);
-
-        count += try_all_moves_recursive(
-            cb,
-            depth - 1
-        );
-
-        undo_move(cb, *m, st);
-    }
-
-    return count;
-}
 
 void make_move(chess_board* cb, Move m, StateInfo& st) {
     one_side& us   = cb->whites_turn ? cb->white : cb->black;
@@ -99,6 +96,8 @@ void make_move(chess_board* cb, Move m, StateInfo& st) {
         if (cap != NO_PIECE_TYPE) {
             st.captured = cap;
             remove_piece(them, cap, to);
+        }else if(cap == KING){
+            std::cout << "A king just got captured!!" << board_to_fen(*cb);
         }
     }
 
@@ -286,65 +285,69 @@ bool is_in_check(chess_board* board)
     }
 }
 
-Move* find_all_moves(Move* moves, chess_board* chess_board){
+void find_all_moves(MoveStacks* move_stacks, chess_board* chess_board){
 
     if(chess_board->whites_turn){
         square white_king_square = __builtin_ctzll(chess_board->white.king);
 
         find_pin_information(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
 
-        moves = find_king_save_squares(moves, chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
-        moves = add_castling(moves, chess_board, &(chess_board->white), &(chess_board->black), white_king_square, chess_board->whites_turn);
+        find_king_save_squares(move_stacks, chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
+        add_castling(move_stacks, chess_board, &(chess_board->white), &(chess_board->black), white_king_square, chess_board->whites_turn);
 
         if(chess_board->attack_count < 2){
             if(chess_board->attack_count == 1){
                 chess_board->attack_defend_squares = SQUARES_IN_BETWEEN[white_king_square][__builtin_ctzll(chess_board->attacking_pieces)];
             }
 
-            moves = find_knight_moves(moves, chess_board, &(chess_board->white), &(chess_board->black));
+            find_knight_moves(move_stacks, chess_board, &(chess_board->white), &(chess_board->black));
 
-            moves = find_pawn_moves(moves, chess_board, &(chess_board->white), &(chess_board->black));
+            find_pawn_moves(move_stacks, chess_board, &(chess_board->white), &(chess_board->black));
 
-            moves = find_bishop_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
-            moves = find_rook_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.rooks));
+            find_bishop_moves(move_stacks, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
+            find_rook_moves(move_stacks, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.rooks));
 
-            moves = find_bishop_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
-            moves = find_rook_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
+            find_bishop_moves(move_stacks, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
+            find_rook_moves(move_stacks, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
         }
     }else{
         square black_king_square = __builtin_ctzll(chess_board->black.king);
 
         find_pin_information(chess_board, &(chess_board->black), &(chess_board->white), black_king_square);
 
-        moves = find_king_save_squares(moves, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square);
-        moves = add_castling(moves, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square, chess_board->whites_turn);
+        find_king_save_squares(move_stacks, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square);
+        add_castling(move_stacks, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square, chess_board->whites_turn);
 
         if(chess_board->attack_count < 2){
             if(chess_board->attack_count == 1){
                 chess_board->attack_defend_squares = SQUARES_IN_BETWEEN[black_king_square][__builtin_ctzll(chess_board->attacking_pieces)];
             }
 
-            moves = find_knight_moves(moves, chess_board, &(chess_board->black), &(chess_board->white));
+            find_knight_moves(move_stacks, chess_board, &(chess_board->black), &(chess_board->white));
 
-            moves = find_pawn_moves(moves, chess_board, &(chess_board->black), &(chess_board->white));
+            find_pawn_moves(move_stacks, chess_board, &(chess_board->black), &(chess_board->white));
 
-            moves = find_bishop_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.bishop));
-            moves = find_rook_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.rooks));
+            find_bishop_moves(move_stacks, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.bishop));
+            find_rook_moves(move_stacks, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.rooks));
 
-            moves = find_bishop_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.queen));
-            moves = find_rook_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.queen));
+            find_bishop_moves(move_stacks, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.queen));
+            find_rook_moves(move_stacks, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.queen));
         }
     }
-    return moves;
 }
 
-Move* add_normal_moves(square from, Bitboard destinations, Move* moves){
-    while(destinations){
-        *moves++ = Move(from, pop_lsb(destinations));
-    }return moves;
+void add_normal_moves(square from, Bitboard destinations, Bitboard enemys, MoveStacks* moves){
+    Bitboard attack_moves = destinations & enemys;
+    Bitboard normal_moves = destinations & ~attack_moves;
+    while(normal_moves){
+        *moves->normal_end++ = Move(from, pop_lsb(normal_moves));
+    }
+    while(attack_moves){
+        *moves->capture_end++ = Move(from, pop_lsb(attack_moves));
+    }
 }
 
-Move* find_bishop_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishop){
+void find_bishop_moves(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishop){
     Bitboard bishops = *bishop;
     while(bishops){
 
@@ -367,12 +370,11 @@ Move* find_bishop_moves(Move* moves, chess_board* chess_board, one_side* player,
             bishop_destinations &= SQUARES_ON_THE_LINE[bishop_square][__builtin_ctzll(player->king)];
         }// else king is not attacked and piece not pinned!
 
-        moves = add_normal_moves(bishop_square, bishop_destinations, moves);
+        add_normal_moves(bishop_square, bishop_destinations, enemy->side_all, moves);
     }
-    return moves;
 }
 
-Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rook){
+void find_rook_moves(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rook){
     Bitboard rooks = *rook;
     while(rooks){
         square rook_square = pop_lsb(rooks);    
@@ -395,12 +397,11 @@ Move* find_rook_moves(Move* moves, chess_board* chess_board, one_side* player, o
             rook_destinations &= SQUARES_ON_THE_LINE[rook_square][__builtin_ctzll(player->king)];
         }// else king is not attacked and piece not pinned!
 
-        moves = add_normal_moves(rook_square, rook_destinations, moves);
+        add_normal_moves(rook_square, rook_destinations, enemy->side_all, moves);
     }
-    return moves;
 }
 
-Move* find_knight_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy) {
+void find_knight_moves(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy) {
     Bitboard knights = player->knights & (~chess_board->pinned_pieces); // pinned nights cant walk
     Bitboard negative_player = ~player->side_all;
     while (knights) {
@@ -414,9 +415,8 @@ Move* find_knight_moves(Move* moves, chess_board* chess_board, one_side* player,
             // Filter for defending moves
             knight_destinations &= chess_board->attack_defend_squares;
         }
-        moves = add_normal_moves(knight_square, knight_destinations, moves);
+        add_normal_moves(knight_square, knight_destinations, enemy->side_all, moves);
     }
-    return moves;
 }
 
 void find_different_pawn_moves(Bitboard pawns, Bitboard empty, one_side* player, one_side* enemy, chess_board* chess_board, Bitboard* results){
@@ -477,20 +477,20 @@ void find_different_pawn_moves(Bitboard pawns, Bitboard empty, one_side* player,
 
 }
 
-Move* add_all_pawn_moves(Bitboard* results, Move* moves, bool color){
-    moves = add_pawn_moves(results[PUSH1], moves, FORWARD, color);
-    moves = add_pawn_moves(results[PUSH2], moves, DOUBLE_FORWARD, color);
-    moves = add_pawn_moves(results[CAPL], moves, FORWARD_LEFT[color], color);
-    moves = add_pawn_moves(results[CAPR], moves, FORWARD_RIGHT[color], color);
-    moves = add_ep(results[EPL], moves, FORWARD_LEFT[color], color);
-    moves = add_ep(results[EPR], moves, FORWARD_RIGHT[color], color);
-    moves = add_prom(results[PROMO_PUSH], moves, FORWARD, color);
-    moves = add_prom(results[PROMO_CAPL], moves, FORWARD_LEFT[color], color);
-    moves = add_prom(results[PROMO_CAPR], moves, FORWARD_RIGHT[color], color);
-    return moves;
+void add_all_pawn_moves(Bitboard* results, MoveStacks* moves, bool color){
+
+    moves->normal_end = add_pawn_moves(results[PUSH1], moves->normal_end, FORWARD, color);
+    moves->normal_end = add_pawn_moves(results[PUSH2], moves->normal_end, DOUBLE_FORWARD, color);
+    moves->capture_end = add_pawn_moves(results[CAPL], moves->capture_end, FORWARD_LEFT[color], color);
+    moves->capture_end = add_pawn_moves(results[CAPR],  moves->capture_end, FORWARD_RIGHT[color], color);
+    moves->capture_end = add_ep(results[EPL],  moves->capture_end, FORWARD_LEFT[color], color);
+    moves->capture_end = add_ep(results[EPR],  moves->capture_end, FORWARD_RIGHT[color], color);
+    moves->normal_end = add_prom(results[PROMO_PUSH], moves->normal_end, FORWARD, color);
+    moves->capture_end = add_prom(results[PROMO_CAPL], moves->capture_end, FORWARD_LEFT[color], color);
+    moves->capture_end = add_prom(results[PROMO_CAPR], moves->capture_end, FORWARD_RIGHT[color], color);
 }
 
-Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy){
+void find_pawn_moves(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy){
     Bitboard empty_squares = ~chess_board->complete_board;
     Bitboard pawns = player->pawns;
 
@@ -530,9 +530,7 @@ Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, o
         }
     }
     
-    moves = add_all_pawn_moves(results, moves, chess_board->whites_turn);
-
-    return moves;
+    add_all_pawn_moves(results, moves, chess_board->whites_turn);
 
 }
 
@@ -543,21 +541,26 @@ Move* add_prom(Bitboard destinations, Move* moves, int8_t offset, bool color){
         for(int8_t type = BISHOP; type <= QUEEN; type++){
             *moves++ = Move(from, to, PROMOTION, type);
         }
-    }return moves;
+    }
+    return moves;
 }
 
 Move* add_ep(Bitboard destinations, Move* moves, int8_t offset, bool color){
     if(destinations){
         square to = pop_lsb(destinations);
         *moves++ = Move(to-color_dir(offset, color), to, EN_PASSANT);
-    }return moves;
+    }
+    return moves;
 }
+
+
 
 Move* add_pawn_moves(Bitboard destinations, Move* moves, int8_t offset, bool color){
     while(destinations){
         square to = pop_lsb(destinations);
         *moves++ = Move(to-color_dir(offset, color), to);
-    }return moves;
+    }
+    return moves;
 }
 
 bool is_save_square(chess_board* chess_board, one_side* player, one_side* enemy, square pos_ind, Bitboard original_square){
@@ -623,9 +626,10 @@ extern const CastlingRights CASTLING_FLAG[2][2] = {
     { WHITE_KING_SIDE,  WHITE_QUEEN_SIDE }
 };
 
-Move* add_castling(Move* moves,chess_board* board, one_side* player, one_side* enemy, square king_pos, bool is_white) {
-    if (board->attack_count)
-        return moves;
+void add_castling(MoveStacks* moves,chess_board* board, one_side* player, one_side* enemy, square king_pos, bool is_white) {
+    if (board->attack_count){
+        return;
+    }
 
     for (int cs = 0; cs < 2; ++cs) {
 
@@ -655,23 +659,33 @@ Move* add_castling(Move* moves,chess_board* board, one_side* player, one_side* e
 
         // 4) add move
         
-        *moves++ = Move(king_pos, CASTLE_TO[is_white][cs], CASTLING);
+        *moves->normal_end++ = Move(king_pos, CASTLE_TO[is_white][cs], CASTLING);
     }
 
-    return moves;
 }
 
-Move* find_king_save_squares(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position){
+void  find_king_save_squares(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position){
     Bitboard possible_king_moves = KING_MOVES_MASK[king_position] & ~player->side_all;
+    Bitboard possible_king_attack_moves = possible_king_moves & enemy->side_all;
+    possible_king_moves &= ~possible_king_attack_moves;
     player->save_king_squares = 0LL;
+
     while(possible_king_moves){
         square to = pop_lsb(possible_king_moves);
         if(is_save_square(chess_board, player, enemy, to, player->king)){ // there can be a piece as long as the square is not under attack
             // this whole function could be split in only parallel moves and the rest so this is not done for every free square:
             player->save_king_squares |= (1ULL << to);
-            *moves++ = Move(king_position, to);
+            *moves->normal_end++ = Move(king_position, to);
         }
-    }return moves;
+    }
+    while(possible_king_attack_moves){
+        square to = pop_lsb(possible_king_attack_moves);
+        if(is_save_square(chess_board, player, enemy, to, player->king)){ // there can be a piece as long as the square is not under attack
+            // this whole function could be split in only parallel moves and the rest so this is not done for every free square:
+            player->save_king_squares |= (1ULL << to);
+            *moves->capture_end++ = Move(king_position, to);
+        }
+    }
 }
 
 void setup_fen_position(chess_board& board, const std::string& fen)

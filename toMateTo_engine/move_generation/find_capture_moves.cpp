@@ -1,59 +1,59 @@
 #include "find_capture_moves.h"
 
 
-Move* find_all_capture_moves(Move* moves, chess_board* chess_board){
+void find_all_capture_moves(MoveStacks* moves, chess_board* chess_board){
 
     if(chess_board->whites_turn){
         square white_king_square = __builtin_ctzll(chess_board->white.king);
 
         find_pin_information(chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
 
-        moves = find_king_save_squares_captures(moves, chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
-        // moves = add_castling(moves, chess_board, &(chess_board->white), &(chess_board->black), white_king_square, chess_board->whites_turn);
+        find_king_save_squares_captures(moves, chess_board,  &(chess_board->white), &(chess_board->black), white_king_square);
+        // add_castling(moves, chess_board, &(chess_board->white), &(chess_board->black), white_king_square, chess_board->whites_turn);
 
         if(chess_board->attack_count < 2){
             if(chess_board->attack_count == 1){
                 chess_board->attack_defend_squares = SQUARES_IN_BETWEEN[white_king_square][__builtin_ctzll(chess_board->attacking_pieces)];
             }
 
-            moves = find_knight_capture_moves(moves, chess_board, &(chess_board->white), &(chess_board->black));
+            find_knight_capture_moves(moves, chess_board, &(chess_board->white), &(chess_board->black));
 
-            moves = find_pawn_capture_moves(moves, chess_board, &(chess_board->white), &(chess_board->black));
+            find_pawn_capture_moves(moves, chess_board, &(chess_board->white), &(chess_board->black));
 
-            moves = find_bishop_capture_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
-            moves = find_rook_capture_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.rooks));
+            find_bishop_capture_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.bishop));
+            find_rook_capture_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.rooks));
 
-            moves = find_bishop_capture_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
-            moves = find_rook_capture_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
+            find_bishop_capture_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
+            find_rook_capture_moves(moves, chess_board, &(chess_board->white), &(chess_board->black), &(chess_board->white.queen));
         }
     }else{
         square black_king_square = __builtin_ctzll(chess_board->black.king);
 
         find_pin_information(chess_board, &(chess_board->black), &(chess_board->white), black_king_square);
 
-        moves = find_king_save_squares_captures(moves, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square);
-        // moves = add_castling(moves, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square, chess_board->whites_turn);
+        find_king_save_squares_captures(moves, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square);
+        // add_castling(moves, chess_board,  &(chess_board->black), &(chess_board->white), black_king_square, chess_board->whites_turn);
 
         if(chess_board->attack_count < 2){
             if(chess_board->attack_count == 1){
                 chess_board->attack_defend_squares = SQUARES_IN_BETWEEN[black_king_square][__builtin_ctzll(chess_board->attacking_pieces)];
             }
 
-            moves = find_knight_capture_moves(moves, chess_board, &(chess_board->black), &(chess_board->white));
+            find_knight_capture_moves(moves, chess_board, &(chess_board->black), &(chess_board->white));
 
-            moves = find_pawn_capture_moves(moves, chess_board, &(chess_board->black), &(chess_board->white));
+            find_pawn_capture_moves(moves, chess_board, &(chess_board->black), &(chess_board->white));
 
-            moves = find_bishop_capture_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.bishop));
-            moves = find_rook_capture_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.rooks));
+            find_bishop_capture_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.bishop));
+            find_rook_capture_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.rooks));
 
-            moves = find_bishop_capture_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.queen));
-            moves = find_rook_capture_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.queen));
+            find_bishop_capture_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.queen));
+            find_rook_capture_moves(moves, chess_board, &(chess_board->black), &(chess_board->white), &(chess_board->black.queen));
         }
     }
-    return moves;
 }
 
-Move* find_king_save_squares_captures(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position){
+
+void find_king_save_squares_captures(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy, square king_position){
     Bitboard possible_king_moves = (KING_MOVES_MASK[king_position] & ~player->side_all) & enemy->side_all;
     player->save_king_squares = 0LL;
     while(possible_king_moves){
@@ -61,13 +61,13 @@ Move* find_king_save_squares_captures(Move* moves, chess_board* chess_board, one
         if(is_save_square(chess_board, player, enemy, to, player->king)){ // there can be a piece as long as the square is not under attack
             // this whole function could be split in only parallel moves and the rest so this is not done for every free square:
             player->save_king_squares |= (1ULL << to);
-            *moves++ = Move(king_position, to);
+            *moves->capture_end++ = Move(king_position, to);
         }
-    }return moves;
+    }
 }
 
 
-Move* find_bishop_capture_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishop){
+void find_bishop_capture_moves(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* bishop){
     Bitboard bishops = *bishop;
     while(bishops){
 
@@ -90,12 +90,12 @@ Move* find_bishop_capture_moves(Move* moves, chess_board* chess_board, one_side*
             bishop_destinations_captures &= SQUARES_ON_THE_LINE[bishop_square][__builtin_ctzll(player->king)];
         }// else king is not attacked and piece not pinned!
 
-        moves = add_normal_moves(bishop_square, bishop_destinations_captures, moves);
+        add_normal_moves(bishop_square, bishop_destinations_captures, enemy->side_all, moves);
     }
-    return moves;
 }
 
-Move* find_knight_capture_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy) {
+
+void find_knight_capture_moves(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy) {
     Bitboard knights = player->knights & (~chess_board->pinned_pieces); // pinned nights cant walk
     while (knights) {
 
@@ -108,12 +108,12 @@ Move* find_knight_capture_moves(Move* moves, chess_board* chess_board, one_side*
             // Filter for defending moves
             knight_destinations_captures &= chess_board->attack_defend_squares;
         }
-        moves = add_normal_moves(knight_square, knight_destinations_captures, moves);
+        add_normal_moves(knight_square, knight_destinations_captures, enemy->side_all, moves);
     }
-    return moves;
 }
 
-Move* find_pawn_capture_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy){
+
+void find_pawn_capture_moves(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy){
     Bitboard empty_squares = ~chess_board->complete_board;
     Bitboard pawns = player->pawns;
 
@@ -152,11 +152,9 @@ Move* find_pawn_capture_moves(Move* moves, chess_board* chess_board, one_side* p
         }
     }
     
-    moves = add_all_pawn_moves(results, moves, chess_board->whites_turn);
-
-    return moves;
-
+    add_all_pawn_moves(results, moves, chess_board->whites_turn);
 }
+
 
 void find_different_pawn_capture_moves(Bitboard pawns, Bitboard empty, one_side* player, one_side* enemy, chess_board* chess_board, Bitboard* results){
     // single push
@@ -208,7 +206,8 @@ void find_different_pawn_capture_moves(Bitboard pawns, Bitboard empty, one_side*
 
 }
 
-Move* find_rook_capture_moves(Move* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rook){
+
+void find_rook_capture_moves(MoveStacks* moves, chess_board* chess_board, one_side* player, one_side* enemy, Bitboard* rook){
     Bitboard rooks = *rook;
     while(rooks){
         square rook_square = pop_lsb(rooks);    
@@ -231,7 +230,7 @@ Move* find_rook_capture_moves(Move* moves, chess_board* chess_board, one_side* p
             rook_destinations_captures &= SQUARES_ON_THE_LINE[rook_square][__builtin_ctzll(player->king)];
         }// else king is not attacked and piece not pinned!
 
-        moves = add_normal_moves(rook_square, rook_destinations_captures, moves);
+        add_normal_moves(rook_square, rook_destinations_captures, enemy->side_all, moves);
     }
-    return moves;
 }
+

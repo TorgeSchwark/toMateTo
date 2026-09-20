@@ -22,6 +22,7 @@ add_executable(toMateTo
     ${ENGINE_DIR}/testing/debugging.cpp
     ${ENGINE_DIR}/toMateTo/toMateTo.cpp
     ${ENGINE_DIR}/toMateTo/eval.cpp
+    ./engine_server/engine_server.cpp
     ./testing/engine_match.cpp
     ./testing/stockfish_perft.cpp
     ./testing/move_gen_speed_testing.cpp

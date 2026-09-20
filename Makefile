@@ -153,6 +153,30 @@ chess_gui/gui.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/chess_gui/gui.cpp.s
 .PHONY : chess_gui/gui.cpp.s
 
+engine_server/engine_server.o: engine_server/engine_server.cpp.o
+.PHONY : engine_server/engine_server.o
+
+# target to build an object file
+engine_server/engine_server.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/engine_server/engine_server.cpp.o
+.PHONY : engine_server/engine_server.cpp.o
+
+engine_server/engine_server.i: engine_server/engine_server.cpp.i
+.PHONY : engine_server/engine_server.i
+
+# target to preprocess a source file
+engine_server/engine_server.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/engine_server/engine_server.cpp.i
+.PHONY : engine_server/engine_server.cpp.i
+
+engine_server/engine_server.s: engine_server/engine_server.cpp.s
+.PHONY : engine_server/engine_server.s
+
+# target to generate assembly for a file
+engine_server/engine_server.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/toMateTo.dir/build.make CMakeFiles/toMateTo.dir/engine_server/engine_server.cpp.s
+.PHONY : engine_server/engine_server.cpp.s
+
 main.o: main.cpp.o
 .PHONY : main.o
 
@@ -525,6 +549,9 @@ help:
 	@echo "... chess_gui/gui.o"
 	@echo "... chess_gui/gui.i"
 	@echo "... chess_gui/gui.s"
+	@echo "... engine_server/engine_server.o"
+	@echo "... engine_server/engine_server.i"
+	@echo "... engine_server/engine_server.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

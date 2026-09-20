@@ -22,7 +22,6 @@ Process start_stockfish(const char* path) {
     }
 
     if (pid == 0) {
-        // Child: Stockfish
         dup2(in_pipe[0], STDIN_FILENO);
         dup2(out_pipe[1], STDOUT_FILENO);
 
@@ -30,10 +29,9 @@ Process start_stockfish(const char* path) {
         close(out_pipe[0]);
 
         execl(path, path, nullptr);
-        _exit(1); // exec failed
+        _exit(1);
     }
 
-    // Parent
     close(in_pipe[0]);
     close(out_pipe[1]);
 
@@ -74,7 +72,6 @@ int stockfish_move_count(Process& sf, const std::string& fen) {
 }
 
 
-
 Process start_and_init_stockfish() {
     auto sf = start_stockfish("stockfish");
 
@@ -104,15 +101,11 @@ void perft_debugging(const std::string& fen, int depth) {
 }
 
 
+void perft_debug_recursive(chess_board& board, int depth, Process& sf) {
+    MoveStacks moves;
+    find_all_moves(&moves, &board);
 
-void perft_debug_recursive(
-    chess_board& board,
-    int depth,
-    Process& sf
-) {
-    Move moves[256];
-    Move* end = find_all_moves(moves, &board);
-    int engine_moves = end - moves;
+    int engine_moves = moves.capture_size() + moves.normal_size();
 
     std::string fen = board_to_fen(board);
     int sf_moves = stockfish_move_count(sf, fen);
@@ -120,12 +113,15 @@ void perft_debug_recursive(
     if (engine_moves != sf_moves) {
         fprintf(stderr, "\n❌ MOVE COUNT MISMATCH\n");
         fprintf(stderr, "FEN: %s\n", fen.c_str());
-        fprintf(stderr, "Engine: %d  Stockfish: %d\n",
-                engine_moves, sf_moves);
+        fprintf(stderr, "Engine: %d  Stockfish: %d\n", engine_moves, sf_moves);
 
         board.print_board();
-        for (int i = 0; i < engine_moves; ++i)
-            fprintf(stderr, "%s\n", moves[i].move_to_string(board.whites_turn).c_str());
+
+        for (Move* m = moves.capture_moves; m != moves.capture_end; ++m)
+            fprintf(stderr, "%s\n", m->move_to_string(board.whites_turn).c_str());
+
+        for (Move* m = moves.normal_moves; m != moves.normal_end; ++m)
+            fprintf(stderr, "%s\n", m->move_to_string(board.whites_turn).c_str());
 
         return;
     }
@@ -133,11 +129,18 @@ void perft_debug_recursive(
     if (depth == 1)
         return;
 
-    for (int i = 0; i < engine_moves; ++i) {
+    for (Move* m = moves.capture_moves; m != moves.capture_end; ++m) {
         StateInfo st;
-        make_move(&board, moves[i], st);
+        make_move(&board, *m, st);
         perft_debug_recursive(board, depth - 1, sf);
-        undo_move(&board, moves[i], st);
+        undo_move(&board, *m, st);
+    }
+
+    for (Move* m = moves.normal_moves; m != moves.normal_end; ++m) {
+        StateInfo st;
+        make_move(&board, *m, st);
+        perft_debug_recursive(board, depth - 1, sf);
+        undo_move(&board, *m, st);
     }
 }
 
@@ -148,98 +151,63 @@ void perft_debug_depth2_undo(const std::string& fen) {
     board.setup_chess_board();
     setup_fen_position(board, fen);
 
-    // ============================================================
-    // Helper: collect all moves
-    // ============================================================
-
-    auto get_moves = [&](chess_board& b, Move* moves) -> int {
-        Move* end = find_all_moves(moves, &b);
-        return static_cast<int>(end - moves);
+    auto get_moves = [&](chess_board& b, MoveStacks& moves) {
+        find_all_moves(&moves, &b);
     };
 
+    auto move_count = [&](MoveStacks& moves) {
+        return moves.capture_size() + moves.normal_size();
+    };
 
-    // ============================================================
-    // Helper: check whether a move exists in a move list
-    // ============================================================
+    auto contains_move = [&](MoveStacks& moves, const std::string& target, bool white_to_move) -> bool {
+        for (Move* m = moves.capture_moves; m != moves.capture_end; ++m) {
+            if (m->move_to_string(white_to_move) == target)
+                return true;
+        }
 
-    auto contains_move =
-        [&](Move* moves,
-            int count,
-            const std::string& target,
-            bool white_to_move) -> bool {
-
-        for (int i = 0; i < count; ++i) {
-
-            std::string move_str =
-                moves[i].move_to_string(white_to_move);
-
-            if (move_str == target)
+        for (Move* m = moves.normal_moves; m != moves.normal_end; ++m) {
+            if (m->move_to_string(white_to_move) == target)
                 return true;
         }
 
         return false;
     };
 
-
-    // ============================================================
-    // Helper: compare two complete move lists
-    //
-    // Important:
-    // We compare the actual moves, NOT just the number of moves.
-    // ============================================================
-
-    auto compare_move_lists =
-        [&](Move* expected,
-            int expected_count,
-            Move* actual,
-            int actual_count,
-            bool white_to_move) -> bool {
-
+    auto compare_move_lists = [&](MoveStacks& expected, MoveStacks& actual, bool white_to_move) -> bool {
         bool identical = true;
 
-        // --------------------------------------------------------
-        // Moves that disappeared
-        // --------------------------------------------------------
+        for (Move* m = expected.capture_moves; m != expected.capture_end; ++m) {
+            std::string expected_str = m->move_to_string(white_to_move);
 
-        for (int i = 0; i < expected_count; ++i) {
-
-            std::string expected_str =
-                expected[i].move_to_string(white_to_move);
-
-            if (!contains_move(
-                    actual,
-                    actual_count,
-                    expected_str,
-                    white_to_move)) {
-
-                fprintf(stderr,
-                        "    ❌ MOVE LOST: %s\n",
-                        expected_str.c_str());
-
+            if (!contains_move(actual, expected_str, white_to_move)) {
+                fprintf(stderr, "    ❌ MOVE LOST: %s\n", expected_str.c_str());
                 identical = false;
             }
         }
 
+        for (Move* m = expected.normal_moves; m != expected.normal_end; ++m) {
+            std::string expected_str = m->move_to_string(white_to_move);
 
-        // --------------------------------------------------------
-        // Moves that appeared
-        // --------------------------------------------------------
+            if (!contains_move(actual, expected_str, white_to_move)) {
+                fprintf(stderr, "    ❌ MOVE LOST: %s\n", expected_str.c_str());
+                identical = false;
+            }
+        }
 
-        for (int i = 0; i < actual_count; ++i) {
+        for (Move* m = actual.capture_moves; m != actual.capture_end; ++m) {
+            std::string actual_str = m->move_to_string(white_to_move);
 
-            std::string actual_str =
-                actual[i].move_to_string(white_to_move);
+            if (!contains_move(expected, actual_str, white_to_move)) {
+                fprintf(stderr, "    ❌ NEW / WRONG MOVE: %s\n", actual_str.c_str());
+                identical = false;
+            }
+        }
 
-            if (!contains_move(
-                    expected,
-                    expected_count,
-                    actual_str,
-                    white_to_move)) {
+        for (Move* m = actual.normal_moves; m != actual.normal_end; ++m) {
+            std::string actual_str = m->move_to_string(white_to_move);
 
-                fprintf(stderr,
-                        "    ❌ NEW / WRONG MOVE: %s\n",
-                        actual_str.c_str());
-
+            if (!contains_move(expected, actual_str, white_to_move)) {
+                fprintf(stderr, "    ❌ NEW / WRONG MOVE: %s\n", actual_str.c_str());
                 identical = false;
             }
         }
@@ -247,17 +215,12 @@ void perft_debug_depth2_undo(const std::string& fen) {
         return identical;
     };
 
-
-    // ============================================================
-    // Initial position
-    // ============================================================
-
     bool initial_side = board.whites_turn;
 
-    Move initial_moves[256];
-    int initial_count =
-        get_moves(board, initial_moves);
+    MoveStacks initial_moves;
+    get_moves(board, initial_moves);
 
+    int initial_count = move_count(initial_moves);
 
     fprintf(stderr,
             "\n"
@@ -275,98 +238,55 @@ void perft_debug_depth2_undo(const std::string& fen) {
             initial_count
     );
 
+    int move1_index = 0;
 
-    // ============================================================
-    // Test every root move
-    // ============================================================
+    for (Move* m1 = initial_moves.capture_moves; m1 != initial_moves.capture_end; ++m1) {
 
-    for (int i = 0; i < initial_count; ++i) {
-
-        Move move1 = initial_moves[i];
+        Move move1 = *m1;
 
         std::string move1_str =
             move1.move_to_string(board.whites_turn);
 
-
         fprintf(stderr,
                 "[%d/%d] Testing: %s\n",
-                i + 1,
+                ++move1_index,
                 initial_count,
                 move1_str.c_str());
-
-
-        // --------------------------------------------------------
-        // Make first move
-        // --------------------------------------------------------
 
         StateInfo st1;
 
         make_move(&board, move1, st1);
 
+        bool side_after_move1 = board.whites_turn;
 
-        // --------------------------------------------------------
-        // Position after move1
-        // --------------------------------------------------------
+        MoveStacks moves_after_1;
+        get_moves(board, moves_after_1);
 
-        bool side_after_move1 =
-            board.whites_turn;
+        int count_after_1 = move_count(moves_after_1);
 
-        Move moves_after_1[256];
+        int move2_index = 0;
 
-        int count_after_1 =
-            get_moves(board, moves_after_1);
+        for (Move* m2 = moves_after_1.capture_moves; m2 != moves_after_1.capture_end; ++m2) {
 
-
-        // --------------------------------------------------------
-        // Execute EVERY move2 and immediately undo it.
-        //
-        // We expect the position after move1 to be restored
-        // after EVERY single move2.
-        // --------------------------------------------------------
-
-        for (int j = 0; j < count_after_1; ++j) {
-
-            Move move2 = moves_after_1[j];
+            Move move2 = *m2;
 
             std::string move2_str =
                 move2.move_to_string(board.whites_turn);
 
-
             StateInfo st2;
 
-
-            // ----------------------------------------------------
-            // make move2
-            // ----------------------------------------------------
-
             make_move(&board, move2, st2);
-
-
-            // ----------------------------------------------------
-            // undo move2
-            // ----------------------------------------------------
-
             undo_move(&board, move2, st2);
 
+            MoveStacks check_moves;
+            get_moves(board, check_moves);
 
-            // ----------------------------------------------------
-            // Check position after undo(move2)
-            //
-            // This MUST be identical to the position after move1.
-            // ----------------------------------------------------
-
-            Move check_moves[256];
-
-            int check_count =
-                get_moves(board, check_moves);
-
+            int check_count = move_count(check_moves);
 
             if (check_count != count_after_1 ||
                 !compare_move_lists(
                     moves_after_1,
-                    count_after_1,
                     check_moves,
-                    check_count,
                     side_after_move1)) {
 
                 fprintf(stderr,
@@ -417,36 +337,88 @@ void perft_debug_depth2_undo(const std::string& fen) {
             }
         }
 
+        for (Move* m2 = moves_after_1.normal_moves; m2 != moves_after_1.normal_end; ++m2) {
 
-        // --------------------------------------------------------
-        // Now undo move1
-        // --------------------------------------------------------
+            Move move2 = *m2;
+
+            std::string move2_str =
+                move2.move_to_string(board.whites_turn);
+
+            StateInfo st2;
+
+            make_move(&board, move2, st2);
+            undo_move(&board, move2, st2);
+
+            MoveStacks check_moves;
+            get_moves(board, check_moves);
+
+            int check_count = move_count(check_moves);
+
+            if (check_count != count_after_1 ||
+                !compare_move_lists(
+                    moves_after_1,
+                    check_moves,
+                    side_after_move1)) {
+
+                fprintf(stderr,
+                        "\n"
+                        "##################################################\n"
+                        "❌ INNER UNDO FAILURE\n"
+                        "##################################################\n"
+                        "\n"
+                        "Initial FEN:\n"
+                        "%s\n"
+                        "\n"
+                        "Move 1:\n"
+                        "    %s\n"
+                        "\n"
+                        "Move 2:\n"
+                        "    %s\n"
+                        "\n"
+                        "Expected moves after undo(move2): %d\n"
+                        "Actual moves:                     %d\n"
+                        "\n"
+                        "Position after move1 / undo(move2):\n",
+                        fen.c_str(),
+                        move1_str.c_str(),
+                        move2_str.c_str(),
+                        count_after_1,
+                        check_count
+                );
+
+                board.print_board();
+
+                fprintf(stderr,
+                        "\n"
+                        "The following operation corrupted the position:\n"
+                        "\n"
+                        "    make_move(%s)\n"
+                        "    undo_move(%s)\n"
+                        "\n"
+                        "Expected the exact position after:\n"
+                        "    %s\n"
+                        "\n"
+                        "##################################################\n",
+                        move2_str.c_str(),
+                        move2_str.c_str(),
+                        move1_str.c_str()
+                );
+
+                return;
+            }
+        }
 
         undo_move(&board, move1, st1);
 
+        MoveStacks restored_moves;
+        get_moves(board, restored_moves);
 
-        // --------------------------------------------------------
-        // Check complete ORIGINAL move list.
-        //
-        // This is the important test for your current bug.
-        //
-        // It is NOT enough that the number is still 53.
-        // We verify that g2g1b and every other original move
-        // actually exists again.
-        // --------------------------------------------------------
-
-        Move restored_moves[256];
-
-        int restored_count =
-            get_moves(board, restored_moves);
-
+        int restored_count = move_count(restored_moves);
 
         if (restored_count != initial_count ||
             !compare_move_lists(
                 initial_moves,
-                initial_count,
                 restored_moves,
-                restored_count,
                 initial_side)) {
 
             fprintf(stderr,
@@ -463,10 +435,6 @@ void perft_debug_depth2_undo(const std::string& fen) {
                     "\n"
                     "Expected initial move count: %d\n"
                     "Actual move count:           %d\n"
-                    "\n"
-                    "The number can be equal while the actual move\n"
-                    "list is different. Therefore the complete move\n"
-                    "list was compared above.\n"
                     "\n"
                     "Restored board:\n",
                     fen.c_str(),
@@ -494,10 +462,225 @@ void perft_debug_depth2_undo(const std::string& fen) {
         }
     }
 
+    for (Move* m1 = initial_moves.normal_moves; m1 != initial_moves.normal_end; ++m1) {
 
-    // ============================================================
-    // SUCCESS
-    // ============================================================
+        Move move1 = *m1;
+
+        std::string move1_str =
+            move1.move_to_string(board.whites_turn);
+
+        fprintf(stderr,
+                "[%d/%d] Testing: %s\n",
+                ++move1_index,
+                initial_count,
+                move1_str.c_str());
+
+        StateInfo st1;
+
+        make_move(&board, move1, st1);
+
+        bool side_after_move1 = board.whites_turn;
+
+        MoveStacks moves_after_1;
+        get_moves(board, moves_after_1);
+
+        int count_after_1 = move_count(moves_after_1);
+
+        for (Move* m2 = moves_after_1.capture_moves; m2 != moves_after_1.capture_end; ++m2) {
+
+            Move move2 = *m2;
+
+            std::string move2_str =
+                move2.move_to_string(board.whites_turn);
+
+            StateInfo st2;
+
+            make_move(&board, move2, st2);
+            undo_move(&board, move2, st2);
+
+            MoveStacks check_moves;
+            get_moves(board, check_moves);
+
+            int check_count = move_count(check_moves);
+
+            if (check_count != count_after_1 ||
+                !compare_move_lists(
+                    moves_after_1,
+                    check_moves,
+                    side_after_move1)) {
+
+                fprintf(stderr,
+                        "\n"
+                        "##################################################\n"
+                        "❌ INNER UNDO FAILURE\n"
+                        "##################################################\n"
+                        "\n"
+                        "Initial FEN:\n"
+                        "%s\n"
+                        "\n"
+                        "Move 1:\n"
+                        "    %s\n"
+                        "\n"
+                        "Move 2:\n"
+                        "    %s\n"
+                        "\n"
+                        "Expected moves after undo(move2): %d\n"
+                        "Actual moves:                     %d\n"
+                        "\n"
+                        "Position after move1 / undo(move2):\n",
+                        fen.c_str(),
+                        move1_str.c_str(),
+                        move2_str.c_str(),
+                        count_after_1,
+                        check_count
+                );
+
+                board.print_board();
+
+                fprintf(stderr,
+                        "\n"
+                        "The following operation corrupted the position:\n"
+                        "\n"
+                        "    make_move(%s)\n"
+                        "    undo_move(%s)\n"
+                        "\n"
+                        "Expected the exact position after:\n"
+                        "    %s\n"
+                        "\n"
+                        "##################################################\n",
+                        move2_str.c_str(),
+                        move2_str.c_str(),
+                        move1_str.c_str()
+                );
+
+                return;
+            }
+        }
+
+        for (Move* m2 = moves_after_1.normal_moves; m2 != moves_after_1.normal_end; ++m2) {
+
+            Move move2 = *m2;
+
+            std::string move2_str =
+                move2.move_to_string(board.whites_turn);
+
+            StateInfo st2;
+
+            make_move(&board, move2, st2);
+            undo_move(&board, move2, st2);
+
+            MoveStacks check_moves;
+            get_moves(board, check_moves);
+
+            int check_count = move_count(check_moves);
+
+            if (check_count != count_after_1 ||
+                !compare_move_lists(
+                    moves_after_1,
+                    check_moves,
+                    side_after_move1)) {
+
+                fprintf(stderr,
+                        "\n"
+                        "##################################################\n"
+                        "❌ INNER UNDO FAILURE\n"
+                        "##################################################\n"
+                        "\n"
+                        "Initial FEN:\n"
+                        "%s\n"
+                        "\n"
+                        "Move 1:\n"
+                        "    %s\n"
+                        "\n"
+                        "Move 2:\n"
+                        "    %s\n"
+                        "\n"
+                        "Expected moves after undo(move2): %d\n"
+                        "Actual moves:                     %d\n"
+                        "\n"
+                        "Position after move1 / undo(move2):\n",
+                        fen.c_str(),
+                        move1_str.c_str(),
+                        move2_str.c_str(),
+                        count_after_1,
+                        check_count
+                );
+
+                board.print_board();
+
+                fprintf(stderr,
+                        "\n"
+                        "The following operation corrupted the position:\n"
+                        "\n"
+                        "    make_move(%s)\n"
+                        "    undo_move(%s)\n"
+                        "\n"
+                        "Expected the exact position after:\n"
+                        "    %s\n"
+                        "\n"
+                        "##################################################\n",
+                        move2_str.c_str(),
+                        move2_str.c_str(),
+                        move1_str.c_str()
+                );
+
+                return;
+            }
+        }
+
+        undo_move(&board, move1, st1);
+
+        MoveStacks restored_moves;
+        get_moves(board, restored_moves);
+
+        int restored_count = move_count(restored_moves);
+
+        if (restored_count != initial_count ||
+            !compare_move_lists(
+                initial_moves,
+                restored_moves,
+                initial_side)) {
+
+            fprintf(stderr,
+                    "\n"
+                    "##################################################\n"
+                    "❌ OUTER UNDO FAILURE\n"
+                    "##################################################\n"
+                    "\n"
+                    "Initial FEN:\n"
+                    "%s\n"
+                    "\n"
+                    "Move that was made:\n"
+                    "    %s\n"
+                    "\n"
+                    "Expected initial move count: %d\n"
+                    "Actual move count:           %d\n"
+                    "\n"
+                    "Restored board:\n",
+                    fen.c_str(),
+                    move1_str.c_str(),
+                    initial_count,
+                    restored_count
+            );
+
+            board.print_board();
+
+            fprintf(stderr,
+                    "\n"
+                    "Operation tested:\n"
+                    "    make_move(%s)\n"
+                    "    ... all move2 make/undo tests ...\n"
+                    "    undo_move(%s)\n"
+                    "\n"
+                    "The original position was NOT restored correctly.\n"
+                    "##################################################\n",
+                    move1_str.c_str(),
+                    move1_str.c_str()
+            );
+
+            return;
+        }
+    }
 
     fprintf(stderr,
             "\n"
@@ -516,5 +699,3 @@ void perft_debug_depth2_undo(const std::string& fen) {
             initial_count
     );
 }
-
-

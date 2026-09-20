@@ -27,7 +27,7 @@ struct TTEntry
 
 
 
-constexpr std::size_t TT_SIZE = 1 << 19;
+constexpr std::size_t TT_SIZE = 1 << 22;
 
 // ---------------------------------------------------------
 // Zobrist hashing

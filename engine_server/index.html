@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ToMateTo – Schach gegen die Engine</title>
+<style>
+:root{
+  --leaf-deep:#1c2b21;
+  --leaf:#5f8f45;
+  --leaf-pale:#e6eed6;
+  --tomato:#e5383b;
+  --tomato-soft:rgba(229,56,59,.45);
+  --paper:#f4f1e8;
+  --muted:#a9b8a3;
+  --size:min(92vw, 78vh, 640px);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:linear-gradient(135deg,#000 0%,var(--leaf-deep) 100%) fixed;
+  background-color:var(--leaf-deep);
+  color:var(--paper);
+  font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  min-height:100vh;
+  display:flex;justify-content:center;
+  padding:clamp(12px,3vw,32px);
+}
+main{
+  display:flex;flex-wrap:wrap;gap:clamp(16px,3vw,40px);
+  align-items:flex-start;justify-content:center;
+  width:100%;max-width:1040px;
+}
+
+/* ---------- Brett ---------- */
+.board-wrap{position:relative}
+#board{
+  width:var(--size);height:var(--size);
+  display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+  border-radius:6px;overflow:hidden;
+  box-shadow:0 0 0 4px #0f1a13, 0 18px 40px rgba(0,0,0,.45);
+  user-select:none;
+}
+.sq{
+  position:relative;border:0;padding:0;margin:0;cursor:default;
+  display:flex;align-items:center;justify-content:center;
+  font-size:calc(var(--size) / 8 * .78);line-height:1;
+  font-family:"Segoe UI Symbol","Noto Sans Symbols 2","DejaVu Sans",sans-serif;
+}
+.sq.light{background:var(--leaf-pale)}
+.sq.dark{background:var(--leaf)}
+.sq.last::before{content:"";position:absolute;inset:0;background:rgba(245,208,66,.42)}
+.sq.selected::before{content:"";position:absolute;inset:0;background:rgba(245,208,66,.7)}
+.sq.check::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(circle,var(--tomato) 0%,var(--tomato-soft) 55%,transparent 75%)}
+.sq.can{cursor:pointer}
+.sq.can::after{content:"";position:absolute;width:26%;height:26%;border-radius:50%;background:rgba(28,43,33,.35)}
+.sq.can.capture::after{width:88%;height:88%;background:transparent;border:5px solid rgba(28,43,33,.35)}
+.sq.mine{cursor:pointer}
+.piece{position:relative;z-index:1;pointer-events:none}
+.piece.w{color:#fffdf4;text-shadow:0 0 1px #000,0 0 1px #000,0 1px 2px rgba(0,0,0,.6);-webkit-text-stroke:1.5px #1a1a1a}
+.piece.b{color:#1a1613;text-shadow:0 1px 1px rgba(255,255,255,.25)}
+.coord{position:absolute;font-size:calc(var(--size) / 8 * .17);font-weight:700;font-family:system-ui,sans-serif;pointer-events:none;z-index:2}
+.coord.file{right:4%;bottom:2%}
+.coord.rank{left:5%;top:3%}
+.light .coord{color:var(--leaf)}
+.dark .coord{color:var(--leaf-pale)}
+
+/* ---------- Umwandlung ---------- */
+#promo{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(15,26,19,.72);border-radius:6px;z-index:5;
+}
+#promo.open{display:flex}
+#promo .choices{display:flex;gap:10px;background:var(--paper);padding:14px;border-radius:10px}
+#promo button{
+  width:calc(var(--size) / 8 * 1.1);height:calc(var(--size) / 8 * 1.1);
+  font-size:calc(var(--size) / 8 * .85);border:0;border-radius:8px;background:var(--leaf-pale);cursor:pointer;
+  font-family:"Segoe UI Symbol","Noto Sans Symbols 2","DejaVu Sans",sans-serif;color:#1a1613;
+}
+#promo button:hover,#promo button:focus-visible{background:#f5d042;outline:none}
+
+/* ---------- Seitenleiste ---------- */
+aside{flex:1 1 280px;max-width:380px;min-width:260px;display:flex;flex-direction:column;gap:18px}
+h1{margin:0;font-size:clamp(2rem,5vw,3rem);font-weight:700;letter-spacing:-.02em;line-height:1}
+h1 .t{color:var(--tomato)}
+.sub{margin:6px 0 0;color:var(--muted);font-size:1rem}
+#status{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.06);border-radius:8px;padding:12px 14px;min-height:48px;
+  font-size:1.05rem;
+}
+#status .dot{width:10px;height:10px;border-radius:50%;background:var(--leaf);flex:none}
+#status.thinking .dot{background:var(--tomato);animation:pulse 1s ease-in-out infinite}
+#status.over{background:var(--tomato);color:#fff}
+#status.over .dot{background:#fff}
+@keyframes pulse{50%{transform:scale(1.6);opacity:.5}}
+@media (prefers-reduced-motion:reduce){#status.thinking .dot{animation:none}}
+
+fieldset{border:0;margin:0;padding:0}
+legend{padding:0;margin-bottom:8px;color:var(--muted);font-size:.95rem}
+.seg{display:flex;border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.18)}
+.seg button{
+  flex:1;background:transparent;color:var(--paper);border:0;padding:10px 6px;
+  font:inherit;cursor:pointer;
+}
+.seg button+button{border-left:1px solid rgba(255,255,255,.18)}
+.seg button[aria-pressed="true"]{background:var(--paper);color:var(--leaf-deep);font-weight:700}
+.seg button:focus-visible,.btn:focus-visible,input[type=range]:focus-visible{outline:2px solid #f5d042;outline-offset:2px}
+
+.time-row{display:flex;align-items:center;gap:12px}
+input[type=range]{flex:1;accent-color:var(--tomato)}
+#timeLabel{min-width:4.5em;text-align:right;font-variant-numeric:tabular-nums}
+
+.actions{display:flex;gap:10px}
+.btn{
+  flex:1;font:inherit;font-weight:700;padding:12px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.3);background:transparent;color:var(--paper);
+}
+.btn.primary{background:var(--tomato);border-color:var(--tomato);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+#moves{
+  background:rgba(0,0,0,.22);border-radius:8px;padding:12px 14px;
+  max-height:190px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;
+  font-size:.92rem;line-height:1.7;color:var(--muted);
+}
+#moves b{color:var(--paper);font-weight:400}
+#moves .empty{font-family:inherit}
+
+/* ---------- Schachmatt-Finale ---------- */
+#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50}
+
+#finale{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  border-radius:6px;overflow:hidden;z-index:6;pointer-events:none;
+}
+#finale.show{display:flex}
+#finale.hidden{display:none}
+#finale .fx{position:absolute;inset:0}
+#finale .banner{
+  position:relative;text-align:center;pointer-events:auto;
+  background:rgba(12,20,15,.88);border-radius:14px;padding:22px 26px 20px;
+  max-width:88%;box-shadow:0 12px 40px rgba(0,0,0,.5);
+  animation:bannerIn .7s cubic-bezier(.2,1.4,.4,1) .35s both;
+}
+#finale h2{margin:0 0 6px;font-size:clamp(1.6rem,4.6vw,2.5rem);line-height:1.1}
+#finale p{margin:0 0 16px;color:var(--muted)}
+#finale.win h2{color:#f5d042}
+#finale.lose h2{color:var(--tomato)}
+#finale .btn{flex:none;padding:10px 18px}
+@keyframes bannerIn{from{opacity:0;transform:scale(.3) rotate(-6deg)}to{opacity:1;transform:none}}
+
+/* Sieg: goldener Glanz, der über das Brett wandert */
+#finale.win .fx{
+  background:linear-gradient(115deg,transparent 30%,rgba(245,208,66,.55) 50%,transparent 70%);
+  background-size:250% 100%;animation:shine 1.6s ease-out .1s both;
+}
+@keyframes shine{from{background-position:120% 0}to{background-position:-120% 0}}
+
+/* Niederlage: Tomaten-Splat mit Tropfen */
+#finale.lose .fx{
+  background:radial-gradient(circle at 50% 45%,rgba(229,56,59,.95) 0%,rgba(190,30,40,.85) 35%,rgba(140,20,30,.0) 72%);
+  animation:splat .55s cubic-bezier(.1,.9,.3,1) both;
+}
+@keyframes splat{from{transform:scale(0);opacity:0}60%{opacity:1}to{transform:scale(1.25);opacity:1}}
+#finale .drip{
+  position:absolute;top:30%;border-radius:0 0 999px 999px;
+  background:linear-gradient(#c81e2b,#8f1420);height:0;
+  animation:drip var(--d,2.2s) ease-in var(--delay,.5s) forwards;
+}
+@keyframes drip{to{height:var(--h,40%)}}
+
+body.shake #board{animation:shake .6s ease-in-out}
+@keyframes shake{
+  10%,90%{transform:translateX(-3px)}20%,80%{transform:translateX(6px)}
+  30%,50%,70%{transform:translateX(-10px)}40%,60%{transform:translateX(10px)}
+}
+
+/* Der mattgesetzte König kippt um */
+.piece.mated{transform-origin:50% 92%;animation:topple .8s ease-in .25s forwards}
+@keyframes topple{to{transform:rotate(82deg) translateY(6%)}}
+
+@media (prefers-reduced-motion:reduce){
+  #finale .banner,#finale .fx,#finale .drip,body.shake #board,.piece.mated{animation:none}
+  #finale.lose .fx{opacity:.6}
+  #finale .drip{height:var(--h,40%)}
+  .piece.mated{transform:rotate(82deg) translateY(6%)}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="board-wrap">
+    <div id="board" role="grid" aria-label="Schachbrett"></div>
+    <div id="promo" role="dialog" aria-label="Umwandlungsfigur wählen"><div class="choices"></div></div>
+    <div id="finale" aria-live="assertive">
+      <div class="fx"></div>
+      <div class="banner">
+        <h2 id="finaleTitle"></h2>
+        <p id="finaleSub"></p>
+        <button class="btn" id="finaleClose" type="button">Brett ansehen</button>
+      </div>
+    </div>
+  </div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <aside>
+    <header>
+      <h1>To<span class="t">Mate</span>To</h1>
+      <p class="sub">Spiel gegen meine Schach-Engine.</p>
+    </header>
+
+    <div id="status" aria-live="polite"><span class="dot"></span><span id="statusText">Verbinde …</span></div>
+
+    <fieldset>
+      <legend>Du spielst</legend>
+      <div class="seg" id="colorSeg">
+        <button type="button" data-c="w" aria-pressed="true">Weiß</button>
+        <button type="button" data-c="b" aria-pressed="false">Schwarz</button>
+        <button type="button" data-c="r" aria-pressed="false">Zufall</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Bedenkzeit der Engine pro Zug</legend>
+      <div class="time-row">
+        <input type="range" id="time" min="0.5" max="10" step="0.5" value="2" aria-label="Bedenkzeit in Sekunden">
+        <span id="timeLabel">2 s</span>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button class="btn primary" id="newGame" type="button">Neue Partie</button>
+      <button class="btn" id="undo" type="button">Zug zurück</button>
+    </div>
+
+    <div id="moves" aria-label="Zugliste"><span class="empty">Noch keine Züge.</span></div>
+  </aside>
+</main>
+
+<script>
+const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+const GLYPH = { k:'\u265A', q:'\u265B', r:'\u265C', b:'\u265D', n:'\u265E', p:'\u265F' };
+const TEXT = '\uFE0E'; // erzwingt Textdarstellung statt Emoji
+
+const $ = id => document.getElementById(id);
+const boardEl = $('board');
+
+const game = {
+  history: [],      // { fen, info, last }
+  player: 'w',
+  colorChoice: 'w',
+  busy: false,
+  over: false,
+  selected: null,
+  gen: 0            // erhöht sich bei jeder neuen Partie, um alte Antworten zu verwerfen
+};
+
+const cur = () => game.history[game.history.length - 1];
+
+/* ---------------- FEN / Hilfsfunktionen ---------------- */
+function parseFen(fen){
+  const cells = [];
+  for (const ch of fen.split(' ')[0]){
+    if (ch === '/') continue;
+    if (/\d/.test(ch)) for (let i = 0; i < +ch; i++) cells.push(null);
+    else cells.push(ch);
+  }
+  return cells;
+}
+const sqName = i => 'abcdefgh'[i % 8] + (8 - Math.floor(i / 8));
+const sqIndex = n => (8 - +n[1]) * 8 + 'abcdefgh'.indexOf(n[0]);
+const isWhitePiece = p => p === p.toUpperCase();
+
+async function api(path){
+  const res = await fetch(path);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+/* ---------------- Partieende ---------------- */
+function insufficient(cells){
+  const pcs = cells.filter(Boolean).map(p => p.toLowerCase()).filter(p => p !== 'k');
+  if (pcs.length === 0) return true;
+  if (pcs.length === 1 && (pcs[0] === 'b' || pcs[0] === 'n')) return true;
+  return false;
+}
+
+function outcome(){
+  const { info, fen } = cur();
+  if (info.status === 'checkmate'){
+    const whiteMated = info.turn === 'w';
+    const playerWon = (game.player === 'w') !== whiteMated;
+    return { over:true, mate:true, won:playerWon,
+             text: playerWon ? 'Schachmatt – du hast gewonnen!' : 'Schachmatt – ToMateTo gewinnt.' };
+  }
+  if (info.status === 'stalemate') return { over:true, text:'Patt – Unentschieden.' };
+
+  const parts = fen.split(' ');
+  if (+parts[4] >= 100) return { over:true, text:'Remis nach der 50-Züge-Regel.' };
+
+  const key = parts.slice(0, 4).join(' ');
+  const count = game.history.filter(h => h.fen.split(' ').slice(0, 4).join(' ') === key).length;
+  if (count >= 3) return { over:true, text:'Remis durch dreifache Stellungswiederholung.' };
+
+  if (insufficient(parseFen(fen))) return { over:true, text:'Remis – zu wenig Material.' };
+  return { over:false };
+}
+
+/* ---------------- Rendering ---------------- */
+function legalMap(){
+  const map = new Map();   // von -> Set(nach)
+  for (const m of cur().info.legal){
+    const from = m.slice(0, 2), to = m.slice(2, 4);
+    if (!map.has(from)) map.set(from, new Set());
+    map.get(from).add(to);
+  }
+  return map;
+}
+
+function setStatus(text, mode){
+  const el = $('status');
+  el.className = mode || '';
+  $('statusText').textContent = text;
+}
+
+function render(){
+  const { fen, info, last } = cur();
+  const cells = parseFen(fen);
+  const legal = game.over || game.busy ? new Map() : legalMap();
+  const myTurn = info.turn === game.player && !game.over && !game.busy;
+  const flip = game.player === 'b';
+
+  let kingIdx = -1;
+  if (info.check) kingIdx = cells.findIndex(p => p === (info.turn === 'w' ? 'K' : 'k'));
+
+  boardEl.innerHTML = '';
+  for (let vr = 0; vr < 8; vr++){
+    for (let vc = 0; vc < 8; vc++){
+      const r = flip ? 7 - vr : vr;
+      const c = flip ? 7 - vc : vc;
+      const i = r * 8 + c;
+      const name = sqName(i);
+      const piece = cells[i];
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sq ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
+      btn.dataset.sq = name;
+      btn.setAttribute('aria-label', name + (piece ? ' ' + piece : ''));
+
+      if (last && (name === last.slice(0, 2) || name === last.slice(2, 4))) btn.classList.add('last');
+      if (i === kingIdx) btn.classList.add('check');
+      if (game.selected === name) btn.classList.add('selected');
+
+      if (myTurn && piece && legal.has(name) && (isWhitePiece(piece) === (game.player === 'w')))
+        btn.classList.add('mine');
+
+      if (myTurn && game.selected && legal.get(game.selected)?.has(name)){
+        btn.classList.add('can');
+        if (piece) btn.classList.add('capture');
+      }
+
+      if (piece){
+        const span = document.createElement('span');
+        span.className = 'piece ' + (isWhitePiece(piece) ? 'w' : 'b') +
+                         (game.over && info.status === 'checkmate' && i === kingIdx ? ' mated' : '');
+        span.textContent = GLYPH[piece.toLowerCase()] + TEXT;
+        btn.appendChild(span);
+      }
+
+      if (vc === 0){
+        const rk = document.createElement('span');
+        rk.className = 'coord rank'; rk.textContent = 8 - r; btn.appendChild(rk);
+      }
+      if (vr === 7){
+        const fl = document.createElement('span');
+        fl.className = 'coord file'; fl.textContent = 'abcdefgh'[c]; btn.appendChild(fl);
+      }
+
+      btn.addEventListener('click', () => onSquare(name));
+      boardEl.appendChild(btn);
+    }
+  }
+
+  renderMoves();
+  $('undo').disabled = game.busy || game.history.length < 2;
+}
+
+function renderMoves(){
+  const el = $('moves');
+  const moves = game.history.slice(1).map(h => h.last);
+  if (!moves.length){ el.innerHTML = '<span class="empty">Noch keine Züge.</span>'; return; }
+  let html = '';
+  for (let i = 0; i < moves.length; i += 2){
+    html += `<b>${i / 2 + 1}.</b> ${moves[i]} ${moves[i + 1] || ''}<br>`;
+  }
+  el.innerHTML = html;
+  el.scrollTop = el.scrollHeight;
+}
+
+/* ---------------- Interaktion ---------------- */
+function onSquare(name){
+  if (game.busy || game.over) return;
+  const { info, fen } = cur();
+  if (info.turn !== game.player) return;
+
+  const legal = legalMap();
+
+  if (game.selected && legal.get(game.selected)?.has(name)){
+    const from = game.selected;
+    const needsPromo = info.legal.includes(from + name + 'q');
+    if (needsPromo) askPromotion(from, name);
+    else playerMove(from + name);
+    return;
+  }
+
+  const piece = parseFen(fen)[sqIndex(name)];
+  if (piece && legal.has(name) && isWhitePiece(piece) === (game.player === 'w'))
+    game.selected = game.selected === name ? null : name;
+  else
+    game.selected = null;
+  render();
+}
+
+function askPromotion(from, to){
+  const box = $('promo');
+  const choices = box.querySelector('.choices');
+  choices.innerHTML = '';
+  for (const p of ['q', 'r', 'b', 'n']){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = GLYPH[p] + TEXT;
+    b.setAttribute('aria-label', { q:'Dame', r:'Turm', b:'Läufer', n:'Springer' }[p]);
+    b.addEventListener('click', () => { box.classList.remove('open'); playerMove(from + to + p); });
+    choices.appendChild(b);
+  }
+  box.classList.add('open');
+  choices.firstChild.focus();
+}
+
+async function playerMove(uci){
+  const gen = game.gen;
+  game.busy = true; game.selected = null; render();
+  try{
+    const res = await api('/api/move?fen=' + encodeURIComponent(cur().fen) + '&move=' + uci);
+    if (gen !== game.gen) return;
+    game.history.push({ fen: res.fen, info: res, last: uci });
+    game.busy = false;
+    await afterMove();
+  }catch(e){
+    game.busy = false;
+    setStatus('Fehler: ' + e.message, 'over');
+    render();
+  }
+}
+
+async function afterMove(){
+  const out = outcome();
+  if (out.over){
+    game.over = true; game.busy = false;
+    setStatus(out.text, 'over'); render();
+    if (out.mate) finale(out.won);
+    return;
+  }
+  if (cur().info.turn !== game.player){
+    await engineMove();
+  }else{
+    game.busy = false;
+    setStatus(cur().info.check ? 'Schach! Du bist am Zug.' : 'Du bist am Zug.');
+    render();
+  }
+}
+
+async function engineMove(){
+  const gen = game.gen;
+  game.busy = true;
+  setStatus('ToMateTo denkt nach …', 'thinking');
+  render();
+  try{
+    const t = $('time').value;
+    const res = await api('/api/engine?fen=' + encodeURIComponent(cur().fen) + '&time=' + t);
+    if (gen !== game.gen) return;
+    game.history.push({ fen: res.fen, info: res, last: res.move });
+    game.busy = false;
+    const out = outcome();
+    if (out.over){
+      game.over = true;
+      setStatus(out.text, 'over');
+    }else{
+      setStatus((res.check ? 'Schach! ' : '') + 'ToMateTo spielte ' + res.move + '. Du bist am Zug.');
+    }
+    render();
+    if (game.over && out.mate) finale(out.won);
+  }catch(e){
+    if (gen !== game.gen) return;
+    game.busy = false;
+    setStatus('Engine-Fehler: ' + e.message, 'over');
+    render();
+  }
+}
+
+async function newGame(){
+  game.gen++;
+  resetFinale();
+  $('promo').classList.remove('open');
+  game.over = false; game.busy = false; game.selected = null;
+
+  game.player = game.colorChoice === 'r' ? (Math.random() < .5 ? 'w' : 'b') : game.colorChoice;
+
+  try{
+    const info = await api('/api/info?fen=' + encodeURIComponent(START));
+    game.history = [{ fen: info.fen, info, last: null }];
+  }catch(e){
+    setStatus('Server nicht erreichbar.', 'over');
+    return;
+  }
+
+  if (cur().info.turn !== game.player) await engineMove();
+  else { setStatus('Du bist am Zug.'); render(); }
+}
+
+async function undo(){
+  if (game.busy || game.history.length < 2) return;
+  game.over = false; game.selected = null;
+  resetFinale();
+  game.history.pop();
+  if (cur().info.turn !== game.player && game.history.length > 1) game.history.pop();
+
+  if (cur().info.turn !== game.player) { await engineMove(); return; }
+  setStatus('Du bist am Zug.');
+  render();
+}
+
+/* ---------------- Schachmatt-Finale ---------------- */
+let confettiRaf = null;
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function resetFinale(){
+  const f = $('finale');
+  f.className = '';
+  f.querySelector('.fx').innerHTML = '';
+  document.body.classList.remove('shake');
+  if (confettiRaf) cancelAnimationFrame(confettiRaf);
+  confettiRaf = null;
+  const cv = $('confetti');
+  cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+}
+
+function finale(playerWon){
+  resetFinale();
+  const f = $('finale');
+
+  if (playerWon){
+    $('finaleTitle').textContent = 'Schachmatt – Sieg!';
+    $('finaleSub').textContent = 'Du hast ToMateTo geschlagen.';
+    f.className = 'show win';
+    if (!reduceMotion()) confetti();
+  }else{
+    $('finaleTitle').textContent = 'Schachmatt – zerquetscht!';
+    $('finaleSub').textContent = 'ToMateTo hat gewonnen. Nächste Runde?';
+    f.className = 'show lose';
+
+    const fx = f.querySelector('.fx');
+    for (let i = 0; i < 9; i++){
+      const d = document.createElement('div');
+      d.className = 'drip';
+      d.style.left = (8 + Math.random() * 84) + '%';
+      d.style.width = (8 + Math.random() * 14) + 'px';
+      d.style.setProperty('--h', (25 + Math.random() * 45) + '%');
+      d.style.setProperty('--d', (1.6 + Math.random() * 1.8) + 's');
+      d.style.setProperty('--delay', (0.45 + Math.random() * 0.6) + 's');
+      fx.appendChild(d);
+    }
+    if (!reduceMotion()){
+      document.body.classList.add('shake');
+      setTimeout(() => document.body.classList.remove('shake'), 700);
+    }
+  }
+}
+
+function confetti(){
+  const cv = $('confetti'), ctx = cv.getContext('2d');
+  cv.width = innerWidth; cv.height = innerHeight;
+
+  const colors = ['#e5383b', '#5f8f45', '#f5d042', '#f4f1e8', '#ff6b6b'];
+  const glyphs = ['\u265A', '\u265B', '\u265C', '\u265D', '\u265E', '\u265F'];
+  const parts = [];
+
+  const spawn = (n, fromTop) => {
+    for (let i = 0; i < n; i++){
+      parts.push({
+        x: Math.random() * cv.width,
+        y: fromTop ? -20 : -Math.random() * cv.height * .5,
+        vx: (Math.random() - .5) * 3,
+        vy: 2 + Math.random() * 4,
+        size: 8 + Math.random() * 10,
+        rot: Math.random() * 6.28,
+        vr: (Math.random() - .5) * .25,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        glyph: Math.random() < .22 ? glyphs[Math.floor(Math.random() * glyphs.length)] : null,
+        round: Math.random() < .4
+      });
+    }
+  };
+
+  spawn(170, false);
+  const start = performance.now();
+
+  function frame(now){
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    if (now - start < 4000) spawn(3, true);
+
+    for (let i = parts.length - 1; i >= 0; i--){
+      const p = parts[i];
+      p.x += p.vx + Math.sin(p.y / 40) * .8;
+      p.y += p.vy;
+      p.rot += p.vr;
+
+      if (p.y > cv.height + 40){ parts.splice(i, 1); continue; }
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      if (p.glyph){
+        ctx.font = (p.size * 2) + 'px "Segoe UI Symbol","DejaVu Sans",sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(p.glyph + '\uFE0E', 0, 0);
+      }else if (p.round){
+        ctx.beginPath(); ctx.arc(0, 0, p.size / 2, 0, 6.28); ctx.fill();
+      }else{
+        ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+      }
+      ctx.restore();
+    }
+
+    if (parts.length) confettiRaf = requestAnimationFrame(frame);
+    else { confettiRaf = null; ctx.clearRect(0, 0, cv.width, cv.height); }
+  }
+  confettiRaf = requestAnimationFrame(frame);
+}
+
+$('finaleClose').addEventListener('click', () => $('finale').classList.add('hidden'));
+
+/* ---------------- Steuerelemente ---------------- */
+$('newGame').addEventListener('click', newGame);
+$('undo').addEventListener('click', undo);
+
+$('time').addEventListener('input', e => { $('timeLabel').textContent = e.target.value + ' s'; });
+
+document.querySelectorAll('#colorSeg button').forEach(b => {
+  b.addEventListener('click', () => {
+    game.colorChoice = b.dataset.c;
+    document.querySelectorAll('#colorSeg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  });
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){ $('promo').classList.remove('open'); game.selected = null; render(); }
+});
+
+newGame();
+</script>
+</body>
+</html>

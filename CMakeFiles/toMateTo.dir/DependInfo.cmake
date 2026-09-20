@@ -9,6 +9,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/MyProjects/toMateTo/chess_gui/gui.cpp" "CMakeFiles/toMateTo.dir/chess_gui/gui.cpp.o" "gcc" "CMakeFiles/toMateTo.dir/chess_gui/gui.cpp.o.d"
+  "/home/MyProjects/toMateTo/engine_server/engine_server.cpp" "CMakeFiles/toMateTo.dir/engine_server/engine_server.cpp.o" "gcc" "CMakeFiles/toMateTo.dir/engine_server/engine_server.cpp.o.d"
   "/home/MyProjects/toMateTo/main.cpp" "CMakeFiles/toMateTo.dir/main.cpp.o" "gcc" "CMakeFiles/toMateTo.dir/main.cpp.o.d"
   "/home/MyProjects/toMateTo/testing/engine_match.cpp" "CMakeFiles/toMateTo.dir/testing/engine_match.cpp.o" "gcc" "CMakeFiles/toMateTo.dir/testing/engine_match.cpp.o.d"
   "/home/MyProjects/toMateTo/testing/move_gen_speed_testing.cpp" "CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o" "gcc" "CMakeFiles/toMateTo.dir/testing/move_gen_speed_testing.cpp.o.d"

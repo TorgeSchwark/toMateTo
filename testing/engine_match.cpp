@@ -139,14 +139,22 @@ struct Stockfish
 };
 
 
-static bool make_uci_move(
-    chess_board& board,
-    const std::string& uci)
+static bool make_uci_move(chess_board& board, const std::string& uci)
 {
-    Move moves[256];
-    Move* end = find_all_moves(moves, &board);
+    MoveStacks moves;
+    find_all_moves(&moves, &board);
 
-    for (Move* m = moves; m != end; ++m)
+    for (Move* m = moves.capture_moves; m != moves.capture_end; ++m)
+    {
+        if (m->move_to_string(board.whites_turn) == uci)
+        {
+            StateInfo st;
+            make_move(&board, *m, st);
+            return true;
+        }
+    }
+
+    for (Move* m = moves.normal_moves; m != moves.normal_end; ++m)
     {
         if (m->move_to_string(board.whites_turn) == uci)
         {
@@ -162,16 +170,14 @@ static bool make_uci_move(
 
 static bool has_legal_moves(chess_board& board)
 {
-    Move moves[256];
-    Move* end = find_all_moves(moves, &board);
+    MoveStacks moves;
+    find_all_moves(&moves, &board);
 
-    return moves != end;
+    return !moves.empty();
 }
 
 
-static int game_result(
-    chess_board& board,
-    bool engine_white)
+static int game_result(chess_board& board, bool engine_white)
 {
     if (has_legal_moves(board))
         return 0;
@@ -237,6 +243,7 @@ static int play_game(
             << "Game " << game_number
             << " move: "
             << move
+            << " elo: " << stockfish_elo
             << "\n";
 
         if (!make_uci_move(board, move))
@@ -259,6 +266,7 @@ static int play_game(
             return 2;
     }
 }
+
 
 void run_engine_match_ST(
     double engine_time,
@@ -287,13 +295,10 @@ void run_engine_match_ST(
         int batch_stockfish_wins = 0;
         int batch_draws = 0;
 
-        // Ganz stumpf: 10 Spiele hintereinander
         for (int game_index = 0; game_index < 10; ++game_index)
         {
             int game_number = game_index + 1;
 
-            // Gerade Spiele: ToMateTo weiß
-            // Ungerade Spiele: ToMateTo schwarz
             bool engine_white = (game_index % 2 == 0);
 
             std::cout
@@ -305,8 +310,6 @@ void run_engine_match_ST(
                         : "ToMateTo black")
                 << "\n";
 
-            // Jeder Spiel bekommt einen eigenen Stockfish-Prozess.
-            // Aber die Spiele selbst laufen NICHT parallel.
             Stockfish stockfish(stockfish_path);
 
             int result = play_game(
@@ -418,50 +421,64 @@ void run_engine_match(double engine_time, int stockfish_elo){
     std::cout << "Available CPU cores: " << hardware_cores << "\n";
     std::cout << "Running " << num_threads << " games in parallel.\n";
 
+    struct EloResult{
+        int started = 0;
+        int finished = 0;
+        int engine_wins = 0;
+        int stockfish_wins = 0;
+        int draws = 0;
+    };
+
+    std::mutex mutex;
+    std::condition_variable cv;
+
+    std::map<int, EloResult> results;
+
+    int next_elo = stockfish_elo;
+    int game_number = 0;
     int total_games = 0;
     int engine_wins = 0;
     int stockfish_wins = 0;
     int draws = 0;
 
-    std::mutex mutex;
-    std::condition_variable cv;
-
-    int current_elo = stockfish_elo;
-    int games_started = 0;
-    int games_finished = 0;
-    int game_number = 0;
-
-    int batch_engine_wins = 0;
-    int batch_stockfish_wins = 0;
-    int batch_draws = 0;
-
     bool stop = false;
+
+    auto get_next_job = [&]() -> std::tuple<int, int, bool>{
+
+        while (true){
+
+            auto& elo_result = results[next_elo];
+
+            if (elo_result.started < GAMES_PER_ELO){
+                int game_index = elo_result.started++;
+                int number = ++game_number;
+
+                bool engine_white = (game_index % 2 == 0);
+
+                return {next_elo, number, engine_white};
+            }
+
+            next_elo += 100;
+            results[next_elo];
+        }
+    };
 
     auto worker = [&](){
 
         while (true){
 
-            int game_index;
             int elo;
             int number;
+            bool engine_white;
 
             {
                 std::unique_lock<std::mutex> lock(mutex);
 
-                cv.wait(lock, [&](){
-                    return stop ||
-                           games_started < GAMES_PER_ELO;
-                });
-
                 if (stop)
                     return;
 
-                game_index = games_started++;
-                elo = current_elo;
-                number = ++game_number;
+                std::tie(elo, number, engine_white) = get_next_job();
             }
-
-            bool engine_white = (game_index % 2 == 0);
 
             std::cout
                 << "Game " << number
@@ -483,17 +500,20 @@ void run_engine_match(double engine_time, int stockfish_elo){
             {
                 std::lock_guard<std::mutex> lock(mutex);
 
-                ++games_finished;
+                EloResult& elo_result = results[elo];
+
+                ++elo_result.finished;
+                ++total_games;
 
                 if (result == 1){
+                    ++elo_result.engine_wins;
                     ++engine_wins;
-                    ++batch_engine_wins;
                 }else if (result == -1){
+                    ++elo_result.stockfish_wins;
                     ++stockfish_wins;
-                    ++batch_stockfish_wins;
                 }else{
+                    ++elo_result.draws;
                     ++draws;
-                    ++batch_draws;
                 }
 
                 std::cout
@@ -502,40 +522,26 @@ void run_engine_match(double engine_time, int stockfish_elo){
                     << (result == 1 ? "ToMateTo wins" :
                         result == -1 ? "Stockfish wins" :
                         "Draw")
+                    << " elo: " << elo
                     << "\n";
 
-                if (games_finished == GAMES_PER_ELO){
+                if (elo_result.finished == GAMES_PER_ELO){
 
                     double stockfish_points =
-                        batch_stockfish_wins +
-                        batch_draws * 0.5;
+                        elo_result.stockfish_wins +
+                        elo_result.draws * 0.5;
 
                     std::cout
                         << "\n----------------------------------------\n"
-                        << "Elo " << current_elo << " results\n"
+                        << "Elo " << elo << " results\n"
                         << "----------------------------------------\n"
-                        << "ToMateTo wins:    " << batch_engine_wins << "\n"
-                        << "Stockfish wins:   " << batch_stockfish_wins << "\n"
-                        << "Draws:            " << batch_draws << "\n"
+                        << "ToMateTo wins:    " << elo_result.engine_wins << "\n"
+                        << "Stockfish wins:   " << elo_result.stockfish_wins << "\n"
+                        << "Draws:            " << elo_result.draws << "\n"
                         << "Stockfish points: " << stockfish_points << "/10\n";
 
-                    total_games += GAMES_PER_ELO;
-
-                    if (stockfish_points > 7.0){
+                    if (stockfish_points > 7.0)
                         stop = true;
-                    }else{
-                        ++current_elo;
-
-                        current_elo += 99;
-
-                        games_started = 0;
-                        games_finished = 0;
-                        game_number = 0;
-
-                        batch_engine_wins = 0;
-                        batch_stockfish_wins = 0;
-                        batch_draws = 0;
-                    }
                 }
             }
 

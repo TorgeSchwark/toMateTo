@@ -1,6 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/toMateTo.dir/chess_gui/gui.cpp.o"
   "CMakeFiles/toMateTo.dir/chess_gui/gui.cpp.o.d"
+  "CMakeFiles/toMateTo.dir/engine_server/engine_server.cpp.o"
+  "CMakeFiles/toMateTo.dir/engine_server/engine_server.cpp.o.d"
   "CMakeFiles/toMateTo.dir/main.cpp.o"
   "CMakeFiles/toMateTo.dir/main.cpp.o.d"
   "CMakeFiles/toMateTo.dir/testing/engine_match.cpp.o"
