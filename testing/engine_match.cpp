@@ -401,10 +401,8 @@ void run_engine_match_ST(
 }
 
 
-void run_engine_match(
-    double engine_time,
-    int stockfish_elo)
-{
+void run_engine_match(double engine_time, int stockfish_elo){
+
     const std::string stockfish_path =
         "testing/stockfish_bin/stockfish/"
         "stockfish-ubuntu-x86-64-avx2";
@@ -412,212 +410,158 @@ void run_engine_match(
     const unsigned int hardware_cores =
         std::thread::hardware_concurrency();
 
-    const unsigned int available_cores =
-        hardware_cores == 0 ? 1 : hardware_cores;
-
     const unsigned int num_threads =
-        std::min(
-            available_cores,
-            10u
-        );
+        std::min(hardware_cores == 0 ? 1u : hardware_cores, 10u);
 
-    std::cout
-        << "Available CPU cores: "
-        << available_cores
-        << "\n";
+    constexpr int GAMES_PER_ELO = 10;
 
-    std::cout
-        << "Running "
-        << num_threads
-        << " games in parallel.\n";
-
+    std::cout << "Available CPU cores: " << hardware_cores << "\n";
+    std::cout << "Running " << num_threads << " games in parallel.\n";
 
     int total_games = 0;
-
     int engine_wins = 0;
     int stockfish_wins = 0;
     int draws = 0;
 
+    std::mutex mutex;
+    std::condition_variable cv;
 
-    while (true)
-    {
-        std::cout
-            << "\n========================================\n"
-            << "Stockfish Elo: "
-            << stockfish_elo
-            << "\n"
-            << "========================================\n";
+    int current_elo = stockfish_elo;
+    int games_started = 0;
+    int games_finished = 0;
+    int game_number = 0;
 
+    int batch_engine_wins = 0;
+    int batch_stockfish_wins = 0;
+    int batch_draws = 0;
 
-        std::vector<int> results(10);
+    bool stop = false;
 
-        int next_game = 0;
+    auto worker = [&](){
 
+        while (true){
 
-        while (next_game < 10)
-        {
-            std::vector<std::thread> threads;
+            int game_index;
+            int elo;
+            int number;
 
-
-            int games_this_batch =
-                std::min(
-                    static_cast<int>(num_threads),
-                    10 - next_game
-                );
-
-
-            for (int i = 0; i < games_this_batch; ++i)
             {
-                int game_index = next_game + i;
-                int game_number = game_index + 1;
+                std::unique_lock<std::mutex> lock(mutex);
 
+                cv.wait(lock, [&](){
+                    return stop ||
+                           games_started < GAMES_PER_ELO;
+                });
 
-                threads.emplace_back(
-                    [&, game_index, game_number]()
-                    {
-                        bool engine_white =
-                            (game_index % 2 == 0);
+                if (stop)
+                    return;
 
+                game_index = games_started++;
+                elo = current_elo;
+                number = ++game_number;
+            }
 
-                        std::cout
-                            << "\nGame "
-                            << game_number
-                            << "/10  "
-                            << (engine_white
-                                    ? "ToMateTo white"
-                                    : "ToMateTo black")
-                            << "\n";
+            bool engine_white = (game_index % 2 == 0);
 
+            std::cout
+                << "Game " << number
+                << " Elo " << elo
+                << " "
+                << (engine_white ? "ToMateTo white" : "ToMateTo black")
+                << "\n";
 
-                        /*
-                         * Jeder Thread bekommt seinen eigenen
-                         * Stockfish-Prozess.
-                         */
-                        Stockfish stockfish(
-                            stockfish_path
-                        );
+            Stockfish stockfish(stockfish_path);
 
+            int result = play_game(
+                stockfish,
+                engine_time,
+                elo,
+                engine_white,
+                number
+            );
 
-                        int result = play_game(
-                            stockfish,
-                            engine_time,
-                            stockfish_elo,
-                            engine_white,
-                            game_number
-                        );
+            {
+                std::lock_guard<std::mutex> lock(mutex);
 
+                ++games_finished;
 
-                        results[game_index] = result;
+                if (result == 1){
+                    ++engine_wins;
+                    ++batch_engine_wins;
+                }else if (result == -1){
+                    ++stockfish_wins;
+                    ++batch_stockfish_wins;
+                }else{
+                    ++draws;
+                    ++batch_draws;
+                }
 
+                std::cout
+                    << "Game " << number
+                    << " result: "
+                    << (result == 1 ? "ToMateTo wins" :
+                        result == -1 ? "Stockfish wins" :
+                        "Draw")
+                    << "\n";
 
-                        if (result == 1)
-                        {
-                            std::cout
-                                << "Game "
-                                << game_number
-                                << " result: ToMateTo wins\n";
-                        }
-                        else if (result == -1)
-                        {
-                            std::cout
-                                << "Game "
-                                << game_number
-                                << " result: Stockfish wins\n";
-                        }
-                        else
-                        {
-                            std::cout
-                                << "Game "
-                                << game_number
-                                << " result: Draw\n";
-                        }
+                if (games_finished == GAMES_PER_ELO){
+
+                    double stockfish_points =
+                        batch_stockfish_wins +
+                        batch_draws * 0.5;
+
+                    std::cout
+                        << "\n----------------------------------------\n"
+                        << "Elo " << current_elo << " results\n"
+                        << "----------------------------------------\n"
+                        << "ToMateTo wins:    " << batch_engine_wins << "\n"
+                        << "Stockfish wins:   " << batch_stockfish_wins << "\n"
+                        << "Draws:            " << batch_draws << "\n"
+                        << "Stockfish points: " << stockfish_points << "/10\n";
+
+                    total_games += GAMES_PER_ELO;
+
+                    if (stockfish_points > 7.0){
+                        stop = true;
+                    }else{
+                        ++current_elo;
+
+                        current_elo += 99;
+
+                        games_started = 0;
+                        games_finished = 0;
+                        game_number = 0;
+
+                        batch_engine_wins = 0;
+                        batch_stockfish_wins = 0;
+                        batch_draws = 0;
                     }
-                );
+                }
             }
 
+            cv.notify_all();
 
-            for (auto& thread : threads)
-                thread.join();
-
-
-            next_game += games_this_batch;
+            if (stop)
+                return;
         }
+    };
 
+    std::vector<std::thread> threads;
 
-        int batch_engine_wins = 0;
-        int batch_stockfish_wins = 0;
-        int batch_draws = 0;
+    for (unsigned int i = 0; i < num_threads; ++i)
+        threads.emplace_back(worker);
 
-
-        for (int result : results)
-        {
-            if (result == 1)
-            {
-                ++engine_wins;
-                ++batch_engine_wins;
-            }
-            else if (result == -1)
-            {
-                ++stockfish_wins;
-                ++batch_stockfish_wins;
-            }
-            else
-            {
-                ++draws;
-                ++batch_draws;
-            }
-
-            ++total_games;
-        }
-
-
-        double stockfish_points =
-            batch_stockfish_wins +
-            batch_draws * 0.5;
-
-
-        std::cout
-            << "\n----------------------------------------\n"
-            << "Elo " << stockfish_elo << " results\n"
-            << "----------------------------------------\n"
-            << "ToMateTo wins:    "
-            << batch_engine_wins
-            << "\n"
-            << "Stockfish wins:   "
-            << batch_stockfish_wins
-            << "\n"
-            << "Draws:            "
-            << batch_draws
-            << "\n"
-            << "Stockfish points: "
-            << stockfish_points
-            << "/10\n";
-
-
-        if (stockfish_points > 7.0)
-            break;
-
-
-        stockfish_elo += 100;
-    }
-
+    for (auto& thread : threads)
+        thread.join();
 
     std::cout
         << "\n\n========================================\n"
         << "FINAL RESULTS\n"
         << "========================================\n"
-        << "Games:            "
-        << total_games
-        << "\n"
-        << "ToMateTo wins:    "
-        << engine_wins
-        << "\n"
-        << "Stockfish wins:   "
-        << stockfish_wins
-        << "\n"
-        << "Draws:            "
-        << draws
-        << "\n"
+        << "Games:            " << total_games << "\n"
+        << "ToMateTo wins:    " << engine_wins << "\n"
+        << "Stockfish wins:   " << stockfish_wins << "\n"
+        << "Draws:            " << draws << "\n"
         << "Stockfish points: "
         << stockfish_wins + draws * 0.5
         << "\n"

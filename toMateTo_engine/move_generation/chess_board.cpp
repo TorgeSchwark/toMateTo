@@ -497,11 +497,14 @@ Move* find_pawn_moves(Move* moves, chess_board* chess_board, one_side* player, o
     Bitboard pinned_pawns = pawns & chess_board->pinned_pieces;
     pawns &= ~pinned_pawns;
 
-    // if a pawn is defending the King by capturing en_passant it is allowed to even though it is not going on the attackers square
-    Bitboard eq_pawns_pos = (1ULL << (chess_board->ep_square + color_dir(FORWARD, !chess_board->whites_turn)));
     Bitboard attack_defend_squares_pawns = chess_board->attack_defend_squares;
-    if(chess_board->attack_defend_squares & eq_pawns_pos){
-        attack_defend_squares_pawns |= 1ULL << (chess_board->ep_square);
+
+    // if a pawn is defending the King by capturing en_passant it is allowed to even though it is not going on the attackers square
+    if(chess_board->ep_square != SQ_NONE){
+        Bitboard eq_pawns_pos = (1ULL << (chess_board->ep_square + color_dir(FORWARD, !chess_board->whites_turn)));
+        if(chess_board->attack_defend_squares & eq_pawns_pos){
+            attack_defend_squares_pawns |= 1ULL << (chess_board->ep_square);
+        }
     }
     
     Bitboard results[RESULT_COUNT] = {0LL};

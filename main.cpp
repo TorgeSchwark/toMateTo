@@ -41,7 +41,7 @@ int main()
 
     
 
-    run_engine_match(1.0, 1500);
+    run_engine_match(2.0, 1500);
 
     // =====================================================
     // TEST POSITION 2

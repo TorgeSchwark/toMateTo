@@ -119,12 +119,14 @@ Move* find_pawn_capture_moves(Move* moves, chess_board* chess_board, one_side* p
 
     Bitboard pinned_pawns = pawns & chess_board->pinned_pieces;
     pawns &= ~pinned_pawns;
+    Bitboard attack_defend_squares_pawns = chess_board->attack_defend_squares;
 
     // if the ep pawn attacks the king we can capture it even though we dont move to its square
-    Bitboard eq_pawns_pos = (1ULL << (chess_board->ep_square + color_dir(FORWARD, !chess_board->whites_turn)));
-    Bitboard attack_defend_squares_pawns = chess_board->attack_defend_squares;
-    if(chess_board->attack_defend_squares & eq_pawns_pos){
-        attack_defend_squares_pawns |= 1ULL << (chess_board->ep_square);
+    if(chess_board->ep_square != SQ_NONE){
+        Bitboard eq_pawns_pos = (1ULL << (chess_board->ep_square + color_dir(FORWARD, !chess_board->whites_turn)));
+        if(chess_board->attack_defend_squares & eq_pawns_pos){
+            attack_defend_squares_pawns |= 1ULL << (chess_board->ep_square);
+        }
     }
     
     Bitboard results[RESULT_COUNT] = {0LL};

@@ -13,12 +13,7 @@ void pesto_init_tables();
 
 constexpr int pesto_piece_type(PieceType piece);
 
-int pesto_piece_value(
-    PieceType piece,
-    square sq,
-    bool is_white,
-    int gamePhase
-);
+int pesto_piece_value(PieceType piece, square sq, bool is_white, int gamePhase,square ep_square);
 
 int pesto_game_phase(chess_board* board);
 

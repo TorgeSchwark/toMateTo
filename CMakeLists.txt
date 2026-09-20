@@ -37,8 +37,8 @@ target_include_directories(toMateTo
 set(CMAKE_CXX_FLAGS_RELEASE
     "-O3 -march=native -mtune=native"
 )
-set(CMAKE_CXX_FLAGS_DEBUG "-O1 -g -fsanitize=thread -fno-omit-frame-pointer")
-set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=thread")
+set(CMAKE_CXX_FLAGS_DEBUG "-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address,undefined")
 
 find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
 

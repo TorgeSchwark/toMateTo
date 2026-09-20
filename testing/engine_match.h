@@ -8,6 +8,9 @@
 #include <chrono>
 #include <thread>
 #include <stdexcept>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include <sys/types.h>
 #include <sys/wait.h>

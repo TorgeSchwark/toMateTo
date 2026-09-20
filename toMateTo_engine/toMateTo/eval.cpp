@@ -439,15 +439,12 @@ int pesto_game_phase(chess_board* board)
     return gamePhase;
 }
 
-int pesto_piece_value(
-    PieceType piece,
-    square sq,
-    bool is_white,
-    int gamePhase
-)
-{
+int pesto_piece_value(PieceType piece, square sq, bool is_white, int gamePhase, square ep_square){
     int color = is_white ? PESTO_WHITE : PESTO_BLACK;
 
+    if(sq == ep_square){
+        piece = PAWN;
+    }
     int table_index = 2 * pesto_piece_type(piece) + color;
 
     int mg = pesto_mg_table[table_index][sq];
