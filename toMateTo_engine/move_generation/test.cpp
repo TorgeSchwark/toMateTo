@@ -201,7 +201,7 @@ CPU frequency: 3.098 GHz
 ========================================
 SEARCH STATISTICS
 ========================================
-Nodes:          836721
+Nodes:          836 721
 Q-Nodes:        12555554
 TT lookups:     836721
 TT hits:        215520
@@ -209,5 +209,125 @@ TT cutoffs:     157445
 TT EXACT:       4477
 TT LOWERBOUND:  177521
 TT UPPERBOUND:  33522
-Delta cuts:  2294184
+Delta cuts:  2 294 184
 TT hit rate:    25.76%
+
+depth 9
+
+========================================
+PROFILER
+========================================
+Function                       Time [ms]          Calls        us/call
+----------------------------------------
+alpha_beta                      2190.761        3 634 653          0.603
+calculate_hash                   178.545        3 634 653          0.049
+eval                             576.945       13460802          0.043
+quiescence                      2099.497       14 253 221          0.147
+sort                             500.906        7762168          0.065
+
+CPU frequency: 3.106 GHz
+
+========================================
+SEARCH STATISTICS
+========================================
+Nodes:          3 634 653
+Q-Nodes:        14253221
+TT lookups:     3634653
+TT hits:        1081009
+TT cutoffs:     826140
+TT EXACT:       12043
+TT LOWERBOUND:  961808
+TT UPPERBOUND:  107158
+Delta cuts:  2 721 025
+TT hit rate:    29.74%
+
+========================================
+PROFILER
+========================================
+Function                       Time [ms]          Calls        us/call
+----------------------------------------
+alpha_beta                      2156.294        3634653          0.593
+calculate_hash                   177.079        3634653          0.049
+eval                             567.200       13460758          0.042
+quiescence                      2118.982       14 253177          0.149
+sort                             504.779        7762191          0.065
+
+
+========================================
+Function                       Time [ms]          Calls        us/call
+----------------------------------------
+alpha_beta                      1946.016        3492251          0.557
+calculate_hash                   165.948        3492251          0.048
+eval                             516.877       12593628          0.041
+quiescence                      1949.189       13340982          0.146
+sort                             317.814        4636334          0.069
+
+
+========================================
+PROFILER
+========================================
+Function                       Time [ms]          Calls        us/call
+----------------------------------------
+alpha_beta                      1838.877        3511635          0.524
+calculate_hash                   157.961        3511635          0.045
+eval                             535.156       12736385          0.042
+quiescence                      1866.102       13474218          0.138
+sort                             455.046        6984105          0.065
+
+========================================
+PROFILER
+========================================
+Function                       Time [ms]          Calls        us/call
+----------------------------------------
+alpha_beta                      2285.662        3511635          0.651
+calculate_hash                   244.274        3511635          0.070
+eval                             824.678       12736385          0.065
+quiescence                      2069.410       13474218          0.154
+sort                             519.509        6984105          0.074
+
+CPU frequency: 3.119 GHz
+
+========================================
+SEARCH STATISTICS
+========================================
+Nodes:          3511635
+Q-Nodes:        13474218
+TT lookups:     3511635
+TT hits:        1284169
+TT cutoffs:     1049876
+TT EXACT:       11245
+TT LOWERBOUND:  1207779
+TT UPPERBOUND:  65145
+Delta cuts:  2350765
+TT hit rate:    36.57%
+
+copy board: 388 467 289 per sec
+Nodes per second: 407 634 159
+
+depth 9
+
+========================================
+PROFILER
+========================================
+Function                       Time [ms]          Calls        us/call
+----------------------------------------
+alpha_beta                      1780.798        3 219 156          0.553
+calculate_hash                   147.985        3 219 156          0.046
+eval                             273.735        6 384 411          0.043
+quiescence                       786.732        6 717 739          0.117
+
+CPU frequency: 3.116 GHz
+
+========================================
+SEARCH STATISTICS
+========================================
+Nodes:          3219156
+Q-Nodes:        6717739
+TT lookups:     3219156
+TT hits:        1653623
+TT cutoffs:     1057905
+TT EXACT:       0
+TT LOWERBOUND:  0
+TT UPPERBOUND:  0
+Delta cuts:  2808407
+TT hit rate:    51.37%

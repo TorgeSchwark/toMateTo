@@ -239,13 +239,6 @@ static int play_game(
         if (move.empty())
             return (board.whites_turn == engine_white) ? -1 : 1;
 
-        std::cout
-            << "Game " << game_number
-            << " move: "
-            << move
-            << " elo: " << stockfish_elo
-            << "\n";
-
         if (!make_uci_move(board, move))
         {
             std::cerr
@@ -479,13 +472,6 @@ void run_engine_match(double engine_time, int stockfish_elo){
 
                 std::tie(elo, number, engine_white) = get_next_job();
             }
-
-            std::cout
-                << "Game " << number
-                << " Elo " << elo
-                << " "
-                << (engine_white ? "ToMateTo white" : "ToMateTo black")
-                << "\n";
 
             Stockfish stockfish(stockfish_path);
 

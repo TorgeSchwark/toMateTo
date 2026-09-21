@@ -28,7 +28,7 @@ int mvv_lva_score(chess_board *board, Move m);
 
 int mvv_lva_score_pesto(chess_board* board, Move m, int gamePhase);
 
-void sort_capture_moves(Move* moves, Move* end, chess_board* board, int game_phase);
+void sort_capture_moves(Move* moves, Move* end, int* victim_values, chess_board* board, int game_phase);
 
 int quiescence(chess_board *board, int alpha, int beta, int root_dist);
 

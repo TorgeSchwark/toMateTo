@@ -1,0 +1,2 @@
+name,method,timestamp,acc,h1,h2,h3,depth,samples,games,best_loss,final_loss,total_time_ms,validation_loss,validation_correlation
+ToMateToSelf2,selfplay,2026-09-22 01:23:41,256,128,32,32,2,9792,100,3.26513e-06,7.87598e-06,58901.8,0.081939,0

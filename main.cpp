@@ -9,6 +9,7 @@
 #include "toMateTo_engine/toMateTo/eval.h"
 #include "toMateTo_engine/toMateTo/profiler.h"
 #include "testing/engine_match.h"
+#include "testing/move_gen_speed_testing.h"
 #include "engine_server/engine_server.h"
 
 
@@ -48,7 +49,6 @@ int main(int argc, char** argv)
         return 0;
     }
     
-
     run_engine_match(2.0, 1500);
 
     // =====================================================

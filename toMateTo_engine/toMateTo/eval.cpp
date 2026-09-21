@@ -205,14 +205,7 @@ int* pesto_eg_pesto_table[6] =
     pesto_eg_king_table
 };
 
-int pesto_gamephaseInc[12] = {
-    0, 0,
-    1, 1,
-    1, 1,
-    2, 2,
-    4, 4,
-    0, 0
-};
+int pesto_gamephaseInc[6] = { 0, 1, 1, 2, 4, 0 };  
 
 int pesto_mg_table[12][64];
 int pesto_eg_table[12][64];
@@ -233,21 +226,10 @@ void pesto_init_tables()
         for (sq = 0; sq < 64; sq++)
         {
 
-            pesto_mg_table[pc][sq] =
-                pesto_mg_value[p] +
-                pesto_mg_pesto_table[p][sq];
-
-            pesto_eg_table[pc][sq] =
-                pesto_eg_value[p] +
-                pesto_eg_pesto_table[p][sq];
-
-            pesto_mg_table[pc + 1][sq] =
-                pesto_mg_value[p] +
-                pesto_mg_pesto_table[p][PESTO_FLIP(sq)];
-
-            pesto_eg_table[pc + 1][sq] =
-                pesto_eg_value[p] +
-                pesto_eg_pesto_table[p][PESTO_FLIP(sq)];
+            pesto_mg_table[pc][sq]     = pesto_mg_value[p] + pesto_mg_pesto_table[p][PESTO_FLIP(sq)];
+            pesto_eg_table[pc][sq]     = pesto_eg_value[p] + pesto_eg_pesto_table[p][PESTO_FLIP(sq)];
+            pesto_mg_table[pc + 1][sq] = pesto_mg_value[p] + pesto_mg_pesto_table[p][sq];
+            pesto_eg_table[pc + 1][sq] = pesto_eg_value[p] + pesto_eg_pesto_table[p][sq];
         }
     }
 }
