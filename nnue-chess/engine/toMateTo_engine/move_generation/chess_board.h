@@ -58,10 +58,7 @@ struct one_side
 
     void setup_side(bool is_white) {
     if (is_white) {
-        pawns = 0x000000000000FF00 & ~((1ULL << 9)  |  // b2
-                               (1ULL << 11) |  // d2
-                               (1ULL << 12) |  // e2
-                               (1ULL << 14));  // g2
+        pawns = 0x000000000000FF00;  // a2-h2 (Bits 8-15)
         rooks  = 0x0000000000000081;  // a1, h1 (Bits 0, 7)
         knights= 0x0000000000000042;  // b1, g1 (Bits 1, 6)
         bishop = 0x0000000000000024;  // c1, f1 (Bits 2, 5)

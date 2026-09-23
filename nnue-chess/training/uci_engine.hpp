@@ -6,16 +6,32 @@
 // checks, would be far too slow for generating thousands of training
 // positions).
 //
-// POSIX only (fork/pipe/exec) - matches this project's existing Stockfish
+// POSIX only (posix_spawn/pipe) - matches this project's existing Stockfish
 // integration, which already assumes Linux/WSL.
+//
+// Uses posix_spawn(), not fork()+exec(): this class is constructed
+// concurrently from many worker threads (full_cycle.cpp's --threads,
+// strength_match.cpp's --threads), and plain fork() is unsafe to call from
+// a multithreaded process except when the child does *nothing* but
+// async-signal-safe calls before exec - found the hard way running
+// strength_match.cpp with 8 threads, where several Stockfish subprocesses
+// simply never came up (their pipe closed before sending "uciok"/a
+// bestmove), while the identical setup at 1-4 threads never failed. glibc's
+// posix_spawn is specifically implemented to be safe here (typically via
+// clone/vfork with the child immediately exec'ing), which fork()+exec()
+// hand-rolled in a threaded program is not guaranteed to be.
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <stdexcept>
 #include <string>
 
+#include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+extern char** environ;
 
 class UciEngine {
 public:
@@ -23,19 +39,19 @@ public:
         int in_pipe[2], out_pipe[2];
         if (pipe(in_pipe) != 0 || pipe(out_pipe) != 0) throw std::runtime_error("pipe() failed");
 
-        pid_ = fork();
-        if (pid_ < 0) throw std::runtime_error("fork() failed");
+        posix_spawn_file_actions_t actions;
+        posix_spawn_file_actions_init(&actions);
+        posix_spawn_file_actions_adddup2(&actions, in_pipe[0], STDIN_FILENO);
+        posix_spawn_file_actions_adddup2(&actions, out_pipe[1], STDOUT_FILENO);
+        posix_spawn_file_actions_addclose(&actions, in_pipe[0]);
+        posix_spawn_file_actions_addclose(&actions, in_pipe[1]);
+        posix_spawn_file_actions_addclose(&actions, out_pipe[0]);
+        posix_spawn_file_actions_addclose(&actions, out_pipe[1]);
 
-        if (pid_ == 0) {
-            dup2(in_pipe[0], STDIN_FILENO);
-            dup2(out_pipe[1], STDOUT_FILENO);
-            close(in_pipe[0]);
-            close(in_pipe[1]);
-            close(out_pipe[0]);
-            close(out_pipe[1]);
-            execl(path.c_str(), path.c_str(), (char*)nullptr);
-            _exit(127); // execl only returns on failure
-        }
+        char* argv[] = {const_cast<char*>(path.c_str()), nullptr};
+        const int rc = posix_spawn(&pid_, path.c_str(), &actions, nullptr, argv, environ);
+        posix_spawn_file_actions_destroy(&actions);
+        if (rc != 0) throw std::runtime_error("posix_spawn() failed for " + path + ": " + std::strerror(rc));
 
         close(in_pipe[0]);
         close(out_pipe[1]);
@@ -45,6 +61,11 @@ public:
 
         send("uci");
         wait_for("uciok");
+        // One process per worker thread (see full_cycle.cpp's --threads) is
+        // how this project parallelizes Stockfish calls, not Stockfish's
+        // own internal multithreading - force each instance to 1 thread so
+        // N worker threads don't oversubscribe cores N times over.
+        send("setoption name Threads value 1");
         send("isready");
         wait_for("readyok");
     }
@@ -87,6 +108,50 @@ public:
         }
         if (!got_score) throw std::runtime_error("no 'score' line parsed for fen: " + fen);
         return last_cp;
+    }
+
+    // Generic "setoption name X value Y" - e.g. set_option("Hash", "16").
+    void set_option(const std::string& name, const std::string& value) {
+        send("setoption name " + name + " value " + value);
+        send("isready");
+        wait_for("readyok");
+    }
+
+    // Caps Stockfish at approximately this real-world Elo via its own
+    // internal strength-limiting (not the older, coarser "Skill Level 0-20"
+    // knob) - see strength_match.cpp, which bisects on this value to find
+    // where the TestEngine's win rate crosses 50%.
+    void set_limit_strength(int elo) {
+        set_option("UCI_LimitStrength", "true");
+        set_option("UCI_Elo", std::to_string(elo));
+    }
+
+    // Resets Stockfish's own hash table / move history between games (played
+    // match games should not leak state into each other) - cheap, call once
+    // per game before the first move.
+    void new_game() {
+        send("ucinewgame");
+        send("isready");
+        wait_for("readyok");
+    }
+
+    // Plays one move: returns its UCI notation (e.g. "e2e4", "e7e8q"), or
+    // "(none)"/"0000" if Stockfish reports no legal move (checkmate/
+    // stalemate reached from `fen` - the caller should already know this
+    // from its own move generator, this is just here for symmetry/safety).
+    std::string best_move(const std::string& fen, int movetime_ms) {
+        send("position fen " + fen);
+        send("go movetime " + std::to_string(movetime_ms));
+
+        std::string line;
+        while (read_line(line)) {
+            if (line.rfind("bestmove", 0) == 0) {
+                std::size_t start = 9; // strlen("bestmove ")
+                std::size_t end = line.find_first_of(" \r\n", start);
+                return line.substr(start, end == std::string::npos ? std::string::npos : end - start);
+            }
+        }
+        throw std::runtime_error("engine closed its output before sending bestmove for fen: " + fen);
     }
 
 private:

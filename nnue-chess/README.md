@@ -153,6 +153,28 @@ darauf, und speichert Datensatz + Netz unter einem gemeinsamen Namen.
 #          my_net.nnue     (fertig trainiertes, quantisiertes int8-Netz)
 ```
 
+### Ausführungsmöglichkeiten (`--mode`)
+
+`full_cycle` (bzw. `./train.sh`) kennt drei Modi, per `--mode`:
+
+- **`full`** (Default): generieren + trainieren in einem Durchlauf, wie oben.
+- **`gen_data`**: nur `--name.dataset` erzeugen, kein Netz, kein Training,
+  kein Leaderboard-Eintrag – praktisch um einen Datensatz einmal zu
+  generieren und später mehrfach für verschiedene Architekturen/Runs zu
+  verwenden.
+- **`only_train`**: kein Stockfish, keine Generierung – trainiert direkt auf
+  einem vorhandenen `--dataset PATH` (z. B. aus `gen_data`), optional über
+  mehrere `--epochs`. Hier zahlt sich Multithreading am meisten aus (siehe
+  oben) – kein Stockfish-Aufruf, den man "verstecken" könnte.
+
+```bash
+./train.sh --mode gen_data --depth 12 --samples 200000 --name shared_data
+./train.sh --mode only_train --dataset shared_data.dataset --epochs 3 --name my_net
+```
+
+Beide Kommandos landen (bis auf `gen_data`, das gar kein Netz erzeugt) am
+Ende wieder im selben Leaderboard wie `full`.
+
 **Architektur ist ein Compile-Time-Parameter, kein Runtime-Flag.**
 `NNUE<ACC_SIZE,H1,H2,H3>` ist ein C++-Template – die Größen müssen beim
 Kompilieren feststehen, das geht mit C++-Templates grundsätzlich nicht zur
@@ -201,9 +223,22 @@ braucht – genau der Vorteil, um den es bei NNUE geht):
 **Kosten/Dauer**: jede generierte Stellung braucht einen echten
 Stockfish-Aufruf auf der gewählten Tiefe – bei Tiefe 10-12 realistisch
 20-100+ ms pro Stellung (stark hardwareabhängig), bei `--samples 100000`
-also potenziell Stunden. `full_cycle` zeigt laufend `ms/sample` und eine
-ETA an; Tiefe und Sample-Zahl entsprechend wählen. Das Tool läuft
-single-threaded (ein Stockfish-Prozess), keine Parallelisierung bisher.
+also potenziell Stunden. Ein Fortschrittsbalken mit `ms/item` und ETA läuft
+laufend mit; Tiefe und Sample-Zahl entsprechend wählen.
+
+**Multithreading** (`--threads N`, Default: alle logischen Kerne):
+Datengenerierung parallelisiert trivial – jede Stellung ist unabhängig, und
+jeder Worker-Thread bekommt seinen eigenen Stockfish-Prozess (per
+`setoption name Threads value 1` selbst auf 1 Thread beschränkt, damit sich
+N Worker nicht gegenseitig die Kerne wegnehmen). Ein Produzenten/Konsumenten-
+Queue (`training/full_cycle.cpp`, `WorkQueue`) sammelt die fertig
+bewerteten Stellungen ein; das eigentliche `net.train_step()` bleibt
+einzelner Thread (ein gemeinsamer Adam-Optimizer-State, siehe Kommentar
+dort). Bei `--mode only_train` (unten) trägt Multithreading dagegen direkt
+im Training selbst: `compute_gradients()` ist pro Stellung unabhängig und
+lässt sich über alle Threads parallelisieren, `apply_gradients()` fasst die
+Batch-Gradienten zu einem sequentiellen Adam-Schritt zusammen (siehe
+`train_network.hpp`).
 
 **Nur Linux/WSL**: `full_cycle` spricht Stockfish über `fork`+`exec`+Pipes
 an ([`training/uci_engine.hpp`](training/uci_engine.hpp), gleicher Ansatz
@@ -272,26 +307,70 @@ und Begründung. Beide Zahlen landen auch im Leaderboard (`val_loss`,
 ranken kann, obwohl ihre rohen Trainings-Losses auf unterschiedlichen Skalen
 leben.
 
-**Ein echter Bug, der dabei aufgefallen ist** (gefixt, siehe
-`randomize_ft_weights()`-Kommentar in `self_play.cpp`): der
-Feature-Transformer startet normalerweise bei exakt 0 (sinnvoll, wenn
-Stockfish von Anfang an externe, positionsabhängige Ziele liefert). Bei
-reinem Self-Play ist das aber ein echter Fixpunkt – jede Stellung bekommt
-denselben (positionsunabhängigen) Bias-Wert, die Suche kollabiert dadurch
-auf genau diesen konstanten Wert, Vorhersage und Ziel sind dadurch exakt
-identisch, und der Gradient ist dadurch exakt Null für immer. Fix: die
-Feature-Transformer-Gewichte bekommen vor dem Self-Play einen kleinen
-zufälligen Startwert, damit von Zug eins an überhaupt ein Lernsignal
-existiert.
+### Kollaps-Risiko: was probiert wurde, ehrlicher Stand
 
-**Ehrlicher Stand**: die TD-Loss-Werte sind mit konservativer Lernrate
-(1e-4) bewusst klein/verrauscht gehalten – Self-Play ist notorisch
-langsamer/instabiler als überwachtes Training, das ist normal, kein Bug.
-Bei kurzen Testläufen (wenige hundert Partien) bleibt die
-Validierungs-Korrelation oft noch nahe 0 (das Netz hat einfach noch nicht
-genug gesehen) – für belastbare Ergebnisse braucht's vermutlich deutlich
-mehr Partien als beim Stockfish-Pfad, da jede Partie viel weniger
-"externes Wissen" pro Stellung liefert.
+Self-Play neigt dazu, in einen Zustand zu kollabieren, in dem das Netz für
+(fast) jede Stellung dieselbe Bewertung ausgibt – Suche und Statik werden
+sich selbst-referenziell einig, ohne dass echtes Schachwissen dahinter
+steckt. Mehrere Gegenmaßnahmen sind eingebaut:
+
+- **`randomize_ft_weights()`**: der Feature-Transformer startet normalerweise
+  bei exakt 0 (sinnvoll, wenn Stockfish von Anfang an externe,
+  positionsabhängige Ziele liefert). Bei reinem Self-Play ist das ein
+  echter Fixpunkt – jede Stellung bekommt denselben Bias-Wert, die Suche
+  kollabiert auf genau diesen konstanten Wert, Ziel und Vorhersage sind
+  exakt identisch, Gradient exakt Null für immer. Fix: kleiner zufälliger
+  Startwert vor dem Self-Play.
+- **Target-Network** (`--sync-every`, siehe `main()`s Kommentar): die Suche
+  bewertet Blätter mit einer periodisch eingefrorenen Kopie des Netzes,
+  nicht mit dem live trainierten – sonst kann der Optimizer billig "Suche
+  und Statik stimmen überein" lernen, ohne irgendwas über Schach zu lernen
+  (derselbe Trick wie DQNs Target-Network gegen "moving target").
+- **Exploration** (`kExplorationRate`): 10% der Züge werden zufällig
+  gespielt statt immer der Suchbestzug – sonst laufen alle Partien schnell
+  auf dieselbe schmale Zugfolge zusammen.
+- **Warmstart** (`--init-from`, `dequantize_from()`): startet mit einem
+  vorher Stockfish-trainierten Netz statt Zufallsgewichten.
+- **LR-Schedule** (`--lr-half-life`, s.u.): sinkende Lernrate für mehr
+  Stabilität in späteren Phasen.
+
+**Ehrlich**: in ~200-Partien-Testläufen hat keine einzelne Maßnahme das
+Kollaps-Risiko zuverlässig beseitigt – der [`eval_sanity_check.hpp`](training/eval_sanity_check.hpp)-Test
+(läuft automatisch am Ende jedes Laufs) schlägt in kurzen Läufen weiterhin
+gelegentlich an. Wahrscheinlichste Erklärung: ein reines Skalenproblem,
+kein einzelner Bug mehr – `full_cycle` selbst brauchte 150.000 Schritte bis
+zum Durchbruch (siehe oben), Self-Play erzeugt viel weniger Positionen pro
+Zeiteinheit als das. Für belastbare Self-Play-Ergebnisse also: deutlich
+mehr Partien einplanen und den Sanity-Check am Ende immer im Auge behalten.
+
+### TD(λ)-Rollout-Variante (`--td-mode lambda`)
+
+Alternative zum obigen TD-Leaf-Ansatz, klassisches forward-view TD(λ)
+(Sutton 1988, Tesauro/TD-Gammon-Stil): statt einer breiten Suche über alle
+Züge wird von jeder Stellung aus **greedy** (nur der 1-Ply-beste Zug laut
+aktueller Bewertung, keine Baumsuche) bis `--rollout-depth` Halbzüge weit
+ausgerollt. Jede Stellung entlang dieser Linie bekommt danach ein Ziel aus
+der λ-gewichteten Summe **aller** nachfolgenden Stellungen auf ihrer
+eigenen Restlinie – Einfluss nimmt mit `--td-lambda` pro Halbzug Abstand ab.
+Rechnerisch günstiger pro Halbzug als die volle Suche (ein Eval pro
+Kandidatenzug statt Zweig²), in Tests bisher genauso kollapsanfällig wie
+TD-Leaf.
+
+```bash
+./self_play.sh --td-mode lambda --games 500 --rollout-depth 7 --td-lambda 0.7 --name sp_lambda
+```
+
+### Lernraten-Schedule
+
+Beide Tools (`full_cycle` und `self_play`) unterstützen jetzt `--lr` und
+`--lr-half-life`. Formel: `lr(t) = lr₀ / (1 + t/half_life)` – bewusst
+**kein** Schedule, der bei einem festen Schritt-Horizont auf 0 herunterfährt
+(z.B. linear über N Schritte): der geht "tot", sobald man länger als geplant
+trainiert, ohne Weg zurück außer Neustart. Diese Formel nähert sich 0 nur
+asymptotisch an – bei `t=half_life` ist die LR halbiert, bei `t=10×half_life`
+immer noch bei `lr₀/11`, nie exakt bei 0. Lieber zu langsames Sinken
+(einfach länger laufen lassen) als zu schnelles (nicht mehr umkehrbar) – der
+Default (100.000) ist entsprechend konservativ gewählt.
 
 ## Bauen
 

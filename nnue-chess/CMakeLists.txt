@@ -7,6 +7,10 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+# full_cycle uses std::thread to parallelize Stockfish calls across cores.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 # --- AVX2 / AVX512 flags -----------------------------------------------
 # AVX2 is the required baseline for the fast paths in include/nnue/simd.hpp;
 # AVX512VNNI is opportunistic (only available on server-class / some newer
@@ -114,9 +118,29 @@ if(UNIX AND EXISTS "${TOMATETO_ROOT}/toMateTo_engine/move_generation/chess_board
     NNUE_H3=${NNUE_H3}
     TABLE_DIR_PATH="${TOMATETO_ROOT}/toMateTo_engine/table_generation/tables"
   )
-  target_link_libraries(full_cycle PRIVATE nnue)
+  target_link_libraries(full_cycle PRIVATE nnue Threads::Threads)
+
+  # --- Move-legality fuzzer: plays random games against the PARENT engine's
+  # real move generator (read-only - same link approach as full_cycle above)
+  # and independently re-verifies, after every move, that it didn't leave
+  # the mover's own king in check - see tests/test_move_legality.cpp.
+  add_executable(test_move_legality
+    tests/test_move_legality.cpp
+    ${TOMATETO_ROOT}/toMateTo_engine/move_generation/chess_board.cpp
+    ${TOMATETO_ROOT}/toMateTo_engine/move_generation/find_capture_moves.cpp
+    ${TOMATETO_ROOT}/toMateTo_engine/move_generation/move_stack.cpp
+    ${TOMATETO_ROOT}/toMateTo_engine/table_generation/knight_tables.cpp
+    ${TOMATETO_ROOT}/toMateTo_engine/table_generation/magic_king_tables.cpp
+    ${TOMATETO_ROOT}/toMateTo_engine/table_generation/magic_helper_functions.cpp
+    ${TOMATETO_ROOT}/toMateTo_engine/table_generation/magic_gen.cpp
+  )
+  target_include_directories(test_move_legality PRIVATE ${TOMATETO_ROOT} ${TOMATETO_ROOT}/toMateTo_engine)
+  target_compile_definitions(test_move_legality PRIVATE
+    TABLE_DIR_PATH="${TOMATETO_ROOT}/toMateTo_engine/table_generation/tables"
+  )
+  add_test(NAME move_legality COMMAND test_move_legality)
 else()
-  message(STATUS "full_cycle target skipped: parent toMateTo engine not found at "
+  message(STATUS "full_cycle/test_move_legality targets skipped: parent toMateTo engine not found at "
                   "${TOMATETO_ROOT} (or not on a POSIX system) - it needs that repo's "
                   "move generator and Stockfish binary.")
 endif()
@@ -154,4 +178,67 @@ if(UNIX AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/engine/toMateTo_engine/move_gene
 else()
   message(STATUS "self_play target skipped: engine/toMateTo_engine/ copy not found under "
                   "${CMAKE_CURRENT_SOURCE_DIR} (or not on a POSIX system).")
+endif()
+
+# --- TestEngine: real search (TT, null-move pruning, PVS, delta-pruned
+# quiescence - see engine/toMateTo_engine/toMateTo/toMateTo_nnue.{h,cpp}'s
+# header comment) evaluated by an NNUE net kept incrementally updated across
+# the search tree, not recomputed per node. Shares the engine/ copy with
+# self_play (same reasoning: fully self-contained inside nnue-chess/,
+# ../toMateTo_engine/ is never touched) plus that copy's toMateTo/ subdir
+# (eval.cpp for delta-pruning's game-phase helper, toMateTo_nnue.cpp for the
+# search itself).
+option(NNUE_DEBUG_LEGALITY
+  "Debug build: re-verify (independently, no magic bitboards) after every move in TestEngine's search that it didn't leave the mover's own king in check - see toMateTo_nnue.cpp. Off by default: it's an extra full board rescan per move, not free."
+  OFF)
+
+set(TESTENGINE_SOURCES
+  engine/toMateTo_engine/move_generation/chess_board.cpp
+  engine/toMateTo_engine/move_generation/find_capture_moves.cpp
+  engine/toMateTo_engine/move_generation/move_stack.cpp
+  engine/toMateTo_engine/table_generation/knight_tables.cpp
+  engine/toMateTo_engine/table_generation/magic_king_tables.cpp
+  engine/toMateTo_engine/table_generation/magic_helper_functions.cpp
+  engine/toMateTo_engine/table_generation/magic_gen.cpp
+  engine/toMateTo_engine/table_generation/TT.cpp
+  engine/toMateTo_engine/toMateTo/eval.cpp
+  engine/toMateTo_engine/toMateTo/toMateTo_nnue.cpp
+)
+
+if(UNIX AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/engine/toMateTo_engine/toMateTo/toMateTo_nnue.cpp")
+  add_executable(test_nnue_accumulator tests/test_nnue_accumulator.cpp ${TESTENGINE_SOURCES})
+  target_include_directories(test_nnue_accumulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engine
+                                                            ${CMAKE_CURRENT_SOURCE_DIR}/engine/toMateTo_engine
+                                                            ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  target_compile_definitions(test_nnue_accumulator PRIVATE
+    NNUE_ACC_SIZE=${NNUE_ACC_SIZE}
+    NNUE_H1=${NNUE_H1}
+    NNUE_H2=${NNUE_H2}
+    NNUE_H3=${NNUE_H3}
+    TABLE_DIR_PATH="${CMAKE_CURRENT_SOURCE_DIR}/engine/toMateTo_engine/table_generation/tables"
+  )
+  target_link_libraries(test_nnue_accumulator PRIVATE nnue)
+  add_test(NAME nnue_accumulator_correctness COMMAND test_nnue_accumulator)
+
+  # --- strength_match: plays TestEngine vs. Elo-capped Stockfish, --------
+  # parallel across --threads games - see testing/strength_match.cpp.
+  add_executable(strength_match testing/strength_match.cpp ${TESTENGINE_SOURCES})
+  target_include_directories(strength_match PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engine
+                                                     ${CMAKE_CURRENT_SOURCE_DIR}/engine/toMateTo_engine
+                                                     ${CMAKE_CURRENT_SOURCE_DIR}/include
+                                                     ${CMAKE_CURRENT_SOURCE_DIR}/training)
+  target_compile_definitions(strength_match PRIVATE
+    NNUE_ACC_SIZE=${NNUE_ACC_SIZE}
+    NNUE_H1=${NNUE_H1}
+    NNUE_H2=${NNUE_H2}
+    NNUE_H3=${NNUE_H3}
+    TABLE_DIR_PATH="${CMAKE_CURRENT_SOURCE_DIR}/engine/toMateTo_engine/table_generation/tables"
+  )
+  target_link_libraries(strength_match PRIVATE nnue Threads::Threads)
+  if(NNUE_DEBUG_LEGALITY)
+    target_compile_definitions(strength_match PRIVATE NNUE_DEBUG_LEGALITY)
+    target_compile_definitions(test_nnue_accumulator PRIVATE NNUE_DEBUG_LEGALITY)
+  endif()
+else()
+  message(STATUS "test_nnue_accumulator/strength_match targets skipped: engine/toMateTo_engine/toMateTo/ not found.")
 endif()

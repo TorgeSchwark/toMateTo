@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nnue-chess Training GUI</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>nnue-chess Training</h1>
+  <div id="status-bar">
+    <span id="cores-gauge" class="pill">Kerne: -/-</span>
+    <span id="arch-pill" class="pill">Architektur: -</span>
+  </div>
+</header>
+
+<main>
+  <section class="panel" id="build-panel">
+    <h2>Architektur (Compile-Time) <button id="build-toggle" class="link-btn">ändern</button></h2>
+    <div id="build-form" class="hidden">
+      <label>ACC_SIZE <input id="b-acc" type="number" value="256"></label>
+      <label>H1 <input id="b-h1" type="number" value="128"></label>
+      <label>H2 <input id="b-h2" type="number" value="32"></label>
+      <label>H3 <input id="b-h3" type="number" value="32"></label>
+      <button id="build-start">Neu bauen</button>
+      <p class="hint">Blockiert, solange Trainings laufen (gleiche Binaries/build/-Ordner) -
+      erst stoppen, dann neu bauen. Dauert je nach Architektur ~10-60s.</p>
+      <div id="build-status"></div>
+    </div>
+  </section>
+
+  <div class="columns">
+    <section class="panel" id="start-panel">
+      <h2>Neues Training starten</h2>
+      <div class="tabs">
+        <button class="tab active" data-tool="full_cycle">full_cycle (Stockfish)</button>
+        <button class="tab" data-tool="self_play">self_play (RL)</button>
+        <button class="tab" data-tool="strength_search">Spielstärke</button>
+      </div>
+
+      <form id="fc-form" class="tool-form">
+        <label>Modus
+          <select name="mode" id="fc-mode">
+            <option value="full">full (generieren + trainieren)</option>
+            <option value="gen_data">gen_data (nur Datensatz)</option>
+            <option value="only_train">only_train (nur trainieren)</option>
+          </select>
+        </label>
+        <div class="fc-gen-fields">
+          <label>Tiefe (--depth) <input type="number" name="depth" value="10"></label>
+          <label>Samples (--samples) <input type="number" name="samples" value="20000"></label>
+        </div>
+        <div class="fc-train-fields hidden">
+          <label>Datensatz (--dataset)
+            <select name="dataset" id="fc-dataset"></select>
+          </label>
+          <label>Epochen (--epochs) <input type="number" name="epochs" value="1"></label>
+          <label>Batch-Size (--batch-size, 0=auto) <input type="number" name="batch_size" value="0"></label>
+          <label>Figuren von (--piece-min) <input type="number" name="piece_min" value="2" min="2" max="32"></label>
+          <label>Figuren bis (--piece-max) <input type="number" name="piece_max" value="32" min="2" max="32"></label>
+          <p class="hint">Nur Stellungen mit dieser Figurenanzahl (beide Könige mitgezählt) werden
+          zum Trainieren benutzt - für ein auf eine Spielphase spezialisiertes Bucket-Netz. Beide auf
+          2/32 lassen für kein Filtern.</p>
+        </div>
+        <label>Threads (0 = alle Kerne) <input type="number" name="threads" value="0"></label>
+        <label>Lernrate (--lr) <input type="text" name="lr" value="1e-4"></label>
+        <label>LR Half-Life (--lr-half-life) <input type="text" name="lr_half_life" value="100000"></label>
+        <label>Name (--name) <input type="text" name="name" value="run" required></label>
+        <button type="submit">full_cycle starten</button>
+      </form>
+
+      <form id="sp-form" class="tool-form hidden">
+        <label>Spiele (--games) <input type="number" name="games" value="200"></label>
+        <label>TD-Modus
+          <select name="td_mode" id="sp-td-mode">
+            <option value="leaf">leaf (Alpha-Beta-Suche pro Stellung)</option>
+            <option value="lambda">lambda (TD(λ) Rollout)</option>
+          </select>
+        </label>
+        <div class="sp-leaf-fields">
+          <label>Suchtiefe (--search-depth) <input type="number" name="search_depth" value="2"></label>
+        </div>
+        <div class="sp-lambda-fields hidden">
+          <label>Rollout-Tiefe (--rollout-depth) <input type="number" name="rollout_depth" value="7"></label>
+          <label>TD-Lambda (--td-lambda) <input type="text" name="td_lambda" value="0.7"></label>
+        </div>
+        <label>Max. Halbzüge (--max-plies) <input type="number" name="max_plies" value="150"></label>
+        <label>Sync alle N Spiele (--sync-every) <input type="number" name="sync_every" value="10"></label>
+        <label>Warmstart-Netz (--init-from, optional)
+          <select name="init_from" id="sp-init-from"><option value="">(keins)</option></select>
+        </label>
+        <label>Lernrate (--lr) <input type="text" name="lr" value="5e-4"></label>
+        <label>LR Half-Life (--lr-half-life) <input type="text" name="lr_half_life" value="100000"></label>
+        <label>Name (--name) <input type="text" name="name" value="selfplay" required></label>
+        <button type="submit">self_play starten</button>
+      </form>
+
+      <form id="st-form" class="tool-form hidden">
+        <p class="hint">Spielt die TestEngine (echte Suche - TT, Null-Move-Pruning, PVS,
+        delta-geprunte Quiescence - mit inkrementell aktualisiertem NNUE-Accumulator, nicht
+        pro Knoten neu berechnet) gegen Stockfish, dessen Spielstärke (UCI_Elo) zuerst grob,
+        dann immer feiner eingegrenzt wird, bis die TestEngine ca. 50% gewinnt. Alle Kerne
+        werden für parallele Spiele genutzt.</p>
+        <label style="flex-direction:row; align-items:center; gap:8px;">
+          <input type="checkbox" id="st-use-buckets" style="width:auto;">
+          Mehrere NNUE-Buckets verwenden (je eins pro Figurenanzahl-Bereich)
+        </label>
+
+        <label id="st-net-single-wrap">Netz (--net)
+          <select name="net" id="st-net"></select>
+        </label>
+
+        <div id="st-buckets-wrap" class="hidden">
+          <div id="st-bucket-rows"></div>
+          <button type="button" id="st-add-bucket" class="link-btn">+ Bucket hinzufügen</button>
+          <p id="st-bucket-coverage" class="hint"></p>
+        </div>
+
+        <label>Spiele pro Elo-Stufe (--games-per-level) <input type="number" name="games_per_level" value="30"></label>
+        <label>Threads (0 = alle Kerne) <input type="number" name="threads" value="0"></label>
+        <label>ms pro Zug (--movetime-ms) <input type="number" name="movetime_ms" value="100"></label>
+        <label>Max. Halbzüge (--max-plies) <input type="number" name="max_plies" value="200"></label>
+        <label>Start-Elo (--initial-elo) <input type="number" name="initial_elo" value="1500"></label>
+        <label>Name (--name) <input type="text" name="name" value="strength_run" required></label>
+        <label style="flex-direction:row; align-items:center; gap:8px;">
+          <input type="checkbox" name="gen_dataset" id="st-gen-dataset" style="width:auto;">
+          Danach Datensatz aus Spielen bei geschätztem Elo generieren
+        </label>
+        <div class="st-dataset-fields hidden">
+          <label>Ziel-Datei (--save-dataset)
+            <input type="text" name="save_dataset" placeholder="z.B. from_play.dataset">
+          </label>
+          <label>Spiele für Datensatz (--gen-dataset-games) <input type="number" name="gen_dataset_games" value="100"></label>
+          <label>Analyse-Tiefe (--dataset-depth) <input type="number" name="dataset_depth" value="12"></label>
+        </div>
+        <button type="submit">Spielstärke ermitteln</button>
+      </form>
+      <div id="start-error" class="error hidden"></div>
+    </section>
+
+    <section class="panel" id="jobs-panel">
+      <h2>Trainings</h2>
+      <div id="jobs-list"><p class="hint">Noch keine Trainings gestartet.</p></div>
+    </section>
+  </div>
+
+  <section class="panel" id="leaderboard-panel">
+    <h2>Leaderboard</h2>
+    <table id="leaderboard-table">
+      <thead>
+        <tr><th>#</th><th>Name</th><th>Methode</th><th>Arch</th><th>Train-Loss</th><th>Val-Loss</th>
+            <th>Korrelation</th><th>Zeit</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="panel" id="loss-plot-panel">
+    <h2>Loss-Verlauf</h2>
+    <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); max-width:300px;">
+      Lauf
+      <select id="loss-select"></select>
+    </label>
+    <canvas id="loss-canvas" width="900" height="260" style="width:100%; max-width:900px; margin-top:10px;"></canvas>
+    <p id="loss-empty" class="hint">Kein Lauf ausgewählt oder keine Daten.</p>
+  </section>
+
+  <section class="panel" id="dataset-plot-panel">
+    <h2>Datensatz-Visualisierung</h2>
+    <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+      <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); max-width:340px;">
+        Datensatz
+        <select id="dataset-select"></select>
+      </label>
+      <button id="dataset-analyze" type="button">Analysieren</button>
+      <span id="dataset-status" class="hint"></span>
+    </div>
+    <canvas id="dataset-canvas" width="900" height="260" style="width:100%; max-width:900px; margin-top:10px;"></canvas>
+    <p id="dataset-empty" class="hint">Noch nicht analysiert.</p>
+    <div id="dataset-summary" class="job-meta" style="margin-top:8px; flex-wrap:wrap;"></div>
+  </section>
+
+  <section class="panel" id="strength-leaderboard-panel">
+    <h2>Spielstärke (geschätztes Elo vs. Stockfish)</h2>
+    <table id="strength-leaderboard-table">
+      <thead>
+        <tr><th>#</th><th>Name</th><th>Netz</th><th>Elo</th><th>Bracket</th><th>Runden</th>
+            <th>Spiele</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

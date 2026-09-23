@@ -16,6 +16,19 @@
 // Smith - used e.g. in KnightCap); here it's the simplest version, TD(0)
 // with lambda=1 truncated to one step, no eligibility trace.
 //
+// Two networks, not one: the network the search uses to evaluate leaves
+// (and therefore to produce each position's TD target) is a periodically-
+// frozen SNAPSHOT (--sync-every games old), separate from the network
+// actually being trained. Without this split, the optimizer can trivially
+// drive the training loss toward 0 by making the live network's search and
+// its own static eval agree with each other - a self-consistency shortcut
+// that requires no real chess knowledge - rather than by learning anything
+// that generalizes (this was observed happening: training loss ~3e-6 after
+// 100 games, validation against Stockfish stuck at the "predicts a
+// constant" baseline). This is the same fix DQN uses for the analogous
+// "chasing a moving target" instability (Mnih et al. 2015); see main()'s
+// comment where search_net is created.
+//
 // Uses its OWN COPY of the toMateTo move generator under
 // engine/toMateTo_engine/ (not the original under ../toMateTo_engine/, the
 // way full_cycle.cpp does it) - self-contained inside nnue-chess, no other
@@ -27,6 +40,8 @@
 //   --max-plies N     abort a game (as a draw, value 0) after this many
 //                      plies; default 150 - bounds worst-case game length,
 //                      no repetition/50-move-rule detection is implemented
+//   --sync-every N    games between refreshing the frozen search/target
+//                      network from the one being trained; default 10
 //   --name NAME       names <NAME>.nnue, <NAME>.dataset and the run's
 //                      leaderboard entry
 //   --report          print the leaderboard and exit (no training)
@@ -65,7 +80,9 @@
 #include "leaderboard.hpp"
 #include "efficiency_check.hpp"
 #include "validation.hpp"
+#include "eval_sanity_check.hpp"
 #include "uci_engine.hpp"
+#include "progress_bar.hpp"
 
 #include "engine/toMateTo_engine/move_generation/chess_board.h"
 #include "engine/toMateTo_engine/table_generation/knight_tables.h"
@@ -92,27 +109,59 @@ using Inference = nnue::NNUE<NNUE_ACC_SIZE, NNUE_H1, NNUE_H2, NNUE_H3>;
 
 namespace {
 
+enum class TdMode { Leaf, Lambda };
+
 struct Args {
     int search_depth = 2;
     long games = 200;
     int max_plies = 150;
+    int sync_every = 10;
     std::string name = "selfplay";
+    std::string init_from;
+    TdMode td_mode = TdMode::Leaf;
+    int rollout_depth = 7;
+    float td_lambda = 0.7f;
+    float lr = 5e-4f;
+    float lr_half_life = 100000.0f;
     bool report_only = false;
 };
 
 void print_usage(const char* prog) {
-    std::fprintf(stderr,
-                  "Usage: %s --games N --search-depth N --max-plies N --name NAME [--arch ACC,H1,H2,H3]\n"
-                  "       %s --report\n"
-                  "  --games         number of self-play games to generate AND train on\n"
-                  "  --search-depth  alpha-beta plies per move (the network's own eval is the leaf\n"
-                  "                  evaluator) - higher = better move choices, slower; default 2\n"
-                  "  --max-plies     abort a game as a draw after this many plies; default 150\n"
-                  "  --name          names <NAME>.nnue, <NAME>.dataset and the leaderboard entry\n"
-                  "  --arch          sanity-checked, not applied: this binary was compiled for\n"
-                  "                  (%d,%d,%d,%d); use ../self_play.sh to actually change it\n"
-                  "  --report        print the results leaderboard and exit - no training\n",
-                  prog, prog, NNUE_ACC_SIZE, NNUE_H1, NNUE_H2, NNUE_H3);
+    std::fprintf(
+        stderr,
+        "Usage: %s --games N [--td-mode leaf|lambda] [options] --name NAME [--arch ACC,H1,H2,H3]\n"
+        "       %s --report\n"
+        "  --games         number of self-play games to generate AND train on\n"
+        "  --td-mode       leaf (default) or lambda - see below\n"
+        "  --max-plies     abort a game as a draw after this many plies; default 150\n"
+        "  --sync-every    games between refreshing the frozen search/target network from\n"
+        "                  the one actually being trained; default 10 (see main()'s comment)\n"
+        "  --init-from     warm-start from a previously exported .nnue (e.g. from full_cycle)\n"
+        "                  instead of small random weights - see dequantize_from()'s comment.\n"
+        "                  Strongly consider a much lower --lr with this (e.g. 1e-5) - fine-\n"
+        "                  tuning an already-decent network, not training from scratch\n"
+        "  --lr            base learning rate; default 5e-4 (higher than full_cycle's 1e-4\n"
+        "                  since self-play positions are far more expensive to generate)\n"
+        "  --lr-half-life  steps until the learning rate has halved (lr/(1+step/half_life),\n"
+        "                  never reaches 0); default 100000. Bigger = slower/gentler decay -\n"
+        "                  if in doubt, prefer too slow (just train longer) over too fast\n"
+        "  --name          names <NAME>.nnue, <NAME>.dataset and the leaderboard entry\n"
+        "  --arch          sanity-checked, not applied: this binary was compiled for\n"
+        "                  (%d,%d,%d,%d); use ../self_play.sh to actually change it\n"
+        "  --report        print the results leaderboard and exit - no training\n"
+        "\n"
+        "  --td-mode leaf (default): at every visited position, a full alpha-beta search (all\n"
+        "    legal moves, --search-depth plies) provides that position's own training target.\n"
+        "    --search-depth  alpha-beta plies per move; default 2\n"
+        "\n"
+        "  --td-mode lambda: classic forward-view TD(lambda) (Sutton 1988 / TD-Gammon): from\n"
+        "    each visited position, greedily roll out --rollout-depth plies (picking, at every\n"
+        "    step, whichever single move looks best by a 0-ply eval - no tree search), then\n"
+        "    every position along that rollout gets a target combining all its own future\n"
+        "    steps with exponentially decaying weight (--td-lambda).\n"
+        "    --rollout-depth  plies to roll out from each position; default 7\n"
+        "    --td-lambda      decay rate for future steps' weight, 0..1; default 0.7\n",
+        prog, prog, NNUE_ACC_SIZE, NNUE_H1, NNUE_H2, NNUE_H3);
 }
 
 Args parse_args(int argc, char** argv) {
@@ -132,6 +181,26 @@ Args parse_args(int argc, char** argv) {
             a.games = std::stol(next());
         } else if (arg == "--max-plies") {
             a.max_plies = std::stoi(next());
+        } else if (arg == "--sync-every") {
+            a.sync_every = std::stoi(next());
+        } else if (arg == "--init-from") {
+            a.init_from = next();
+        } else if (arg == "--lr") {
+            a.lr = std::stof(next());
+        } else if (arg == "--lr-half-life") {
+            a.lr_half_life = std::stof(next());
+        } else if (arg == "--td-mode") {
+            std::string mode = next();
+            if (mode == "leaf") a.td_mode = TdMode::Leaf;
+            else if (mode == "lambda") a.td_mode = TdMode::Lambda;
+            else {
+                std::fprintf(stderr, "Unknown --td-mode: %s (expected 'leaf' or 'lambda')\n", mode.c_str());
+                std::exit(1);
+            }
+        } else if (arg == "--rollout-depth") {
+            a.rollout_depth = std::stoi(next());
+        } else if (arg == "--td-lambda") {
+            a.td_lambda = std::stof(next());
         } else if (arg == "--name") {
             a.name = next();
         } else if (arg == "--arch") {
@@ -389,8 +458,13 @@ SearchResult search_root(chess_board& board, int depth, Net& net) {
 // *data* being too narrow for a nonzero gradient to teach much.
 constexpr float kExplorationRate = 0.1f;
 
-long play_self_play_game(std::mt19937& rng, Net& net, int search_depth, int max_plies, std::ofstream& dataset_file,
-                          float& running_loss) {
+// train_net is the network actually being updated (train_step() runs
+// against it every position); search_net is a periodically-frozen snapshot
+// used ONLY to evaluate leaves during the search that produces each
+// position's TD target - see main()'s comment on why these must be two
+// different objects, not the same network wearing two hats.
+long play_self_play_game(std::mt19937& rng, Net& train_net, Net& search_net, int search_depth, int max_plies,
+                          std::ofstream& dataset_file, float& running_loss) {
     chess_board board = fresh_start_position();
     std::uniform_real_distribution<float> explore_roll(0.0f, 1.0f);
 
@@ -413,18 +487,158 @@ long play_self_play_game(std::mt19937& rng, Net& net, int search_depth, int max_
 
     long positions = 0;
     for (int ply = 0; ply < max_plies; ++ply) {
-        SearchResult sr = search_root(board, search_depth, net);
+        SearchResult sr = search_root(board, search_depth, search_net);
         if (!sr.has_move) break; // checkmate or stalemate reached
 
         nnue::train::TrainingSample sample = sample_from_board(board);
         sample.target_wdl = nnue::train::sigmoid(sr.value); // always the search's real value, even on exploration plies
-        running_loss += net.train_step(sample);
+        running_loss += train_net.train_step(sample);
         ++positions;
 
         int cp = int(std::lround(double(sr.value) * nnue::train::CP_SCALE));
         dataset_file << board_to_fen(board) << ';' << cp << ';' << (board.whites_turn ? 'w' : 'b') << '\n';
 
         Move move_to_play = sr.best_move;
+        if (explore_roll(rng) < kExplorationRate) {
+            MoveStacks ms;
+            find_all_moves(&ms, &board);
+            int total = ms.normal_size() + ms.capture_size();
+            std::uniform_int_distribution<int> move_dist(0, total - 1);
+            int idx = move_dist(rng);
+            move_to_play = idx < ms.normal_size() ? ms.normal_moves[idx] : ms.capture_moves[idx - ms.normal_size()];
+        }
+        StateInfo st;
+        make_move(&board, move_to_play, st);
+    }
+    return positions;
+}
+
+// ---- TD(lambda) rollout mode ---------------------------------------------
+// Classic forward-view TD(lambda) (Sutton 1988; Tesauro's TD-Gammon uses
+// this family of algorithms), as opposed to --td-mode leaf's TD-Leaf(0)
+// above. Difference in one line: TD-Leaf asks "what does a D-ply tree
+// search over ALL moves say this position is worth"; TD(lambda) here asks
+// "what does greedily playing out ONE line - always the single best-
+// looking move, no tree search - for up to `rollout_depth` plies say this
+// position (and every position along the way) is worth", with credit for
+// each position blended in from every later position on its own rollout,
+// weight shrinking by `td_lambda` per ply of distance - hence "the further
+// from the position being updated, the less it counts".
+//
+// Picks the move that looks best for `board`'s side to move by a single
+// 0-ply evaluation of each resulting child position - no search tree, just
+// one raw_eval() per legal move. Returns false if there are no legal moves
+// (terminal position).
+bool greedy_best_move(chess_board& board, Net& eval_net, Move& out_move) {
+    MoveStacks ms;
+    find_all_moves(&ms, &board);
+    int total = ms.normal_size() + ms.capture_size();
+    if (total == 0) return false;
+    float best_val = -std::numeric_limits<float>::infinity();
+    for (int i = 0; i < total; ++i) {
+        Move mv = i < ms.normal_size() ? ms.normal_moves[i] : ms.capture_moves[i - ms.normal_size()];
+        StateInfo st;
+        make_move(&board, mv, st);
+        // raw_eval(child) is from the CHILD's side to move (the opponent) -
+        // negate to get the value from board's own mover's perspective. No
+        // special-casing of "this move delivers checkmate" here - matching
+        // the paper's simple "just a static eval scan, no tree search" -
+        // the network has to learn to recognize decisive positions itself
+        // through the multi-step TD(lambda) updates, same as TD-Gammon.
+        float val_for_mover = -raw_eval(board, eval_net);
+        undo_move(&board, mv, st);
+        if (val_for_mover > best_val) {
+            best_val = val_for_mover;
+            out_move = mv;
+        }
+    }
+    return true;
+}
+
+// Trains every position along a rollout using the truncated forward-view
+// lambda-return, then advances the REAL game by exactly one ply (the
+// rollout's own first move, or a random exploration move) - so successive
+// calls from the outer game loop produce fresh, overlapping rollout windows
+// as the real game progresses, the same way TD-Gammon re-rolls out from
+// wherever the actual game is after each real move.
+long play_lambda_rollout_game(std::mt19937& rng, Net& train_net, Net& search_net, int rollout_depth, float td_lambda,
+                               int max_plies, std::ofstream& dataset_file, float& running_loss) {
+    chess_board board = fresh_start_position();
+    std::uniform_real_distribution<float> explore_roll(0.0f, 1.0f);
+
+    // Opening plies stay random for diversity, same as --td-mode leaf.
+    std::uniform_int_distribution<int> opening_dist(0, 4);
+    int opening_plies = opening_dist(rng);
+    for (int i = 0; i < opening_plies; ++i) {
+        MoveStacks ms;
+        find_all_moves(&ms, &board);
+        int total = ms.normal_size() + ms.capture_size();
+        if (total == 0) return 0; // essentially impossible this early, just bail
+        std::uniform_int_distribution<int> move_dist(0, total - 1);
+        int idx = move_dist(rng);
+        Move mv = idx < ms.normal_size() ? ms.normal_moves[idx] : ms.capture_moves[idx - ms.normal_size()];
+        StateInfo st;
+        make_move(&board, mv, st);
+    }
+
+    long positions = 0;
+    for (int ply = 0; ply < max_plies; ++ply) {
+        // Roll out greedily from `board` for up to rollout_depth plies.
+        std::vector<chess_board> trajectory{board}; // s_0..s_T
+        std::vector<float> raw_evals{raw_eval(board, search_net)}; // V(s_0)..V(s_T), each from ITS OWN mover's view
+        std::vector<Move> moves_played; // move s_t -> s_{t+1}, for t=0..T-1
+
+        chess_board cur = board;
+        for (int step = 0; step < rollout_depth; ++step) {
+            Move mv;
+            if (!greedy_best_move(cur, search_net, mv)) break; // rollout hit a terminal position
+            StateInfo st;
+            make_move(&cur, mv, st);
+            moves_played.push_back(mv);
+            trajectory.push_back(cur);
+            raw_evals.push_back(raw_eval(cur, search_net));
+        }
+
+        const int T = int(trajectory.size()) - 1; // actual rollout length achieved (<= rollout_depth)
+        if (T == 0) break; // board itself is already terminal - game over
+
+        // Sign-correct every value into board's (s_0's) reference frame: s_t
+        // and s_{t+1} have opposite sides to move, so alternate the sign.
+        std::vector<float> u(T + 1);
+        for (int t = 0; t <= T; ++t) u[t] = raw_evals[t] * ((t % 2 == 0) ? 1.0f : -1.0f);
+
+        // Forward-view TD(lambda): for each t, blend u[t+1..T] with weight
+        // (1-lambda)*lambda^(n-1) for the n-step-ahead value, and the
+        // remaining weight lambda^(stepsRemaining-1) on the final u[T] (the
+        // standard truncated/discounted lambda-return formula).
+        for (int t = 0; t < T; ++t) {
+            const int steps_remaining = T - t;
+            float target_u = 0.0f, weight_sum = 0.0f, lambda_pow = 1.0f;
+            for (int n = 1; n < steps_remaining; ++n) {
+                const float w = (1.0f - td_lambda) * lambda_pow;
+                target_u += w * u[t + n];
+                weight_sum += w;
+                lambda_pow *= td_lambda;
+            }
+            target_u += lambda_pow * u[T];
+            weight_sum += lambda_pow;
+            target_u /= weight_sum; // defensive normalization against float rounding
+
+            const float target_for_t = target_u * ((t % 2 == 0) ? 1.0f : -1.0f); // back to s_t's own perspective
+
+            nnue::train::TrainingSample sample = sample_from_board(trajectory[std::size_t(t)]);
+            sample.target_wdl = nnue::train::sigmoid(target_for_t);
+            running_loss += train_net.train_step(sample);
+            ++positions;
+
+            const int cp = int(std::lround(double(target_for_t) * nnue::train::CP_SCALE));
+            dataset_file << board_to_fen(trajectory[std::size_t(t)]) << ';' << cp << ';'
+                         << (trajectory[std::size_t(t)].whites_turn ? 'w' : 'b') << '\n';
+        }
+
+        // Advance the real game by exactly one ply: the rollout's own first
+        // move, unless this ply rolls an exploration move instead.
+        Move move_to_play = moves_played.front();
         if (explore_roll(rng) < kExplorationRate) {
             MoveStacks ms;
             find_all_moves(&ms, &board);
@@ -451,8 +665,13 @@ int main(int argc, char** argv) {
 
     std::printf("architecture: NNUE<%d,%d,%d,%d> (fixed at compile time)\n", NNUE_ACC_SIZE, NNUE_H1, NNUE_H2,
                 NNUE_H3);
-    std::printf("games=%ld search_depth=%d max_plies=%d name=\"%s\"\n\n", args.games, args.search_depth,
-                args.max_plies, args.name.c_str());
+    std::printf("games=%ld td_mode=%s max_plies=%d name=\"%s\"\n",
+                args.games, args.td_mode == TdMode::Leaf ? "leaf" : "lambda", args.max_plies, args.name.c_str());
+    if (args.td_mode == TdMode::Leaf)
+        std::printf("search_depth=%d sync_every=%d\n\n", args.search_depth, args.sync_every);
+    else
+        std::printf("rollout_depth=%d td_lambda=%.2f sync_every=%d\n\n", args.rollout_depth, args.td_lambda,
+                    args.sync_every);
 
     run_efficiency_check<NNUE_ACC_SIZE, NNUE_H1, NNUE_H2, NNUE_H3>();
 
@@ -472,8 +691,42 @@ int main(int argc, char** argv) {
     // to raise; without those this would risk the same "every unit
     // saturates and dies" failure mode found earlier while tuning
     // train_demo.cpp.
-    Net net(/*lr=*/5e-4f, /*ft_weight_decay=*/1e-6f, /*hidden_weight_decay=*/1e-4f);
-    randomize_ft_weights(net, rng); // see this function's comment: essential for self-play, not cosmetic
+    Net net(args.lr, /*ft_weight_decay=*/1e-6f, /*hidden_weight_decay=*/1e-4f, args.lr_half_life);
+    if (!args.init_from.empty()) {
+        // Warm start: load a previously-trained (typically Stockfish-
+        // supervised, via full_cycle) network instead of starting from
+        // small random weights. Sidesteps the cold-start collapse risk at
+        // its root - the network already has real, externally-grounded
+        // chess knowledge before self-play's bootstrapping begins, so its
+        // search from move one reflects genuine tactics/position
+        // understanding rather than noise, and there is no symmetric
+        // "everything evaluates the same" state for training to fall back
+        // into (see randomize_ft_weights()'s comment for what that state
+        // looks like and why it's a trap).
+        auto pretrained = Inference::make();
+        if (!pretrained->load(args.init_from))
+            throw std::runtime_error("could not load --init-from network: " + args.init_from);
+        net.dequantize_from(*pretrained);
+        std::printf("warm-started from %s\n", args.init_from.c_str());
+    } else {
+        randomize_ft_weights(net, rng); // see this function's comment: essential for self-play, not cosmetic
+    }
+
+    // The target-network trick (Mnih et al. 2015's DQN, adapted here):
+    // search_net is a SEPARATE, periodically-refreshed copy of net, used
+    // only to evaluate leaves during search / produce each position's TD
+    // target. Using the SAME live, every-position-updated net for both
+    // "generates the target" and "gets trained on that target" lets the
+    // optimizer find a cheap shortcut: nudge net so its own search and its
+    // own static eval agree with each other, which drives the training
+    // loss toward 0 without requiring net to encode anything real about
+    // chess - confirmed happening here (best_loss ~3e-6 after only 100
+    // games, while validation against Stockfish stayed at the "predicts a
+    // constant" baseline of ~1/12 ≈ 0.083). Freezing the evaluator for
+    // --sync-every games at a time breaks that shortcut: net has to match
+    // what a *fixed* reference network's search found, which it can't do
+    // by simply drifting in lockstep, only by actually getting better.
+    Net search_net = net;
 
     std::printf(
         "== self-play: %ld games, search depth %d (network's own eval as leaf evaluator, no Stockfish) ==\n",
@@ -487,27 +740,30 @@ int main(int argc, char** argv) {
     const long report_every = std::max<long>(1, args.games / 20);
 
     for (long g = 0; g < args.games; ++g) {
-        long before = total_positions;
-        float loss_before = running_loss;
-        long n = play_self_play_game(rng, net, args.search_depth, args.max_plies, dataset_file, running_loss);
+        if (g % args.sync_every == 0) search_net = net; // refresh the frozen search/target network
+
+        long n = args.td_mode == TdMode::Leaf
+                     ? play_self_play_game(rng, net, search_net, args.search_depth, args.max_plies, dataset_file,
+                                            running_loss)
+                     : play_lambda_rollout_game(rng, net, search_net, args.rollout_depth, args.td_lambda,
+                                                 args.max_plies, dataset_file, running_loss);
         total_positions += n;
         positions_since_report += n;
-        (void)loss_before;
-        (void)before;
 
         if ((g + 1) % report_every == 0 || g + 1 == args.games) {
-            auto now = std::chrono::steady_clock::now();
-            double elapsed = std::chrono::duration<double>(now - gen_start).count();
-            double per_game = elapsed / double(g + 1);
-            double eta = per_game * double(args.games - (g + 1));
             float window_loss = positions_since_report > 0 ? running_loss / float(positions_since_report) : 0.0f;
             best_window_loss = std::min(best_window_loss, window_loss);
             last_window_loss = window_loss;
-            std::printf("[games %6ld/%6ld, positions %8ld] avg loss=%.7f  %.1f ms/game  ETA %.0fs\n", g + 1,
-                        args.games, total_positions, window_loss, per_game * 1000.0, eta);
             running_loss = 0.0f;
             positions_since_report = 0;
         }
+
+        const double elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - gen_start).count();
+        const double rate_ms = elapsed * 1000.0 / double(g + 1);
+        const double eta = rate_ms / 1000.0 * double(args.games - (g + 1));
+        char suffix[80];
+        std::snprintf(suffix, sizeof(suffix), "%ld positions  loss=%.7f", total_positions, last_window_loss);
+        print_progress_bar(g + 1, args.games, rate_ms, eta, suffix);
     }
     dataset_file.close();
     std::printf("dataset written to %s (%ld positions from %ld games)\n", dataset_path.c_str(), total_positions,
@@ -522,6 +778,36 @@ int main(int argc, char** argv) {
     const std::string net_path = args.name + ".nnue";
     quantized->save(net_path);
     std::printf("network written to %s\n", net_path.c_str());
+
+    // Cheap, no-Stockfish-needed regression check: does the trained network
+    // actually discriminate between positions at all, on positions similar
+    // to what self-play itself explores (short random walks from the start
+    // position - not the much wilder 40-ply validation set below, since the
+    // point here is "is the network non-degenerate on its own turf", not
+    // "does it generalize"). See eval_sanity_check.hpp.
+    {
+        constexpr int kSanityPositions = 200;
+        std::vector<float> sanity_evals;
+        sanity_evals.reserve(kSanityPositions);
+        std::uniform_int_distribution<int> sanity_ply_dist(0, 30);
+        for (int i = 0; i < kSanityPositions; ++i) {
+            chess_board board = fresh_start_position();
+            int plies = sanity_ply_dist(rng);
+            for (int p = 0; p < plies; ++p) {
+                MoveStacks ms;
+                find_all_moves(&ms, &board);
+                int total = ms.normal_size() + ms.capture_size();
+                if (total == 0) break;
+                std::uniform_int_distribution<int> move_dist(0, total - 1);
+                int idx = move_dist(rng);
+                Move mv = idx < ms.normal_size() ? ms.normal_moves[idx] : ms.capture_moves[idx - ms.normal_size()];
+                StateInfo st;
+                make_move(&board, mv, st);
+            }
+            sanity_evals.push_back(raw_eval(board, net));
+        }
+        print_eval_sanity_stats(compute_eval_sanity_stats(sanity_evals), sanity_evals.size());
+    }
 
     // The only place this tool talks to Stockfish: purely to score a
     // held-out set never trained on, so the self-play network's internally
@@ -563,13 +849,13 @@ int main(int argc, char** argv) {
 
     TrainingResult result;
     result.name = args.name;
-    result.method = "selfplay";
+    result.method = args.td_mode == TdMode::Leaf ? "selfplay-leaf" : "selfplay-lambda";
     result.timestamp = current_timestamp();
     result.acc = NNUE_ACC_SIZE;
     result.h1 = NNUE_H1;
     result.h2 = NNUE_H2;
     result.h3 = NNUE_H3;
-    result.depth = args.search_depth;
+    result.depth = args.td_mode == TdMode::Leaf ? args.search_depth : args.rollout_depth;
     result.samples = total_positions;
     result.games = args.games;
     result.best_loss = best_window_loss;

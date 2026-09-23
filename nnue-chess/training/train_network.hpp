@@ -110,8 +110,15 @@ public:
     DenseLayerF<H2, H3> layer3;           DenseAdamW layer3_w_opt, layer3_b_opt;
     DenseLayerF<H3, 1> output;            DenseAdamW output_w_opt, output_b_opt;
 
-    explicit TrainNetwork(float lr, float ft_weight_decay = 1e-6f, float hidden_weight_decay = 1e-5f)
-        : ft_weight_opt(NUM_FEATURES, lr, 0.9f, 0.999f, 1e-8f, ft_weight_decay),
+    // lr_half_life: see sparse_optimizer.hpp's lr_schedule() - the learning
+    // rate used by every optimizer below is lr / (1 + step/lr_half_life),
+    // never reaching 0 no matter how long training runs. Default (100000)
+    // is deliberately gentle/conservative: better to decay too slowly (you
+    // can always just train longer) than too fast (a dead run can't be
+    // un-decayed without restarting) - see self_play.cpp's --lr-half-life.
+    explicit TrainNetwork(float lr, float ft_weight_decay = 1e-6f, float hidden_weight_decay = 1e-5f,
+                           float lr_half_life = 100000.0f)
+        : ft_weight_opt(NUM_FEATURES, lr, 0.9f, 0.999f, 1e-8f, ft_weight_decay, lr_half_life),
           // Every bias that feeds a ClippedReLU also gets a (small) weight
           // decay, unlike the usual "no decay on biases" convention: it is
           // touched every single step (dense), so over a long run its Adam
@@ -123,14 +130,16 @@ public:
           // gives it a restoring pull back toward 0 that plain "no gradient
           // once saturated" cannot provide on its own. output.bias has no
           // activation after it, so it is exempt (see randomize_dense_weights).
-          ft_bias(ACC_SIZE, 0.0f), ft_bias_opt(ACC_SIZE, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay),
-          layer1_w_opt(H1 * 2 * ACC_SIZE, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay),
-          layer1_b_opt(H1, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay),
-          layer2_w_opt(H2 * H1, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay),
-          layer2_b_opt(H2, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay),
-          layer3_w_opt(H3 * H2, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay),
-          layer3_b_opt(H3, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay),
-          output_w_opt(1 * H3, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay), output_b_opt(1, lr) {
+          ft_bias(ACC_SIZE, 0.0f),
+          ft_bias_opt(ACC_SIZE, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay, lr_half_life),
+          layer1_w_opt(H1 * 2 * ACC_SIZE, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay, lr_half_life),
+          layer1_b_opt(H1, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay, lr_half_life),
+          layer2_w_opt(H2 * H1, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay, lr_half_life),
+          layer2_b_opt(H2, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay, lr_half_life),
+          layer3_w_opt(H3 * H2, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay, lr_half_life),
+          layer3_b_opt(H3, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay, lr_half_life),
+          output_w_opt(1 * H3, lr, 0.9f, 0.999f, 1e-8f, hidden_weight_decay, lr_half_life),
+          output_b_opt(1, lr, 0.9f, 0.999f, 1e-8f, 0.0f, lr_half_life) {
         randomize_dense_weights();
     }
 
@@ -177,50 +186,82 @@ public:
         return c.pred_wdl;
     }
 
-    // --- Backward pass + optimizer step, one sample -----------------------
+    // --- Backward pass, split into a parallel-safe half and a sequential
+    // half, for multithreaded training (see full_cycle.cpp's --threads and
+    // its "gen_data"/"only_train" modes) -----------------------------------
+    //
+    // compute_gradients() is `const` and touches nothing but the current
+    // weight *values* (read-only) - safe to call concurrently from many
+    // threads on the same TrainNetwork, each with its own TrainingSample.
+    // apply_gradients() is the only part that mutates optimizer state (the
+    // Adam moments, the lazy sparse catch-up bookkeeping in
+    // sparse_optimizer.hpp - all fundamentally sequential, one shared
+    // per-parameter history, not something many threads can safely update
+    // at once) - callers collect a batch of compute_gradients() results
+    // (however they got them: several threads, or read sequentially from a
+    // file) and pass the whole batch to ONE apply_gradients() call, which
+    // sums them (a batch gradient is the sum of its members' gradients,
+    // same as any minibatch optimizer) and does exactly one Adam step per
+    // parameter - regardless of batch size, so callers control the
+    // granularity simply by how many Gradients they collect first.
+    struct Gradients {
+        std::unordered_map<int, std::vector<float>> ft_row_grads;
+        std::vector<float> ft_bias_grad, l1_w_grad, l1_b_grad, l2_w_grad, l2_b_grad, l3_w_grad, l3_b_grad,
+            out_w_grad, out_b_grad;
+        float loss = 0.0f;
+        // How many training samples this Gradients' .loss is the SUM over -
+        // 1 for a single compute_gradients() result, the chunk length for a
+        // compute_gradients_range() result. apply_gradients() divides by
+        // this (summed across whatever batch it's given) to report the true
+        // per-sample average loss regardless of how the batch was chunked -
+        // see compute_gradients_range()'s comment for why that matters.
+        std::size_t sample_count = 0;
+        Gradients()
+            : ft_bias_grad(ACC_SIZE, 0.0f), l1_w_grad(H1 * 2 * ACC_SIZE, 0.0f), l1_b_grad(H1, 0.0f),
+              l2_w_grad(H2 * H1, 0.0f), l2_b_grad(H2, 0.0f), l3_w_grad(H3 * H2, 0.0f), l3_b_grad(H3, 0.0f),
+              out_w_grad(H3, 0.0f), out_b_grad(1, 0.0f) {}
+    };
+
     // MSE loss in win-probability space: L = (pred_wdl - target)^2. Simple,
     // well-behaved, and the standard NNUE training loss's shape (a fancier
     // blend of search-eval-derived and game-result-derived targets just
     // changes what target_wdl *is*, not this function).
-    float train_step(const TrainingSample& s) {
+    Gradients compute_gradients(const TrainingSample& s) const {
         Cache c;
         const float pred = forward(s, c);
-        const float loss = (pred - s.target_wdl) * (pred - s.target_wdl);
+        Gradients g;
+        g.loss = (pred - s.target_wdl) * (pred - s.target_wdl);
 
         const float dL_dpred = 2.0f * (pred - s.target_wdl);
         const float dpred_dpre = pred * (1.0f - pred); // sigmoid'
         const float grad_out_pre = dL_dpred * dpred_dpre;
 
         // output layer
-        std::vector<float> grad_output_w(H3);
-        for (std::size_t i = 0; i < H3; ++i) grad_output_w[i] = grad_out_pre * c.l3_post[i];
-        float grad_output_b = grad_out_pre;
+        for (std::size_t i = 0; i < H3; ++i) g.out_w_grad[i] = grad_out_pre * c.l3_post[i];
+        g.out_b_grad[0] = grad_out_pre;
         std::vector<float> grad_l3_post(H3);
         for (std::size_t i = 0; i < H3; ++i) grad_l3_post[i] = grad_out_pre * output.w(0)[i];
 
         // layer3
         std::vector<float> grad_l3_pre(H3);
         for (std::size_t i = 0; i < H3; ++i) grad_l3_pre[i] = grad_l3_post[i] * relu01_grad(c.l3_pre[i]);
-        std::vector<float> grad_l3_w(H3 * H2), grad_l3_b(H3);
         std::vector<float> grad_l2_post(H2, 0.0f);
-        backprop_dense<H2, H3>(layer3, c.l2_post.data(), grad_l3_pre.data(), grad_l3_w.data(), grad_l3_b.data(),
+        backprop_dense<H2, H3>(layer3, c.l2_post.data(), grad_l3_pre.data(), g.l3_w_grad.data(), g.l3_b_grad.data(),
                                 grad_l2_post.data());
 
         // layer2
         std::vector<float> grad_l2_pre(H2);
         for (std::size_t i = 0; i < H2; ++i) grad_l2_pre[i] = grad_l2_post[i] * relu01_grad(c.l2_pre[i]);
-        std::vector<float> grad_l2_w(H2 * H1), grad_l2_b(H2);
         std::vector<float> grad_l1_post(H1, 0.0f);
-        backprop_dense<H1, H2>(layer2, c.l1_post.data(), grad_l2_pre.data(), grad_l2_w.data(), grad_l2_b.data(),
+        backprop_dense<H1, H2>(layer2, c.l1_post.data(), grad_l2_pre.data(), g.l2_w_grad.data(), g.l2_b_grad.data(),
                                 grad_l1_post.data());
 
         // layer1
         std::vector<float> grad_l1_pre(H1);
         for (std::size_t i = 0; i < H1; ++i) grad_l1_pre[i] = grad_l1_post[i] * relu01_grad(c.l1_pre[i]);
-        std::vector<float> grad_l1_w(H1 * 2 * ACC_SIZE), grad_l1_b(H1);
         std::vector<float> grad_input(2 * ACC_SIZE, 0.0f);
-        backprop_dense<2 * ACC_SIZE, H1>(layer1, c.input.data(), grad_l1_pre.data(), grad_l1_w.data(),
-                                          grad_l1_b.data(), grad_input.data());
+        backprop_dense<2 * ACC_SIZE, H1>(layer1, c.input.data(), grad_l1_pre.data(), g.l1_w_grad.data(),
+                                          g.l1_b_grad.data(), grad_input.data());
 
         // accumulator / feature transformer
         const std::size_t stm = static_cast<std::size_t>(s.side_to_move);
@@ -231,37 +272,97 @@ public:
         for (std::size_t i = 0; i < ACC_SIZE; ++i)
             grad_acc[other][i] = grad_input[ACC_SIZE + i] * relu01_grad(c.acc[other][i]);
 
-        std::vector<float> grad_ft_bias(ACC_SIZE);
-        for (std::size_t i = 0; i < ACC_SIZE; ++i) grad_ft_bias[i] = grad_acc[0][i] + grad_acc[1][i];
+        for (std::size_t i = 0; i < ACC_SIZE; ++i) g.ft_bias_grad[i] = grad_acc[0][i] + grad_acc[1][i];
 
         // acc[p][d] = bias[d] + sum over active features of ft_weight[f][d];
         // every active feature of perspective p gets the SAME gradient
         // vector grad_acc[p]. A given absolute row index could (rarely, by
         // coincidence) be active in both perspectives' lists, so accumulate
-        // per-row before calling the optimizer once per distinct row -
-        // this is also exactly the "sparse gradient" the optimizer expects.
-        std::unordered_map<int, std::vector<float>> row_grads;
-        accumulate_row_grads(s.white_features, grad_acc[0], row_grads);
-        accumulate_row_grads(s.black_features, grad_acc[1], row_grads);
+        // per-row before returning - this is also exactly the "sparse
+        // gradient" the optimizer expects.
+        accumulate_row_grads(s.white_features, grad_acc[0], g.ft_row_grads);
+        accumulate_row_grads(s.black_features, grad_acc[1], g.ft_row_grads);
 
-        // --- apply updates ---
-        ft_weight_opt.begin_step();
-        for (auto& [feature, grad] : row_grads) {
-            ft_weight_opt.apply_gradient(static_cast<std::size_t>(feature), grad.data());
-        }
-        ft_bias_opt.step(ft_bias.data(), grad_ft_bias.data());
-
-        layer1_w_opt.step(layer1.weight.data(), grad_l1_w.data());
-        layer1_b_opt.step(layer1.bias.data(), grad_l1_b.data());
-        layer2_w_opt.step(layer2.weight.data(), grad_l2_w.data());
-        layer2_b_opt.step(layer2.bias.data(), grad_l2_b.data());
-        layer3_w_opt.step(layer3.weight.data(), grad_l3_w.data());
-        layer3_b_opt.step(layer3.bias.data(), grad_l3_b.data());
-        output_w_opt.step(output.weight.data(), grad_output_w.data());
-        output_b_opt.step(output.bias.data(), &grad_output_b);
-
-        return loss;
+        g.sample_count = 1;
+        return g;
     }
+
+    // Sums `g` into `acc` (acc += g, field by field, same merge semantics
+    // apply_gradients() always used - factored out so both it and
+    // compute_gradients_range() below share one implementation). `acc` must
+    // already be a default-constructed Gradients (its dense vectors are
+    // zero-initialized by Gradients' constructor).
+    static void add_gradients_into(Gradients& acc, const Gradients& g) {
+        for (const auto& [feature, grad] : g.ft_row_grads) {
+            auto it = acc.ft_row_grads.find(feature);
+            if (it == acc.ft_row_grads.end())
+                acc.ft_row_grads.emplace(feature, grad);
+            else
+                for (std::size_t d = 0; d < grad.size(); ++d) it->second[d] += grad[d];
+        }
+        for (std::size_t i = 0; i < ACC_SIZE; ++i) acc.ft_bias_grad[i] += g.ft_bias_grad[i];
+        for (std::size_t i = 0; i < acc.l1_w_grad.size(); ++i) acc.l1_w_grad[i] += g.l1_w_grad[i];
+        for (std::size_t i = 0; i < H1; ++i) acc.l1_b_grad[i] += g.l1_b_grad[i];
+        for (std::size_t i = 0; i < acc.l2_w_grad.size(); ++i) acc.l2_w_grad[i] += g.l2_w_grad[i];
+        for (std::size_t i = 0; i < H2; ++i) acc.l2_b_grad[i] += g.l2_b_grad[i];
+        for (std::size_t i = 0; i < acc.l3_w_grad.size(); ++i) acc.l3_w_grad[i] += g.l3_w_grad[i];
+        for (std::size_t i = 0; i < H3; ++i) acc.l3_b_grad[i] += g.l3_b_grad[i];
+        for (std::size_t i = 0; i < H3; ++i) acc.out_w_grad[i] += g.out_w_grad[i];
+        acc.out_b_grad[0] += g.out_b_grad[0];
+        acc.loss += g.loss;
+        acc.sample_count += g.sample_count;
+    }
+
+    // Computes and sums the gradients for samples[begin, end) into one
+    // Gradients - same total per-sample work as calling compute_gradients()
+    // on each and summing the results, but done as ONE reduction instead of
+    // `end - begin` separate objects apply_gradients() would otherwise have
+    // to merge sequentially. This is what makes multithreaded training
+    // actually scale (see full_cycle.cpp's run_only_train()): with one
+    // caller thread per chunk, the expensive O(chunk_size * network_size)
+    // summation - not the per-sample forward/backward pass itself, which
+    // was never the bottleneck - happens in parallel across threads, and
+    // apply_gradients() only has to merge O(num_threads) partial sums
+    // instead of O(batch_size) individual ones.
+    Gradients compute_gradients_range(const std::vector<TrainingSample>& samples, std::size_t begin,
+                                       std::size_t end) const {
+        Gradients acc;
+        for (std::size_t i = begin; i < end; ++i) add_gradients_into(acc, compute_gradients(samples[i]));
+        return acc;
+    }
+
+    // The only part of training that mutates shared state - see this
+    // section's header comment. Returns the average loss per SAMPLE (not
+    // per batch entry - see Gradients::sample_count - so this is correct
+    // whether `batch` holds one Gradients per sample or one pre-summed
+    // partial per worker thread, see compute_gradients_range()).
+    float apply_gradients(const std::vector<Gradients>& batch) {
+        if (batch.empty()) return 0.0f;
+
+        Gradients merged;
+        for (const Gradients& g : batch) add_gradients_into(merged, g);
+
+        ft_weight_opt.begin_step();
+        for (auto& [feature, grad] : merged.ft_row_grads)
+            ft_weight_opt.apply_gradient(static_cast<std::size_t>(feature), grad.data());
+        ft_bias_opt.step(ft_bias.data(), merged.ft_bias_grad.data());
+
+        layer1_w_opt.step(layer1.weight.data(), merged.l1_w_grad.data());
+        layer1_b_opt.step(layer1.bias.data(), merged.l1_b_grad.data());
+        layer2_w_opt.step(layer2.weight.data(), merged.l2_w_grad.data());
+        layer2_b_opt.step(layer2.bias.data(), merged.l2_b_grad.data());
+        layer3_w_opt.step(layer3.weight.data(), merged.l3_w_grad.data());
+        layer3_b_opt.step(layer3.bias.data(), merged.l3_b_grad.data());
+        output_w_opt.step(output.weight.data(), merged.out_w_grad.data());
+        output_b_opt.step(output.bias.data(), merged.out_b_grad.data());
+
+        return float(merged.loss / double(merged.sample_count));
+    }
+
+    // Convenience: the old single-sample interface, unchanged for existing
+    // callers (self_play.cpp, train_demo.cpp) - exactly equivalent to a
+    // batch of size 1.
+    float train_step(const TrainingSample& s) { return apply_gradients({compute_gradients(s)}); }
 
     // Must be called once after the last train_step() so every feature-
     // transformer row (even ones idle since their last activation) ends up
@@ -287,6 +388,27 @@ public:
         out.ft_shift = 0;       // accumulator is already in the QA domain, see file header
         out.hidden_shift = 6;   // log2(QB), QB = 64
         out.output_scale = (QA * QB) / CP_SCALE;
+    }
+
+    // Inverse of quantize_into(): loads a previously-exported quantized
+    // network back as this object's float training weights - "warm-
+    // starting" self-play from a Stockfish-supervised net instead of small
+    // random weights (see self_play.cpp's --init-from). Lossy (int8/int16
+    // rounding), but that loss is tiny next to what training then does with
+    // the weights; LazySparseAdamW's m/v/last_step state starts fresh
+    // either way, exactly as it would for a brand new run - only the
+    // weight *values* carry over, not any optimizer momentum.
+    void dequantize_from(const NNUE<ACC_SIZE, H1, H2, H3>& q) {
+        for (std::size_t f = 0; f < NUM_FEATURES; ++f) {
+            float* row = ft_weight_opt.row(f);
+            for (std::size_t d = 0; d < ACC_SIZE; ++d) row[d] = float(q.feature_transformer.weights[f][d]) / QA;
+        }
+        for (std::size_t d = 0; d < ACC_SIZE; ++d) ft_bias[d] = float(q.feature_transformer.biases[d]) / QA;
+
+        dequantize_dense_layer<2 * ACC_SIZE, H1>(q.layer1, layer1);
+        dequantize_dense_layer<H1, H2>(q.layer2, layer2);
+        dequantize_dense_layer<H2, H3>(q.layer3, layer3);
+        dequantize_dense_layer<H3, 1>(q.output_layer, output);
     }
 
 private:
@@ -350,6 +472,14 @@ private:
         for (std::size_t o = 0; o < OUT; ++o) {
             for (std::size_t i = 0; i < IN; ++i) dst.weights[o][i] = quantize_i8(src.w(o)[i] * QB);
             dst.biases[o] = static_cast<int32_t>(std::lround(src.bias[o] * QA * QB));
+        }
+    }
+
+    template <std::size_t IN, std::size_t OUT>
+    static void dequantize_dense_layer(const AffineLayer<IN, OUT>& src, DenseLayerF<IN, OUT>& dst) {
+        for (std::size_t o = 0; o < OUT; ++o) {
+            for (std::size_t i = 0; i < IN; ++i) dst.w(o)[i] = float(src.weights[o][i]) / QB;
+            dst.bias[o] = float(src.biases[o]) / (QA * QB);
         }
     }
 
